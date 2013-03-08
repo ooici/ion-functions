@@ -63,7 +63,7 @@ To obtain the ion-functions project, begin by [forking the GitHub repository](ht
 
 From the *ion-functions* directory, run the following commands:
 
-    python bootstrap.py
+    python bootstrap.py -v 1.7
     bin/buildout
 
 Once those steps complete, you should be able to run the unit tests
