@@ -23,7 +23,12 @@ setup(name = 'ion-functions',
         packages=packages,
         keywords=['oceanography', 'seawater'],
         setup_requires=[],
-        )
+        install_requires=[
+            'ipython==0.13.0',
+            'numexpr==2.0.1',
+            'nose==1.1.2',
+        ]
+)
 
 
 
