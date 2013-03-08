@@ -11,14 +11,14 @@ Topic :: Scientific/Engineering
 Topic :: Education
 Topic :: Software Development :: Libraries :: Python Modules'''
 
-setup(name = 'ion_functions', 
+setup(name = 'ion-functions', 
         version='0.0.1',
         description='Python Function collection for ION',
         long_description=open('README.md').read(),
         license='LICENSE.txt',
         author='Luke Campbell',
         author_email='lcampbell@asascience.com',
-        url='https://github.com/ooici/ion_functions/',
+        url='https://github.com/ooici/ion-functions/',
         classifiers=classifiers.split('\n'),
         packages=packages,
         keywords=['oceanography', 'seawater'],
