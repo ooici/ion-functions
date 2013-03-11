@@ -8,5 +8,11 @@
 """
 
 
-def data_density(*args):
-    pass
+def data_density(SP, p, t, lat, lon):
+    from pygsw import vectors as gsw
+
+    abs_sal = gsw.sa_from_sp(SP, p, lon, lat)
+    cons_temp = gsw.ct_from_t(abs_sal, t, p)
+
+    return gsw.rho(abs_sal, cons_temp, p)
+

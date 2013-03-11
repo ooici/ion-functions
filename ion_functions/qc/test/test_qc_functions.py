@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 
 """
-@package ion_functions.test.base_test
-@file ion_functions/test/base_test.py
+@package ion_functions.test.qc_functions
+@file ion_functions/test/qc_functions.py
 @author Christopher Mueller
-@brief Base class for Unit tests in ion_functions
+@brief Unit tests for qc_functions module
 """
 
 from nose.plugins.attrib import attr
 from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
-from ion_functions import qc_functions as qcf
+from ion_functions.qc import qc_functions as qcfunc
 
-@attr('UNIT', group='qc')
+
+@attr('UNIT', group='func')
 class TestQCFunctionsUnit(BaseUnitTestCase):
 
     def setUp(self):
@@ -43,7 +44,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         lim = [10, 20]
         out = [0, 1, 1, 1, 1, 1, 1, 0]
 
-        got = qcf.dataqc_globalrangetest(x, lim)
+        got = qcfunc.dataqc_globalrangetest(x, lim)
 
         self.assertTrue(np.array_equal(got, out))
 
@@ -71,7 +72,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         L = 5
         out = [1, 1, 0, 1, 1, 1, 1, 1]
 
-        got = qcf.dataqc_spiketest(dat, acc, N, L)
+        got = qcfunc.dataqc_spiketest(dat, acc, N, L)
 
         self.assertTrue(np.array_equal(got, out))
 
@@ -93,7 +94,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         num = 4
         out = [1, 1, 0, 0, 0, 0, 1, 1, 1, 1]
 
-        got = qcf.dataqc_stuckvaluetest(x, reso, num)
+        got = qcfunc.dataqc_stuckvaluetest(x, reso, num)
 
         self.assertTrue(np.array_equal(got, out))
 
@@ -149,42 +150,42 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         x_out = 1
 
-        got = qcf.dataqc_polytrendtest(x_in, t, n, nstd)
+        got = qcfunc.dataqc_polytrendtest(x_in, t, n, nstd)
         self.assertTrue(np.array_equal(got, x_out))
 
         x_in = [0.6557, 0.2357, 1.2491, 1.5340, 1.4787, 1.7577, 1.9431, 1.7922, 2.2555, 1.9712]
         t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         x_out = 1
 
-        got = qcf.dataqc_polytrendtest(x_in, t, n, nstd)
+        got = qcfunc.dataqc_polytrendtest(x_in, t, n, nstd)
         self.assertTrue(np.array_equal(got, x_out))
 
         x_in = [0.7060, 0.5318, 1.2769, 1.5462, 2.0971, 3.3235, 3.6948, 3.8171, 4.9502, 4.5344]
         t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         x_out = 0
 
-        got = qcf.dataqc_polytrendtest(x_in, t, n, nstd)
+        got = qcfunc.dataqc_polytrendtest(x_in, t, n, nstd)
         self.assertTrue(np.array_equal(got, x_out))
 
         x_in = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         x_out = 1
 
-        got = qcf.dataqc_polytrendtest(x_in, t, n, nstd)
+        got = qcfunc.dataqc_polytrendtest(x_in, t, n, nstd)
         self.assertTrue(np.array_equal(got, x_out))
 
         x_in = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         x_out = 1
 
-        got = qcf.dataqc_polytrendtest(x_in, t, n, nstd)
+        got = qcfunc.dataqc_polytrendtest(x_in, t, n, nstd)
         self.assertTrue(np.array_equal(got, x_out))
 
         x_in = [0.4387, -0.1184, -0.2345, -0.7048, -1.8131, -2.0102, -2.5544, -2.8537, -3.2906, -3.7453]
         t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         x_out = 0
 
-        got = qcf.dataqc_polytrendtest(x_in, t, n, nstd)
+        got = qcfunc.dataqc_polytrendtest(x_in, t, n, nstd)
         self.assertTrue(np.array_equal(got, x_out))
 
 
