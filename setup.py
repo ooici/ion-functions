@@ -27,6 +27,7 @@ setup(name = 'ion-functions',
             'ipython==0.13.0',
             'numexpr==2.0.1',
             'nose==1.1.2',
+            'pygsw==0.0.6',
         ]
 )
 
