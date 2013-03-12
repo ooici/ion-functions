@@ -36,14 +36,42 @@ You will need to upgrade couchdb to at least 1.1.0.
 
 ##libgswteos Dependency
 
-**On OSX**  
-This will require a buildout to accomodate the changes. Very important component is that developers will need to include the libgswteos-10 library:
+A very important component is the libgswteos-10 library.  Installation is quite straightforward on Mac OSX and a little more hairy on Linux.
 
-    brew tap lukecampbell/hombrew-libgswteos
+**On OSX**  
+
+The libgswteos dependency is brew installable:
+
+    brew tap lukecampbell/homebrew-libgswteos
     brew install libgswteos-10
     brew test -v libgswteos-10
     
+**On Linux**
 
+The dependencies for building/installing the library are:  **autoconf**, **automake**, & **libtool**
+
+1. Obtain the tarball from:  https://github.com/lukecampbell/gsw-teos/tarball/v3.0r4
+    * sha1: 6ae190b7da78d6aff7859e7d1a3bb027ce6cc5f3
+
+1. Build Procedure
+
+        bash ./autogen.sh  
+        ./configure --prefix=/usr/local/libgswteos-10  
+        make  
+        sudo make install  
+
+1. Linking Procedure:
+
+        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.la /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.so.3 /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.so.3.0.0 /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.so /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos/include/gswteos-10.h /usr/local/include/  
+
+1. Ensure that the global C_INCLUDE_PATH and LD_LIBRARY_PATH includes /usr/local/lib in all profiles otherwise python won't run correctly:
+
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib  
+        export C_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/local/include  
 
 **Python packages and environment management:**
 
