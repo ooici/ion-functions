@@ -75,3 +75,13 @@ From the *coverage-model* directory, run the following command:
     bin/nosetests -v
 
 This will run all tests in the ion-functions repository.  The **-v** flag denotes verbose output (the name of each test prints as it runs).  For more *nose* options, refer to the [nose documentation](https://nose.readthedocs.org/en/latest/man.html)
+
+#Libraries Currently Included
+* [Numpy](http://www.scipy.org/Tentative_NumPy_Tutorial) – array manipulation
+    * import numpy as np
+* [Numexpr](https://code.google.com/p/numexpr/) – relatively trivial "one line" expressions
+    * import numexpr
+        * vals = umexpr.evaluate('sin(x)**10 – y', local\_dict={'x': x\_vals, 'y': y\_vals})
+* [Gibbs Seawater equations – from TEOS-10](https://pypi.python.org/pypi/pygsw) _(Contact Luke Campbell if you notice something's missing)_
+    * from pygsw import vectors as gsw
+        * vals = gsw.sp_from_sa(input_1, …)
