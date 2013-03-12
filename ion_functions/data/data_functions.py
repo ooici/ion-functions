@@ -26,3 +26,10 @@ def data_l2_density(conductivity, temp,pressure, lat, lon):
     rho = gsw.rho(sa, temp, pressure)
     return rho
 
+def data_l2_salinity(conductivity, temp, pressure):
+    '''
+    Based on calculations done here: https://github.com/ooici/coi-services/blob/master/ion/processes/data/transforms/ctd/ctd_L2_salinity.py#L58
+    '''
+    import pygsw.vectors as gsw
+    sal_value = gsw.sp_from_c(conductivity/42.914, temp, pressure)
+    return sal_value
