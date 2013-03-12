@@ -34,6 +34,17 @@ dependent libraries and packages.
 Linux: Note that many installs have much older versions installed by default.
 You will need to upgrade couchdb to at least 1.1.0.
 
+##libgswteos Dependency
+
+**On OSX**  
+This will require a buildout to accomodate the changes. Very important component is that developers will need to include the libgswteos-10 library:
+
+    brew tap lukecampbell/hombrew-libgswteos
+    brew install libgswteos-10
+    brew test -v libgswteos-10
+    
+
+
 **Python packages and environment management:**
 
 **Install** pip
