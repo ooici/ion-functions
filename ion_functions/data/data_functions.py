@@ -16,3 +16,13 @@ def data_density(SP, p, t, lat, lon):
 
     return gsw.rho(abs_sal, cons_temp, p)
 
+def data_l2_density(conductivity, temp,pressure, lat, lon):
+    '''
+    Based on calculations done here: https://github.com/ooici/coi-services/blob/master/ion/processes/data/transforms/ctd/ctd_L2_density.py#L55
+    '''
+    from pygsw import vectors as gsw
+    sp = gsw.sp_from_c(conductivity/42.914, temp, pressure)
+    sa = gsw.sa_from_sp(sp, pressure, lon, lat)
+    rho = gsw.rho(sa, temp, pressure)
+    return rho
+
