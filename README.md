@@ -124,3 +124,4 @@ This will run all tests in the ion-functions repository.  The **-v** flag denote
 * [Gibbs Seawater equations – from TEOS-10](https://pypi.python.org/pypi/pygsw) _(Contact Luke Campbell if you notice something's missing)_
     * from pygsw import vectors as gsw
         * vals = gsw.sp_from_sa(input_1, …)
+* [GeoMag python library](https://pypi.python.org/pypi/geomag/)
