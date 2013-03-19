@@ -7,7 +7,7 @@
 @brief Module containing CTD related data-calculations.
 """
 
-def data_pracsal(c, t, p, lat, lon):
+def ctd_pracsal(c, t, p):
     """
     Description:
 
@@ -23,7 +23,7 @@ def data_pracsal(c, t, p, lat, lon):
 
     Usage:
 
-        SP = data_pracsal(c, t, p)
+        SP = ctd_pracsal(c, t, p)
 
             where
 
@@ -37,12 +37,13 @@ def data_pracsal(c, t, p, lat, lon):
 
     Example:
 
-        c = 33
-        p = 5
-        t = 15
+        c = 5.407471
+        t = 28
+        p = 0
 
-        SP = data_pracsal(c, t, p)
+        SP = ctd_pracsal(c, t, p)
         print SP
+        33.4952
 
     References:
     
@@ -58,10 +59,10 @@ def data_pracsal(c, t, p, lat, lon):
     C10 = c * 10
     
     # Calculate the Practical Salinity (PSS-78) [unitless]
-    SP = gsw.SP_from_C(c, t, p)
+    SP = gsw.sp_from_c(C10, t, p)
     return SP
 
-def data_density(SP, p, t, lat, lon):
+def ctd_density(SP, t, p, lat, lon):
     """
     Description:
     
@@ -74,34 +75,35 @@ def data_density(SP, p, t, lat, lon):
     Implemented by:
     
         2013-03-11: Christopher Mueller. Initial code.
-        2013-03-13: Christopher Wingard. Added commenting
+        2013-03-13: Christopher Wingard. Added commenting and moved to ctd_functions
 
     Usage:
     
-        rho = data_density(SP, p, t, lat, lon)
+        rho = ctd_density(SP, t, p, lat, lon)
         
             where
     
         rho = Density (seawater density) [kg m^-3]
         SP = Practical Salinity (PSS-78) [unitless], (see
             1341-00040_Data_Product_Spec_PRACSAL)
-        p = pressure (sea pressure) [dbar], (see
-            1341-00020_Data_Product_Spec_PRESWAT)
         t = temperature (seawater temperature) [deg_C], (see
             1341-00020_Data_Product_Spec_TEMPWAT)
+        p = pressure (sea pressure) [dbar], (see
+            1341-00020_Data_Product_Spec_PRESWAT)
         lat = latitude where input data was collected [decimal degree]
-        lng = longitude where input data was collected [decimal degree]
+        lon = longitude where input data was collected [decimal degree]
     
     Example:
         
-        SP = 33
-        p = 5
-        t = 15
-        lat = 45
-        lon = -126
+        SP = 33.4952
+        t = 28
+        p = 0
+        lat = 15.00
+        lon = -55.00
         
-        rho = data_density(SP, p, t, lat, lon)
+        rho = ctd_density(SP, t, p, lat, lon)
         print rho
+        1021.26508777
         
     References:
     
@@ -110,15 +112,14 @@ def data_density(SP, p, t, lat, lon):
             Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00050_Data_Product_SPEC_DENSITY_OOI.pdf)
     """
-
     from pygsw import vectors as gsw
 
-    # Calculate the Absolute Salinity from the Practical Salinity
-    abs_sal = gsw.sa_from_sp(SP, p, lon, lat)
+    # Calculate the Absolute Salinity (SA) from the Practical Salinity (SP) [g kg^-1]
+    SA = gsw.sa_from_sp(SP, p, lon, lat)
     
-    # Calculate the Conservative Temperature
-    cons_temp = gsw.ct_from_t(abs_sal, t, p)
+    # Calculate the Conservative Temperature (CT) [deg_C]
+    CT = gsw.ct_from_t(SA, t, p)
 
-    # Calculate the Density [kg m^-3]
-    return gsw.rho(abs_sal, cons_temp, p)
-
+    # Calculate the Density (rho) [kg m^-3]
+    rho = gsw.rho(SA, CT, p)
+    return rho
