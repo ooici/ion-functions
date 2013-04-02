@@ -8,6 +8,12 @@
 """
 
 ## DO NOT IMPORT AT THIS LEVEL - Perform imports within each function
+def dataqc_globalrangetest_minmax(dat, dat_min, dat_max):
+    '''
+    Python wrapper for dataqc_globalrangetest
+    Combines the min/max arguments into list for dataqc_globalrangetest
+    '''
+    return dataqc_globalrangetest_minmax(dat, [dat_min,dat_max])
 
 def dataqc_globalrangetest(dat, datlim):
     """
