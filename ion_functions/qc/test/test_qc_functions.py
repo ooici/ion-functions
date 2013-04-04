@@ -23,6 +23,147 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
     def tearDown(self):
         pass
 
+    def test_dataqc_modulustest(self):
+        """
+        Test Numpy modulus function.
+
+        Test values based on those defined in DPS:
+        
+        OOI (2012). Data Product Specification for Modulus (MODULUS). Document Control
+            Number 1341-10001. https://alfresco.oceanobservatories.org/ (See: 
+            Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-10001_Data_Product_SPEC_MODULUS_OOI.pdf)    
+        """
+
+        x = [-10, 0, 10, 350, 360, 370]
+        y = [360, 360, 360, 360, 360, 360]
+        out = [350, 0, 10, 350, 0, 10]
+
+        got = np.mod(x, y)
+
+        self.assertTrue(np.array_equal(got, out))
+
+    def test_dataqc_interp1test(self):
+        """
+        Test Numpy interp function.
+
+        Test values based on those defined in DPS:
+        
+        OOI (2012). Data Product Specification for 1-D Interpolation (INTERP1).
+            Document Control Number 1341-10001.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-10002_Data_Product_SPEC_INTERP1_OOI.pdf) 
+        """
+
+        x = np.array([
+                [0,1],
+                [0,1],
+                [0,1],
+                [0,1],
+                [0,1],
+                [0,1],
+                [0,1],
+                [0,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+                [0,0.5,1],
+            ])
+        y = np.array([
+                [30,40],
+                [30,40],
+                [30,40],
+                [30,40],
+                [30,40],
+                [30,40],
+                [30,40],
+                [30,40],
+                [30,31,40],
+                [30,31,40],
+                [30,31,40],
+                [30,31,40],
+                [30,31,40],
+                [30,31,40],
+                [30,31,40],
+                [30,31,40],
+                [30,50,40],
+                [30,50,40],
+                [30,50,40],
+                [30,50,40],
+                [30,50,40],
+                [30,50,40],
+                [30,50,40],
+                [30,50,40],
+                [30,50,-40],
+                [30,50,-40],
+                [30,50,-40],
+                [30,50,-40],
+                [30,50,-40],
+                [30,50,-40],
+                [30,50,-40],
+                [30,50,-40],
+            ])
+        XI = np.array([
+                -0.2,
+                0,
+                0.2,
+                0.4,
+                0.6,
+                0.8,
+                1,
+                1.2,
+                -0.2,
+                0,
+                0.2,
+                0.4,
+                0.6,
+                0.8,
+                1,
+                1.2,
+                -0.2,
+                0,
+                0.2,
+                0.4,
+                0.6,
+                0.8,
+                1,
+                1.2,
+                -0.2,
+                0,
+                0.2,
+                0.4,
+                0.6,
+                0.8,
+                1,
+                1.2,
+            ])
+        out = [350, 0, 10, 350, 0, 10]
+
+        got = np.interp(XI, x, y, left=np.nan, right=np.nan)
+
+        self.assertTrue(np.array_equal(got, out))
+
     def test_dataqc_globalrangetest(self):
         """
         Test as defined in DPS:
