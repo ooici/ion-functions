@@ -29,18 +29,23 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
 
         Test values based on those defined in DPS:
         
-        OOI (2012). Data Product Specification for Modulus (MODULUS). Document Control
-            Number 1341-10001. https://alfresco.oceanobservatories.org/ (See: 
-            Company Home >> OOI >> Controlled >> 1000 System Level >>
-            1341-10001_Data_Product_SPEC_MODULUS_OOI.pdf)    
+        OOI (2012). Data Product Specification for Modulus (MODULUS). Document
+            Control Number 1341-10001. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-10001_Data_Product_SPEC_MODULUS_OOI.pdf) 
+            
+        Implemented by Christopher Wingard, April 2013
         """
+        
+        # create input arrays, including expected results (out)
+        x = np.array([-10, 0, 10, 350, 360, 370])
+        y = np.array([360, 360, 360, 360, 360, 360])
+        out = np.array([350, 0, 10, 350, 0, 10])
 
-        x = [-10, 0, 10, 350, 360, 370]
-        y = [360, 360, 360, 360, 360, 360]
-        out = [350, 0, 10, 350, 0, 10]
-
+        # compute output array
         got = np.mod(x, y)
 
+        # compare expected and computed arrays
         self.assertTrue(np.array_equal(got, out))
 
     def test_dataqc_interptest(self):
@@ -50,153 +55,94 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         Test values based on those defined in DPS:
         
         OOI (2012). Data Product Specification for 1-D Interpolation (INTERP1).
-            Document Control Number 1341-10001.
+            Document Control Number 1341-10002.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
             1341-10002_Data_Product_SPEC_INTERP1_OOI.pdf) 
+            
+        Implemented by Christopher Wingard, April 2013
         """
         
-        x = np.array([
-                [0,1],
-                [0,1],
-                [0,1],
-                [0,1],
-                [0,1],
-                [0,1],
-                [0,1],
-                [0,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-                [0,0.5,1],
-            ])
-        y = np.array([
-                [30,40],
-                [30,40],
-                [30,40],
-                [30,40],
-                [30,40],
-                [30,40],
-                [30,40],
-                [30,40],
-                [30,31,40],
-                [30,31,40],
-                [30,31,40],
-                [30,31,40],
-                [30,31,40],
-                [30,31,40],
-                [30,31,40],
-                [30,31,40],
-                [30,50,40],
-                [30,50,40],
-                [30,50,40],
-                [30,50,40],
-                [30,50,40],
-                [30,50,40],
-                [30,50,40],
-                [30,50,40],
-                [30,50,-40],
-                [30,50,-40],
-                [30,50,-40],
-                [30,50,-40],
-                [30,50,-40],
-                [30,50,-40],
-                [30,50,-40],
-                [30,50,-40],
-            ])
-        XI = np.array([
-                -0.2,
-                0,
-                0.2,
-                0.4,
-                0.6,
-                0.8,
-                1,
-                1.2,
-                -0.2,
-                0,
-                0.2,
-                0.4,
-                0.6,
-                0.8,
-                1,
-                1.2,
-                -0.2,
-                0,
-                0.2,
-                0.4,
-                0.6,
-                0.8,
-                1,
-                1.2,
-                -0.2,
-                0,
-                0.2,
-                0.4,
-                0.6,
-                0.8,
-                1,
-                1.2,
-            ])
-        out = np.array([
-                np.nan,
-                30,
-                32,
-                34,
-                36,
-                38,
-                40,
-                np.nan,
-                np.nan,
-                30,
-                30.4,
-                30.8,
-                32.8,
-                36.4,
-                40,
-                np.nan,
-                np.nan,
-                30,
-                38,
-                46,
-                48,
-                44,
-                40,
-                np.nan,
-                np.nan,
-                30,
-                38,
-                46,
-                32,
-                -4,
-                -40,
-                np.nan
-            ])
+        # create input arrays, including expected results (out)
+        x = np.array([[0,1], [0,1], [0,1], [0,1], [0,1], [0,1], [0,1], [0,1],
+                [0,0.5,1], [0,0.5,1], [0,0.5,1], [0,0.5,1], 
+                [0,0.5,1], [0,0.5,1], [0,0.5,1], [0,0.5,1],
+                [0,0.5,1], [0,0.5,1], [0,0.5,1], [0,0.5,1], 
+                [0,0.5,1], [0,0.5,1], [0,0.5,1], [0,0.5,1],
+                [0,0.5,1], [0,0.5,1], [0,0.5,1], [0,0.5,1], 
+                [0,0.5,1], [0,0.5,1], [0,0.5,1], [0,0.5,1]])
+        
+        y = np.array([[30,40], [30,40], [30,40], [30,40],
+                [30,40], [30,40], [30,40], [30,40],
+                [30,31,40], [30,31,40], [30,31,40], [30,31,40],
+                [30,31,40], [30,31,40], [30,31,40], [30,31,40],
+                [30,50,40], [30,50,40], [30,50,40], [30,50,40],
+                [30,50,40], [30,50,40], [30,50,40], [30,50,40],
+                [30,50,-40], [30,50,-40], [30,50,-40], [30,50,-40],
+                [30,50,-40], [30,50,-40], [30,50,-40], [30,50,-40]])
+        
+        XI = np.array([-0.2, 0, 0.2, 0.4, 0.6, 0.8, 1, 1.2,
+                -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1, 1.2,
+                -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1, 1.2,
+                -0.2, 0, 0.2, 0.4, 0.6, 0.8, 1, 1.2])
+        
+        out = np.array([np.nan, 30, 32, 34, 36, 38, 40,np.nan,
+                np.nan, 30, 30.4, 30.8, 32.8, 36.4, 40, np.nan,
+                np.nan, 30, 38, 46, 48, 44, 40, np.nan,
+                np.nan, 30, 38, 46, 32, -4, -40, np.nan])
+
+        # compute output array, setting output limits to NaN as per DPS.
         got = []
         for i in range(len(XI)):
-            got.append(np.interp(XI[i], x[i], y[i], left=np.nan, right=np.nan))
+            YI = np.interp(XI[i], x[i], y[i], left=np.nan, right=np.nan)
+            got.append(YI)
 
-        self.assertTrue(np.allclose(np.nan_to_num(got), np.nan_to_num(out), rtol=1e-7, atol=0))
+        # compare expected and computed arrays using allclose function to
+        # compare floating point numbers (note, need to set NaN in outputs to 0
+        # for comparison to work).
+        self.assertTrue(np.allclose(np.nan_to_num(got), np.nan_to_num(out),
+                                    rtol=1e-8, atol=0))
+
+    def test_dataqc_polyvaltest(self):
+        """
+        Test Numpy polyval function.
+
+        Test values based on those defined in DPS:
+        
+        OOI (2012). Data Product Specification for Evaluate Polynomial
+            (POLYVAL). Document Control Number 1341-10003.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-10003_Data_Product_SPEC_POLYVAL_OOI.pdf) 
+            
+        Implemented by Christopher Wingard, April 2013
+        """
+        
+        # create input arrays, including expected results (out)
+        p = np.array([[0.3], [0.3], [0.3], [0.3],
+                      [1,0], [1,0], [1,0], [1,0],
+                      [1,0.3], [1,0.3], [1,0.3], [1,0.3],
+                      [1,1,0.3], [1,1,0.3], [1,1,0.3], [1,1,0.3]])
+        
+        x = np.array([0, 1, 2, 3,
+                      0, 1, 2, 3,
+                      0, 1, 2, 3,
+                      0, 1, 2, 3])
+        
+        out = np.array([0.3, 0.3, 0.3, 0.3,
+                        0, 1, 2, 3,
+                        0.3, 1.3, 2.3, 3.3,
+                        0.3, 2.3, 6.3, 12.3])
+        
+        # compute output array, setting output limits to NaN as per DPS.
+        got = []
+        for i in range(len(out)):
+            Y = np.polyval(p[i], x[i])
+            got.append(Y)
+        
+        # compare expected and computed arrays using numpy allclose function to
+        # compare floating point numbers.
+        self.assertTrue(np.allclose(got, out, rtol=1e-8, atol=0))
 
     def test_dataqc_globalrangetest(self):
         """

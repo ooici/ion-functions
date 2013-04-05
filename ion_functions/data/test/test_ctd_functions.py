@@ -31,7 +31,9 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         OOI (2012). Data Product Specification for Salinty. Document Control
             Number 1341-00040. https://alfresco.oceanobservatories.org/ (See: 
             Company Home >> OOI >> Controlled >> 1000 System Level >>
-            1341-00050_Data_Product_SPEC_PRACSAL_OOI.pdf)    
+            1341-00050_Data_Product_SPEC_PRACSAL_OOI.pdf)
+            
+        Implemented by Christopher Wingard, March 2013
         """
 
         c = np.array([5.407471, 5.407880, 5.041008, 3.463402, 3.272557, 3.273035])
@@ -68,6 +70,8 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
             Number 1341-00050. https://alfresco.oceanobservatories.org/ (See:
             Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00050_Data_Product_SPEC_DENSITY_OOI.pdf)
+            
+        Implemented by Christopher Wingard, March 2013
         """
         
         SP = np.array([33.5, 33.5, 37, 34.9, 35, 35])

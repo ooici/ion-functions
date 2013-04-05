@@ -164,6 +164,32 @@ def isvector(dat):
     """
     return np.atleast_1d(dat).size > 1
 
+def ismatrix(dat):
+    """
+    ismatrix - test if input array is formatted as a matrix
+    
+    Syntax
+    
+        flag = ismatrix(dat)
+        
+    Description
+    
+        ismatrix(dat) returns logical 1 (true) if np.atleast_1d(dat).shape
+        returns (m, n) with nonnegative integer values m and n, and logical 0
+        (false) otherwise.
+
+    Examples
+        
+        dat = np.array([0, 1]);
+        ismatrix(dat)
+        0
+        dat = np.array([[0,1]])
+        ismatrix(dat)
+        1
+        
+    """
+    return len(np.atleast_1d(dat).shape) == 2
+
 
 def isempty(dat):
     """

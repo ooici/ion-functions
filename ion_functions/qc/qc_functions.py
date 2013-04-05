@@ -88,6 +88,159 @@ def dataqc_globalrangetest(dat, datlim):
 
     return (datlim_arr.min() <= dat) & (dat <= datlim_arr.max()).astype('int8')
 
+def dataqc_localrangetest(dat, z, datlim, datlimz):
+    """
+    Description:
+
+        Data quality control algorithm testing if measurements fall into a
+        user-defined valid range. This range is not constant but varies with
+        measurement location. Returns 1 for presumably good data and 0 for data
+        presumed bad.
+
+    Implemented by:
+
+        2013-04-05: Christopher Wingard. Initial code.
+
+    Usage:
+
+        qcflag = dataqc_localrangetest(dat, Z, datlim, datlimz)
+
+            where
+
+        qcflag = Boolean, 0 if value is outside range, else = 1.
+        dat = input data set, a numeric real scalar or column vector. 
+        z = location of measurement dat. must have same # of rows as dat and
+            same # of columns as datlimz
+        datlim = two column array with the minimum (column 1) and maximum
+            (column 2) values considered valid.
+        datlimz = array with the locations where datlim is given. must have
+            same # of rows as datlim and same # of columns as z.
+
+    Example:
+
+        dat = np.array([3.5166, 8.3083, 5.8526, 5.4972, 9.1719,
+                        2.8584, 7.5720, 7.5373, 3.8045, 5.6782])
+    
+        z = np.array([0.1517, 0.1079, 1.0616, 1.5583, 1.8680,
+                      0.2598, 1.1376, 0.9388, 0.0238, 0.6742])
+    
+        datlim = np.array([[0, 2], [0, 2], [1, 8], [1, 9], [1, 10]]);
+        datlimz = np.array([0, 0.5, 1, 1.5, 2]);
+
+        qcflag = dataqc_localrangetest(dat, z, datlim, datlimz)
+        print qcflag
+            0
+            0
+            1
+            1
+            1
+            0
+            1
+            0
+            0
+            0
+
+    References:
+    
+        OOI (2012). Data Product Specification for Local Range Test. Document Control
+            Number 1341-10005. https://alfresco.oceanobservatories.org/ (See: 
+            Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-10005_Data_Product_SPEC_LOCLRNG_OOI.pdf)
+    """
+    import warnings
+    import numpy as np
+    from scipy.interpolate import griddata
+    from ion_functions import utils
+
+    # check inputs: dat
+    dat_arr = np.atleast_1d(dat)
+
+    if not utils.isnumeric(dat_arr).all():
+        raise ValueError('\'dat\' must be numeric')
+
+    if not utils.ismatrix(dat_arr).all():
+        raise ValueError('\'dat\' must be a matrix')
+
+    if not utils.isreal(dat_arr).all():
+        raise ValueError('\'dat\' must be real')
+    
+    # check inputs: z
+    z_arr = np.atleast_1d(z)
+
+    if not utils.isnumeric(z_arr).all():
+        raise ValueError('\'z\' must be numeric')
+
+    if not utils.ismatrix(z_arr).all():
+        raise ValueError('\'z\' must be a matrix')
+
+    if not utils.isreal(z_arr).all():
+        raise ValueError('\'z\' must be real')
+    
+    # check inputs: datlim
+    datlim_arr = np.atleast_1d(datlim)
+
+    if not utils.isnumeric(datlim_arr).all():
+        raise ValueError('\'datlim\' must be numeric')
+
+    if not utils.ismatrix(datlim_arr).all():
+        raise ValueError('\'datlim\' must be a matrix')
+
+    if not utils.isreal(datlim_arr).all():
+        raise ValueError('\'datlim\' must be real')
+    
+    # check inputs: datlimz
+    datlimz_arr = np.atleast_1d(datlimz)
+
+    if not utils.isnumeric(datlimz_arr).all():
+        raise ValueError('\'datlimz\' must be numeric')
+
+    if not utils.ismatrix(datlimz_arr).all():
+        raise ValueError('\'datlimz\' must be a matrix')
+    
+    if not utils.isreal(datlimz_arr).all():
+        raise ValueError('\'datlimz\' must be real')
+        
+    # test size and shape of the input arrays datlimz and datlim, setting test
+    # variables.
+    array_size = datlimz_arr.shape
+    numlim = array_size[0]
+    ndim = array_size[1]
+        
+    array_size = datlim_arr.shape
+    tmp1 = array_size[0]
+    tmp2 = array_size[1]
+    if tmp1 != numlim:
+        raise ValueError('\'datlim\' and \'datlimz\' must have the same number of rows.')
+        
+    if tmp2 != 2:
+        raise ValueError('\'datlim\' must be structured as an array with exactly 2 columns and 1 through N rows.')
+        
+    # test the size and shape of the z input array
+    array_size = z_arr.shape
+    num = array_size[0]
+    tmp2 = array_size[1]
+    if tmp2 != ndim:
+        raise ValueError('\'z\' must have the same number of columns as \'datlimz\'.')
+    
+    # test size and shape of the dat input array.
+    if not utils.isvector(dat_arr).all():
+        raise ValueError('\'dat\' must be a vector')
+    dat_arr.flatten(1)
+    if num != dat_arr.size:
+        raise ValueError('Length of \'dat\' must match number of rows in \'z\'')
+    
+    # test datlim, values in column 2 must be greater than those in column 1
+    if not all(datlim_arr[:,1] > datlim_arr[:,0]):
+        warnings.warn('Second column values of \'datlim\' should be greater than first column values.')
+    
+    # create the limits for the data set
+    if ndim == 1:
+        lim1 = np.interp(z_arr,datlimz_arr,datlim_arr[:,0])
+        lim2 = np.interp(z_arr,datlimz_arr,datlim_arr[:,1])
+    else:
+        F = griddata(points, values, (grid_x, grid_y), method='cubic')
+
+
 
 def dataqc_spiketest(dat, acc, N=5, L=5):
     """
