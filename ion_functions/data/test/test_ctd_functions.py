@@ -41,20 +41,21 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         output = ctdfunc.ctd_pracsal(c,t,p)
         
         """
-        Note, DPS rounds off output values to the tenth decimal place. For test
-        to work, these were recalculated using the GSW Toolbox, Version 3.02 in
-        Matlab R2013a and output to the 6th decimal place.
+        Note, DPS rounds off output values to %.1f. For test to work, these were
+        recalculated using the GSW Toolbox, Version 3.02 in Matlab R2013a and
+        output using %.6f (see Matlab code snippet below). The DPS will be
+        editted to correctly specify the higher precision.
         
         >> sprintf('%.6f\t',gsw_SP_from_C(c*10,t,p))
         ans =
         33.495229	33.495224	36.995774	34.898526	34.999244	34.999494
         """
-        check_values = np.array((33.495229,
+        check_values = np.array([33.495229,
                                  33.495224,
                                  36.995774,
                                  34.898526,
                                  34.999244,
-                                 34.999494))
+                                 34.999494])
         self.assertTrue(np.allclose(output, check_values))
     
     def test_ctd_density(self):
@@ -77,10 +78,10 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         
         output = ctdfunc.ctd_density(SP,t,p,lat,lon)
 
-        check_values = np.array((1021.26851,
+        check_values = np.array([1021.26851,
                                  1021.31148,
                                  1026.94422,
                                  1031.13498,
                                  1039.28768,
-                                 1050.30616))
+                                 1050.30616])
         self.assertTrue(np.allclose(output, check_values))

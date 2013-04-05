@@ -43,7 +43,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
 
         self.assertTrue(np.array_equal(got, out))
 
-    def test_dataqc_interp1test(self):
+    def test_dataqc_interptest(self):
         """
         Test Numpy interp function.
 
@@ -55,7 +55,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
             >> Controlled >> 1000 System Level >>
             1341-10002_Data_Product_SPEC_INTERP1_OOI.pdf) 
         """
-
+        
         x = np.array([
                 [0,1],
                 [0,1],
@@ -158,11 +158,45 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
                 1,
                 1.2,
             ])
-        out = [350, 0, 10, 350, 0, 10]
+        out = np.array([
+                np.nan,
+                30,
+                32,
+                34,
+                36,
+                38,
+                40,
+                np.nan,
+                np.nan,
+                30,
+                30.4,
+                30.8,
+                32.8,
+                36.4,
+                40,
+                np.nan,
+                np.nan,
+                30,
+                38,
+                46,
+                48,
+                44,
+                40,
+                np.nan,
+                np.nan,
+                30,
+                38,
+                46,
+                32,
+                -4,
+                -40,
+                np.nan
+            ])
+        got = []
+        for i in range(len(XI)):
+            got.append(np.interp(XI[i], x[i], y[i], left=np.nan, right=np.nan))
 
-        got = np.interp(XI, x, y, left=np.nan, right=np.nan)
-
-        self.assertTrue(np.array_equal(got, out))
+        self.assertTrue(np.allclose(np.nan_to_num(got), np.nan_to_num(out), rtol=1e-7, atol=0))
 
     def test_dataqc_globalrangetest(self):
         """
