@@ -227,18 +227,18 @@ def islogical(inflags):
 
     Examples
         
-        inflags = np.array([0, 1]).astype('int8')
+        inflags = np.array([0, 1]).astype('np.int8')
         islogical(inflags)
         True
-        inflags = np.array([[0, 2]]).astype('int8')
+        inflags = np.array([[0, 2]]).astype('np.int8')
         islogical(inflags)
         False
-        inflags = np.array([[0, 1]]).astype('float')
+        inflags = np.array([[0, 1]]).astype('np.float')
         islogical(inflags)
         False
         
     """
     inflags = np.atleast_1d(inflags)
-    flag = (all(ny.in1d(inflags.flatten(), [0,1])) and
-            isinstance(inflags.flatten(),'int8'))
+    flag = (all(np.in1d(inflags.flatten(), [0,1])) and
+            all(isinstance(n, np.int8) for n in inflags.flatten()))
     return flag

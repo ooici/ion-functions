@@ -982,9 +982,8 @@ def dataqc_propogateflags(inflags):
     import numpy as np
     from ion_functions import utils
 
-    inflags = np.atleast_1d(inflags)
-    if not islogical(inflags):
-        raise ErrorValue('\'inflags\' must be \'0\' or \'1\' ' \
+    if not utils.islogical(inflags):
+        raise ValueError('\'inflags\' must be \'0\' or \'1\' ' \
                          'integer flag array')
 
     array_size = inflags.shape
@@ -995,7 +994,8 @@ def dataqc_propogateflags(inflags):
     outflag = np.all(inflags,0);
     return outflag.astype('int8')
 
-def dataqc_solarelevation(lon,lat,dt):
+
+def dataqc_solarelevation(lon, lat, dt):
     """
     Description
     
@@ -1051,15 +1051,20 @@ def dataqc_solarelevation(lon,lat,dt):
     import time
     import numpy as np
     from ion_functions import utils
-    
+        
     # Test lengths and types of inputs. Latitude and longitude must be the same
-    # size and can either be a scalar or a 1D array. The date and time stamp
-    # can also be either a scalar or an array. If all three inputs are arrays,
+    # size and can either be a scalar or a vecotr. The date and time stamp
+    # can also be either a scalar or a vector. If all three inputs are vectors,
     # they must be of the same length.
-    lon = np.atleast_1d(lon)
-    lat = np.atleast_1d(lat)
-    dt = np.atleast_1d(dt)
-   
+    if len(lon) != len(lat):
+        raise ValueError('\'lon\' and \'lat\' must be the same size')
+    
+    if utils.isvector(lon) and utils.isvector(lat) and utils.isvector(dt):
+        # test their lengths
+        if not len(lon) ==  len(lat) == len(dt):
+            raise ValueError ('If all inputs are vectors, these must all ' \
+                          'be of the same length')
+        
     # set constants (using values from as_consts.m)
     # ------ short-wave flux calculations
     #   the solar constant [W m^-2] represents a mean of satellite measurements
@@ -1067,26 +1072,30 @@ def dataqc_solarelevation(lon,lat,dt):
     #   (1995), Earth System Monitor, 6, 6-10.
     solar_const = 1368.0
         
-    # Create a time tuple in UTC from the Epoch time input. 
-    gtime = time.gmtime(dt)
-    yy = gtime[0]
-    mn = gtime[1]
-    dd = gtime[2]
-    hh = gtime[3]
-    mm = gtime[4]
-    ss = gtime[5]
-        
+    # Create a time tuple in UTC from the Epoch time input, and then create
+    # scalars or numpy arrays of time elements for subsequent calculations.
+    ldt = len(dt)
+    yy = np.zeros(ldt, dtype=np.int); mn = np.zeros(ldt, dtype=np.int)
+    dd = np.zeros(ldt, dtype=np.int); hh = np.zeros(ldt, dtype=np.int)
+    mm = np.zeros(ldt, dtype=np.int); ss = np.zeros(ldt, dtype=np.int)
+    for i in range(ldt):
+        # create time tuple in UTC
+        gtime = time.gmtime(dt[i])
+        # create scalar elements
+        yy[i] = gtime[0]; mn[i] = gtime[1]; dd[i] = gtime[2]
+        hh[i] = gtime[3]; mm[i] = gtime[4]; ss[i] = gtime[5]
+    
     #constants used in function
-    deg2rad = np.pi / 180;
-    rad2deg = 1 / deg2rad;
+    deg2rad = np.pi / 180
+    rad2deg = 1 / deg2rad
     
     # compute Universal Time in hours
-    utime = hh + (mm + ss / 60) / 60
+    utime = hh + (mm + ss / 60.0) / 60.0
     
     # compute Julian ephemeris date in days (Day 1 is 1 Jan 4713 B.C. which
     # equals -4712 Jan 1)
     jed = (367 * yy - np.fix(7*(yy+np.fix((mn+9)/12))/4) + np.fix(275*mn/9)
-           + dd + 1721013 + utime / 24)
+           + dd + 1721013 + utime / 24.0)
     
     # compute interval in Julian centuries since 1900
     jc_int = (jed - 2415020.0) / 36525
@@ -1094,7 +1103,7 @@ def dataqc_solarelevation(lon,lat,dt):
     # compute mean anomaly of the sun
     ma_sun = 358.475833 + 35999.049750 * jc_int - 0.000150 * jc_int**2
     ma_sun = (ma_sun - np.fix(ma_sun/360) * 360) * deg2rad
-    
+        
     # compute mean longitude of sun
     ml_sun = 279.696678 + 36000.768920 * jc_int + 0.000303 * jc_int**2
     ml_sun = (ml_sun - np.fix(ml_sun/360) * 360) * deg2rad
@@ -1115,7 +1124,7 @@ def dataqc_solarelevation(lon,lat,dt):
     
     # compute sun theta
     theta = (0.397930 * np.sin(ml_sun) + 0.009999 * np.sin(ma_sun-ml_sun)
-             + 0.00333 * np.sin(ma_sun+ml_sun) - 0.000208 * jc_int
+             + 0.003334 * np.sin(ma_sun+ml_sun) - 0.000208 * jc_int
              * np.sin(ml_sun) + 0.000042 * np.sin(2*ma_sun+ml_sun) - 0.000040
              * np.cos(ml_sun) - 0.000039 * np.sin(an_moon-ml_sun) - 0.000030
              * jc_int * np.sin(ma_sun-ml_sun) - 0.000014
@@ -1130,15 +1139,15 @@ def dataqc_solarelevation(lon,lat,dt):
     
     # compute declination
     decln = np.arcsin(theta/np.sqrt(rho))
-    
+
     # compute equation of time (in seconds of time)
     l = 276.697 + 0.98564734 * (jed-2415020.0)
     l = (l - 360 * np.fix(l/360)) * deg2rad
-    eqt = (-97.8 * np.sin(l) - 431.3 * np.cos(l) + 596 * np.sin(2*l)
+    eqt = (-97.8 * np.sin(l) - 431.3 * np.cos(l) + 596.6 * np.sin(2*l)
            - 1.9 * np.cos(2*l) + 4.0 * np.sin(3*l) + 19.3 * np.cos(3*l)
            - 12.7 * np.sin(4*l))
     eqt = eqt / 60
-    
+
     # compute local hour angle from global hour angle
     gha = 15 * (utime-12) + 15 * eqt / 60
     lha = gha - lon
@@ -1155,8 +1164,9 @@ def dataqc_solarelevation(lon,lat,dt):
     # altitude is below the horizon)
     sorad = (solar_const / rv**2)  * np.sin(deg2rad * z)
     sorad[z<0] = 0
-    
+        
     return (z, sorad)
+
 
 def dataqc_condcompress(p_orig, p_new, c_orig, cpcor=-9.57e-8):
     """
@@ -1206,5 +1216,8 @@ def dataqc_condcompress(p_orig, p_new, c_orig, cpcor=-9.57e-8):
     import numpy as np
     from ion_functions import utils
 
+    # need to add test cases to ensure inputs (p_orig, p_new and c_orig) are
+    # the same size. cpcor is a scalar
+    
     c_new = c_orig * (1 + cpcor * p_orig) / (1 + cpcor * p_new)
-    return cond_new
+    return c_new
