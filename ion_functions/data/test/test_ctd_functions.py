@@ -31,7 +31,9 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         OOI (2012). Data Product Specification for Salinty. Document Control
             Number 1341-00040. https://alfresco.oceanobservatories.org/ (See: 
             Company Home >> OOI >> Controlled >> 1000 System Level >>
-            1341-00050_Data_Product_SPEC_PRACSAL_OOI.pdf)    
+            1341-00050_Data_Product_SPEC_PRACSAL_OOI.pdf)
+            
+        Implemented by Christopher Wingard, March 2013
         """
 
         c = np.array([5.407471, 5.407880, 5.041008, 3.463402, 3.272557, 3.273035])
@@ -41,20 +43,21 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         output = ctdfunc.ctd_pracsal(c,t,p)
         
         """
-        Note, DPS rounds off output values to the tenth decimal place. For test
-        to work, these were recalculated using the GSW Toolbox, Version 3.02 in
-        Matlab R2013a and output to the 6th decimal place.
+        Note, DPS rounds off output values to %.1f. For test to work, these were
+        recalculated using the GSW Toolbox, Version 3.02 in Matlab R2013a and
+        output using %.6f (see Matlab code snippet below). The DPS will be
+        editted to correctly specify the higher precision.
         
         >> sprintf('%.6f\t',gsw_SP_from_C(c*10,t,p))
         ans =
         33.495229	33.495224	36.995774	34.898526	34.999244	34.999494
         """
-        check_values = np.array((33.495229,
+        check_values = np.array([33.495229,
                                  33.495224,
                                  36.995774,
                                  34.898526,
                                  34.999244,
-                                 34.999494))
+                                 34.999494])
         self.assertTrue(np.allclose(output, check_values))
     
     def test_ctd_density(self):
@@ -67,6 +70,8 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
             Number 1341-00050. https://alfresco.oceanobservatories.org/ (See:
             Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00050_Data_Product_SPEC_DENSITY_OOI.pdf)
+            
+        Implemented by Christopher Wingard, March 2013
         """
         
         SP = np.array([33.5, 33.5, 37, 34.9, 35, 35])
@@ -77,10 +82,10 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         
         output = ctdfunc.ctd_density(SP,t,p,lat,lon)
 
-        check_values = np.array((1021.26851,
+        check_values = np.array([1021.26851,
                                  1021.31148,
                                  1026.94422,
                                  1031.13498,
                                  1039.28768,
-                                 1050.30616))
+                                 1050.30616])
         self.assertTrue(np.allclose(output, check_values))
