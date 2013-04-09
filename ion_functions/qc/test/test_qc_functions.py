@@ -47,6 +47,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         # compare expected and computed arrays
         self.assertTrue(np.array_equal(got, out))
 
+
     def test_dataqc_interptest(self):
         """
         Test Numpy interp function.
@@ -102,6 +103,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         self.assertTrue(np.allclose(np.nan_to_num(got), np.nan_to_num(out),
                                     rtol=1e-8, atol=0))
 
+
     def test_dataqc_polyvaltest(self):
         """
         Test Numpy polyval function.
@@ -143,6 +145,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         # compare floating point numbers.
         self.assertTrue(np.allclose(got, out, rtol=1e-8, atol=0))
 
+
     def test_dataqc_globalrangetest(self):
         """
         Test as defined in DPS:
@@ -169,8 +172,33 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         self.assertTrue(np.array_equal(got, out))
 
     def test_dataqc_localrangetest(self):
-        pass
+        """
+        Test of the dataqc_localrangetest function.
+
+        Test values calculated in Matlab R2012b using DPS function.
+        
+        OOI (2012). Data Product Specification for Local Range Test (GRADTST). 
+            Document Control Number 1341-10005.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-10005_Data_Product_SPEC_LOCLRNG_OOI.pdf) 
+            
+        Implemented by Christopher Wingard, April 2013
+        """
+        dat = np.array([3.5166, 8.3083, 5.8526, 5.4972, 9.1719,
+                2.8584, 7.5720, 7.5373, 3.8045, 5.6782])     
+        z = np.array([0.1517, 0.1079, 1.0616, 1.5583, 1.8680,
+                      0.2598, 1.1376, 0.9388, 0.0238, 0.6742]) 
+        datlim = np.array([[0, 2], [0, 2], [1, 8], [1, 9], [1, 10]])
+        datlimz = np.array([0, 0.5, 1, 1.5, 2])
+        
+        qcflag = np.array([0, 0, 1, 1, 1, 0, 1, 0, 0, 0], dtype='int8')
+
+        got = qcfunc.dataqc_localrangetest(dat, z, datlim, datlimz)
+
+        self.assertTrue(np.array_equal(got, qcflag))
     
+
     def test_dataqc_spiketest(self):
         """
         Test as defined in DPS:
@@ -188,7 +216,6 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         1                1
 
         """
-
         dat = [-1, 3, 40, -1, 1, -6, -6, 1]
         acc = 0.1
         N = 5
@@ -327,8 +354,66 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
             
         Implemented by Christopher Wingard, April 2013
         """
-        pass
-    
+        # test case 1
+        dat = np.array([3, 5, 98, 99, 4])
+        x = np.array([1, 2, 3, 4, 5])
+        ddatdx = np.array([-50, 50])
+        mindx = np.array([])
+        startdat = np.array([])
+        toldat = 5.0
+        
+        outdat = np.array([3, 5, 98, 99, 4])
+        outx = np.array([1, 2, 3, 4, 5])
+        outqc = np.array([1, 1, 0, 0, 1], dtype='int8')
+        
+        gotdat, gotx, gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx,
+                                                         mindx, startdat,
+                                                         toldat)
+        
+        self.assertTrue(np.array_equal(gotdat, outdat))
+        self.assertTrue(np.array_equal(gotx, outx))
+        self.assertTrue(np.array_equal(gotqc, outqc))
+        
+        # test case 2
+        dat = np.array([3, 5, 98, 99, 4])
+        x = np.array([1, 2, 3, 4, 5])
+        ddatdx = np.array([-50, 50])
+        mindx = np.array([])
+        startdat = 100.0
+        toldat = 5.0
+        
+        outdat = np.array([3, 5, 98, 99, 4])
+        outx = np.array([1, 2, 3, 4, 5])
+        outqc = np.array([0, 0, 1, 1, 0], dtype='int8')
+        
+        gotdat, gotx, gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx,
+                                                         mindx, startdat,
+                                                         toldat)
+        
+        self.assertTrue(np.array_equal(gotdat, outdat))
+        self.assertTrue(np.array_equal(gotx, outx))
+        self.assertTrue(np.array_equal(gotqc, outqc))
+        
+        # test case 3
+        dat = np.array([3, 5, 98, 99, 4])
+        x = np.array([1, 2, 3, 3.1, 5])
+        ddatdx = np.array([-50, 50])
+        mindx = 0.2
+        startdat = np.array([])
+        toldat = 5.0
+        
+        outdat = np.array([3, 5, 98, 4])
+        outx = np.array([1, 2, 3, 5])
+        outqc = np.array([1, 1, 0, 1], dtype='int8')
+        
+        gotdat, gotx, gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx,
+                                                         mindx, startdat,
+                                                         toldat)
+        
+        self.assertTrue(np.array_equal(gotdat, outdat))
+        self.assertTrue(np.array_equal(gotx, outx))
+        self.assertTrue(np.array_equal(gotqc, outqc))
+
     
     def test_dataqc_propogateflags(self):
         """

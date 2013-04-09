@@ -151,7 +151,7 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
     if not utils.isnumeric(dat).all():
         raise ValueError('\'dat\' must be numeric')
 
-    if not utils.ismatrix(dat):
+    if not utils.isvector(dat):
         raise ValueError('\'dat\' must be a matrix')
 
     if not utils.isreal(dat).all():
@@ -160,9 +160,6 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
     # check inputs: z
     if not utils.isnumeric(z).all():
         raise ValueError('\'z\' must be numeric')
-
-    if not utils.ismatrix(z):
-        raise ValueError('\'z\' must be a matrix')
 
     if not utils.isreal(z).all():
         raise ValueError('\'z\' must be real')
@@ -180,19 +177,20 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
     # check inputs: datlimz
     if not utils.isnumeric(datlimz).all():
         raise ValueError('\'datlimz\' must be numeric')
-
-    if not utils.ismatrix(datlimz):
-        raise ValueError('\'datlimz\' must be a matrix')
-    
+   
     if not utils.isreal(datlimz).all():
         raise ValueError('\'datlimz\' must be real')
         
     # test size and shape of the input arrays datlimz and datlim, setting test
     # variables.
     array_size = datlimz.shape
-    numlim = array_size[0]
-    ndim = array_size[1]
-        
+    if len(array_size) == 1:
+        numlim = array_size[0]
+        ndim = 1
+    else:
+        numlim = array_size[0]
+        ndim = array_size[1]
+       
     array_size = datlim.shape
     tmp1 = array_size[0]
     tmp2 = array_size[1]
@@ -201,22 +199,22 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
                          'have the same number of rows.')
         
     if tmp2 != 2:
-        raise ValueError('\'datlim\' must be structured as an array ' \
+        raise ValueError('\'datlim\' must be structured as 2-D array ' \
                          'with exactly 2 columns and 1 through N rows.')
         
     # test the size and shape of the z input array
     array_size = z.shape
-    num = array_size[0]
-    tmp2 = array_size[1]
+    if len(array_size) == 1:
+        num = array_size[0]
+        tmp2 = 1
+    else:
+        num = array_size[0]
+        tmp2 = array_size[1]
+
     if tmp2 != ndim:
         raise ValueError('\'z\' must have the same number of columns ' \
                          'as \'datlimz\'.')
-    
-    # test size and shape of the dat input array.
-    if not utils.isvector(dat):
-        raise ValueError('\'dat\' must be a vector')
-    
-    dat = dat.flatten()
+             
     if num != dat.size:
         raise ValueError('Len of \'dat\' must match number of ' \
                          'rows in \'z\'')
@@ -229,11 +227,9 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
     # calculate the upper and lower limits for the data set
     if ndim == 1:
         # determine the lower limits using linear interpolation
-        lim1 = np.interp(z, datlimz, datlim[:,0],
-                         left=np.nan, right=np.nan)
+        lim1 = np.interp(z, datlimz, datlim[:,0], left=np.nan, right=np.nan)
         # determine the upper limits using linear interpolation
-        lim2 = np.interp(z, datlimz, datlim[:,1],
-                         left=np.nan, right=np.nan)
+        lim2 = np.interp(z, datlimz, datlim[:,1], left=np.nan, right=np.nan)
     else:
         # Compute Delaunay Triangulation and use linear interpolation to
         # determine the N-dimensional lower limits
@@ -248,13 +244,13 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
                             [numlim, ndim+1])
         lim2 = F(points)
     
-    # replace NaN from above interpolations
-    ff = np.isnan(lim1) or np.isnan(lim2)
+    # replace NaNs from above interpolations
+    ff = (np.isnan(lim1)) | (np.isnan(lim2))
     lim1[ff] = np.max(datlim[:,1])
     lim2[ff] = np.min(datlim[:,0])
     
     # compute the qcflags
-    qcflag = dat >= lim1 and dat <= lim2
+    qcflag = (dat >= lim1) & (dat <= lim2)
     return qcflag.astype('int8')
 
 
@@ -478,6 +474,137 @@ def dataqc_spiketest(dat, acc, N=5, L=5):
     return out
 
 
+def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3):
+    """
+    Stuck Value Test Quality Control Algorithm as defined in the DPS for SPEC_TRNDTST - DCN 1341-10007
+    https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/c33037ab-9dd5-4615-8218-0957f60a47f3/1341-10007_Data_Product_SPEC_TRNDTST_OOI.pdf
+
+    DATAQC_POLYTRENDTEST Data quality control algorithm testing
+    if measurements contain a significant portion of a polynomial.
+    Returns 1 if this is not the case, else 0.
+    %
+    Time-stamp: <2010-10-29 13:56:46 mlankhorst>
+    %
+    RATIONALE: The purpose of this test is to check if a significant
+    fraction of the variability in a time series can be explained
+    by a drift, possibly interpreted as a sensor drift. This drift
+    is assumed to be a polynomial of order ORD. Use ORD=1 to
+    consider a linear drift
+    %
+    METHODOLOGY: The time series dat is passed to MatLab's POLYFIT
+    routine to obtain a polynomial fit PP to dat, and the
+    difference dat-PP is compared to the original dat. If the
+    standard deviation of (dat-PP) is less than that of dat by a
+    factor of NSTD, the time series is assumed to contain a
+    significant trend (output will be 0), else not (output will be
+    1).
+    %
+    USAGE: OUT=dataqc_polytrendtest(dat,ORD,NSTD);
+    %
+    OUT: Boolean scalar, 0 if trend is detected, 1 if not.
+    %
+    dat: Input dataset, a numeric real vector.
+    ORD (optional, defaults to 1): Polynomial order.
+    NSTD (optional, defaults to 3): Factor by how much the
+    standard deviation must be reduced before OUT
+    switches from 1 to 0
+    %
+    function out=dataqc_polytrendtest(varargin);
+    error(nargchk(1,3,nargin,'struct'))
+    dat=varargin{1};
+    if ~isnumeric(dat)
+        error('dat must be numeric.')
+    end
+    if ~isvector(dat)
+        error('dat must be vector.')
+    end
+    if ~isreal(dat)
+        error('dat must be real.')
+    end
+    ord=1;
+    nstd=3;
+    if nargin==2
+        if ~isempty(varargin{2})
+            ord=varargin{2};
+        end
+    end
+    if nargin==3
+        if ~isempty(varargin{2})
+            ord=varargin{2};
+        end
+        if ~isempty(varargin{3})
+            nstd=varargin{3};
+        end
+    end
+    if ~isnumeric(ord)
+        error('ORD must be numeric.')
+    end
+    if ~isscalar(ord)
+        error('ORD must be scalar.')
+    end
+    if ~isreal(ord)
+        error('ORD must be real.')
+    end
+    if ~isnumeric(nstd)
+        error('NSTD must be numeric.')
+    end
+    if ~isscalar(nstd)
+        error('NSTD must be scalar.')
+    end
+    if ~isreal(nstd)
+        error('NSTD must be real.')
+    end
+    ord=round(abs(ord));
+    nstd=abs(nstd);
+    ll=len(dat);
+    x=[1:ll];
+    pp=polyfit(x,dat,ord);
+    datpp=polyval(pp,x);
+    if (nstd*std(dat-datpp))<std(dat)
+        out=0;
+    else
+        out=1;
+    end
+    """
+
+    import numpy as np
+    from ion_functions import utils
+
+    dat = np.atleast_1d(dat)
+
+    if not utils.isnumeric(dat).all():
+        raise ValueError('\'dat\' must be numeric')
+
+    if not utils.isvector(dat):
+        raise ValueError('\'dat\' must be a vector')
+
+    if not utils.isreal(dat).all():
+        raise ValueError('\'dat\' must be real')
+
+    for k, arg in {'ord_n': ord_n, 'nstd': nstd}.iteritems():
+        if not utils.isnumeric(arg).all():
+            raise ValueError('\'{0}\' must be numeric'.format(k))
+
+        if not utils.isscalar(arg):
+            raise ValueError('\'{0}\' must be a scalar'.format(k))
+
+        if not utils.isreal(arg).all():
+            raise ValueError('\'{0}\' must be real'.format(k))
+
+    ord_n = int(round(abs(ord_n)))
+    nstd = int(abs(nstd))
+    # Not needed because time is incorporated as 't'
+    # ll = len(dat)
+    # t = range(ll)
+    pp = np.polyfit(t, dat, ord_n)
+    datpp = np.polyval(pp, t)
+
+    if np.atleast_1d((np.std(dat - datpp) * nstd) < np.std(dat)).all():
+        return 0
+
+    return 1
+
+
 def dataqc_stuckvaluetest(x, reso, num=10):
     """
     Stuck Value Test Quality Control Algorithm as defined in the DPS for SPEC_STUCKVL - DCN 1341-10008
@@ -611,137 +738,6 @@ def dataqc_stuckvaluetest(x, reso, num=10):
     return out
 
 
-def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3):
-    """
-    Stuck Value Test Quality Control Algorithm as defined in the DPS for SPEC_TRNDTST - DCN 1341-10007
-    https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/c33037ab-9dd5-4615-8218-0957f60a47f3/1341-10007_Data_Product_SPEC_TRNDTST_OOI.pdf
-
-    DATAQC_POLYTRENDTEST Data quality control algorithm testing
-    if measurements contain a significant portion of a polynomial.
-    Returns 1 if this is not the case, else 0.
-    %
-    Time-stamp: <2010-10-29 13:56:46 mlankhorst>
-    %
-    RATIONALE: The purpose of this test is to check if a significant
-    fraction of the variability in a time series can be explained
-    by a drift, possibly interpreted as a sensor drift. This drift
-    is assumed to be a polynomial of order ORD. Use ORD=1 to
-    consider a linear drift
-    %
-    METHODOLOGY: The time series dat is passed to MatLab's POLYFIT
-    routine to obtain a polynomial fit PP to dat, and the
-    difference dat-PP is compared to the original dat. If the
-    standard deviation of (dat-PP) is less than that of dat by a
-    factor of NSTD, the time series is assumed to contain a
-    significant trend (output will be 0), else not (output will be
-    1).
-    %
-    USAGE: OUT=dataqc_polytrendtest(dat,ORD,NSTD);
-    %
-    OUT: Boolean scalar, 0 if trend is detected, 1 if not.
-    %
-    dat: Input dataset, a numeric real vector.
-    ORD (optional, defaults to 1): Polynomial order.
-    NSTD (optional, defaults to 3): Factor by how much the
-    standard deviation must be reduced before OUT
-    switches from 1 to 0
-    %
-    function out=dataqc_polytrendtest(varargin);
-    error(nargchk(1,3,nargin,'struct'))
-    dat=varargin{1};
-    if ~isnumeric(dat)
-        error('dat must be numeric.')
-    end
-    if ~isvector(dat)
-        error('dat must be vector.')
-    end
-    if ~isreal(dat)
-        error('dat must be real.')
-    end
-    ord=1;
-    nstd=3;
-    if nargin==2
-        if ~isempty(varargin{2})
-            ord=varargin{2};
-        end
-    end
-    if nargin==3
-        if ~isempty(varargin{2})
-            ord=varargin{2};
-        end
-        if ~isempty(varargin{3})
-            nstd=varargin{3};
-        end
-    end
-    if ~isnumeric(ord)
-        error('ORD must be numeric.')
-    end
-    if ~isscalar(ord)
-        error('ORD must be scalar.')
-    end
-    if ~isreal(ord)
-        error('ORD must be real.')
-    end
-    if ~isnumeric(nstd)
-        error('NSTD must be numeric.')
-    end
-    if ~isscalar(nstd)
-        error('NSTD must be scalar.')
-    end
-    if ~isreal(nstd)
-        error('NSTD must be real.')
-    end
-    ord=round(abs(ord));
-    nstd=abs(nstd);
-    ll=len(dat);
-    x=[1:ll];
-    pp=polyfit(x,dat,ord);
-    datpp=polyval(pp,x);
-    if (nstd*std(dat-datpp))<std(dat)
-        out=0;
-    else
-        out=1;
-    end
-    """
-
-    import numpy as np
-    from ion_functions import utils
-
-    dat = np.atleast_1d(dat)
-
-    if not utils.isnumeric(dat).all():
-        raise ValueError('\'dat\' must be numeric')
-
-    if not utils.isvector(dat):
-        raise ValueError('\'dat\' must be a vector')
-
-    if not utils.isreal(dat).all():
-        raise ValueError('\'dat\' must be real')
-
-    for k, arg in {'ord_n': ord_n, 'nstd': nstd}.iteritems():
-        if not utils.isnumeric(arg).all():
-            raise ValueError('\'{0}\' must be numeric'.format(k))
-
-        if not utils.isscalar(arg):
-            raise ValueError('\'{0}\' must be a scalar'.format(k))
-
-        if not utils.isreal(arg).all():
-            raise ValueError('\'{0}\' must be real'.format(k))
-
-    ord_n = int(round(abs(ord_n)))
-    nstd = int(abs(nstd))
-    # Not needed because time is incorporated as 't'
-    # ll = len(dat)
-    # t = range(ll)
-    pp = np.polyfit(t, dat, ord_n)
-    datpp = np.polyval(pp, t)
-
-    if np.atleast_1d((np.std(dat - datpp) * nstd) < np.std(dat)).all():
-        return 0
-
-    return 1
-
-
 def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
     """
     Description
@@ -841,7 +837,7 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
     # Sanity checks on dat and x
     dat = np.atleast_1d(dat)
     x = np.atleast_1d(x)
-    if not utils.isvector(dat).all() or not utils.isvector(x).all():
+    if not utils.isvector(dat) or not utils.isvector(x):
         raise ValueError('\'dat\' and \'x\' must be vectors')
     
     if len(dat) != len(x):
@@ -871,12 +867,12 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
     # Apply mindx
     dx = np.diff(x) > mindx
     ff = dx.nonzero()[0]
-    gg = np.hstack((np.zeros(1),ff+1)).astype('int')
+    gg = np.hstack((np.zeros(1),ff+1)).astype('int8')
     dat = dat[gg]
     x = x[gg]
     
     # Confirm that there are still data points left, else abort:
-    outqc = np.zeros(len(dat))
+    outqc = np.zeros(len(dat), dtype='int8')
     ll = len(dat)
     if ll <= 1:
         warning.warn('\'dat\' and \'x\' contain too few points for ' \
@@ -926,73 +922,6 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
     outx = x
     
     return outdat, outx, outqc
-
-
-def dataqc_propogateflags(inflags):
-    """
-    Description:
-    
-        Propagate "bad" qc flags (from an arbitrary number of source datasets)
-        to another (derived) dataset.
-    
-        Consider data from an oceanographic CTD (conductivity, temperature, and
-        pressure) instrument. From these three time series, you want to compute
-        salinity. If any of the three source data (conductivity, temperature,
-        pressure) is of bad quality, the salinity will be bad as well. You can
-        feed your QC assessment of the former three into this routine, which
-        will then give you the combined assessment for the derived (here:
-        salinity) property.
-    
-    Implemented by:
-    
-        2012-07-17: DPS authored by Mathias Lankhorst. Example code provided
-        for Matlab.
-        
-        2013-04-06: Christopher Wingard. Initial python implementation.
-    
-    Usage:
-    
-        outflag = dataqc_propogateflags(inflags)
-    
-            where
-            
-        outflag = a 1-by-N boolean vector that contains 1 where all of the
-            inflags are 1, and 0 otherwise.
-    
-        inflags = an M-by-N boolean matrix, where each of the M rows contains
-            flags of an independent data set such that "0" means bad data and
-            "1" means good data.
-    
-    Examples:
-    
-        inflags = np.array([[0, 0, 1, 1],
-                            [1, 0, 1, 0]]).astype('int8')
-                            
-        outflag = dataqc_propagateflags(inflags)
-        outflag = [0, 0, 1, 0]
-    
-    References:
-    
-        OOI (2012). Data Product Specification for Combined QC Flags. Document
-            Control Number 1341-100012.
-            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
-            >> Controlled >> 1000 System Level >>
-            1341-10012_Data_Product_SPEC_CMBNFLG_OOI.pdf)
-    """
-    import numpy as np
-    from ion_functions import utils
-
-    if not utils.islogical(inflags):
-        raise ValueError('\'inflags\' must be \'0\' or \'1\' ' \
-                         'integer flag array')
-
-    array_size = inflags.shape
-    nrows = array_size[0]
-    if nrows < 2:
-        error('\'inflags\' must be at least a two-dimensional array')
-
-    outflag = np.all(inflags,0);
-    return outflag.astype('int8')
 
 
 def dataqc_solarelevation(lon, lat, dt):
@@ -1086,7 +1015,7 @@ def dataqc_solarelevation(lon, lat, dt):
         hh[i] = gtime[3]; mm[i] = gtime[4]; ss[i] = gtime[5]
     
     #constants used in function
-    deg2rad = np.pi / 180
+    deg2rad = np.pi / 180.0
     rad2deg = 1 / deg2rad
     
     # compute Universal Time in hours
@@ -1094,33 +1023,33 @@ def dataqc_solarelevation(lon, lat, dt):
     
     # compute Julian ephemeris date in days (Day 1 is 1 Jan 4713 B.C. which
     # equals -4712 Jan 1)
-    jed = (367 * yy - np.fix(7*(yy+np.fix((mn+9)/12))/4) + np.fix(275*mn/9)
-           + dd + 1721013 + utime / 24.0)
+    jed = (367.0 * yy - np.fix(7.0*(yy+np.fix((mn+9)/12.0))/4.0)
+           + np.fix(275.0*mn/9.0) + dd + 1721013 + utime / 24.0)
     
     # compute interval in Julian centuries since 1900
-    jc_int = (jed - 2415020.0) / 36525
+    jc_int = (jed - 2415020.0) / 36525.0
     
     # compute mean anomaly of the sun
     ma_sun = 358.475833 + 35999.049750 * jc_int - 0.000150 * jc_int**2
-    ma_sun = (ma_sun - np.fix(ma_sun/360) * 360) * deg2rad
+    ma_sun = (ma_sun - np.fix(ma_sun/360.0) * 360.0) * deg2rad
         
     # compute mean longitude of sun
     ml_sun = 279.696678 + 36000.768920 * jc_int + 0.000303 * jc_int**2
-    ml_sun = (ml_sun - np.fix(ml_sun/360) * 360) * deg2rad
+    ml_sun = (ml_sun - np.fix(ml_sun/360.0) * 360.0) * deg2rad
     
     # compute mean anomaly of Jupiter
     ma_jup = 225.444651 + 2880.0 * jc_int + 154.906654 * jc_int
-    ma_jup = (ma_jup - np.fix(ma_jup/360) * 360) * deg2rad
+    ma_jup = (ma_jup - np.fix(ma_jup/360.0) * 360.0) * deg2rad
     
     # compute longitude of the ascending node of the moon's orbit
     an_moon = (259.183275 - 1800 * jc_int - 134.142008 * jc_int
                + 0.002078 * jc_int**2)
-    an_moon = (an_moon - np.fix(an_moon/360) * 360 + 360) * deg2rad
+    an_moon = (an_moon - np.fix(an_moon/360.0) * 360.0 + 360.0) * deg2rad
     
     # compute mean anomaly of Venus
     ma_ven = (212.603219 + 58320 * jc_int + 197.803875 * jc_int
               + 0.001286 * jc_int**2)
-    ma_ven = (ma_ven - np.fix(ma_ven/360) * 360) * deg2rad
+    ma_ven = (ma_ven - np.fix(ma_ven/360.0) * 360.0) * deg2rad
     
     # compute sun theta
     theta = (0.397930 * np.sin(ml_sun) + 0.009999 * np.sin(ma_sun-ml_sun)
@@ -1142,14 +1071,14 @@ def dataqc_solarelevation(lon, lat, dt):
 
     # compute equation of time (in seconds of time)
     l = 276.697 + 0.98564734 * (jed-2415020.0)
-    l = (l - 360 * np.fix(l/360)) * deg2rad
+    l = (l - 360.0 * np.fix(l/360.0)) * deg2rad
     eqt = (-97.8 * np.sin(l) - 431.3 * np.cos(l) + 596.6 * np.sin(2*l)
            - 1.9 * np.cos(2*l) + 4.0 * np.sin(3*l) + 19.3 * np.cos(3*l)
            - 12.7 * np.sin(4*l))
-    eqt = eqt / 60
+    eqt = eqt / 60.0
 
     # compute local hour angle from global hour angle
-    gha = 15 * (utime-12) + 15 * eqt / 60
+    gha = 15.0 * (utime-12) + 15.0 * eqt / 60.0
     lha = gha - lon
     
     # compute radius vector
@@ -1166,6 +1095,73 @@ def dataqc_solarelevation(lon, lat, dt):
     sorad[z<0] = 0
         
     return (z, sorad)
+
+
+def dataqc_propogateflags(inflags):
+    """
+    Description:
+    
+        Propagate "bad" qc flags (from an arbitrary number of source datasets)
+        to another (derived) dataset.
+    
+        Consider data from an oceanographic CTD (conductivity, temperature, and
+        pressure) instrument. From these three time series, you want to compute
+        salinity. If any of the three source data (conductivity, temperature,
+        pressure) is of bad quality, the salinity will be bad as well. You can
+        feed your QC assessment of the former three into this routine, which
+        will then give you the combined assessment for the derived (here:
+        salinity) property.
+    
+    Implemented by:
+    
+        2012-07-17: DPS authored by Mathias Lankhorst. Example code provided
+        for Matlab.
+        
+        2013-04-06: Christopher Wingard. Initial python implementation.
+    
+    Usage:
+    
+        outflag = dataqc_propogateflags(inflags)
+    
+            where
+            
+        outflag = a 1-by-N boolean vector that contains 1 where all of the
+            inflags are 1, and 0 otherwise.
+    
+        inflags = an M-by-N boolean matrix, where each of the M rows contains
+            flags of an independent data set such that "0" means bad data and
+            "1" means good data.
+    
+    Examples:
+    
+        inflags = np.array([[0, 0, 1, 1],
+                            [1, 0, 1, 0]]).astype('int8')
+                            
+        outflag = dataqc_propagateflags(inflags)
+        outflag = [0, 0, 1, 0]
+    
+    References:
+    
+        OOI (2012). Data Product Specification for Combined QC Flags. Document
+            Control Number 1341-100012.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-10012_Data_Product_SPEC_CMBNFLG_OOI.pdf)
+    """
+    import numpy as np
+    from ion_functions import utils
+
+    if not utils.islogical(inflags):
+        raise ValueError('\'inflags\' must be \'0\' or \'1\' ' \
+                         'integer flag array')
+
+    array_size = inflags.shape
+    nrows = array_size[0]
+    if nrows < 2:
+        error('\'inflags\' must be at least a two-dimensional array')
+
+    outflag = np.all(inflags,0);
+    return outflag.astype('int8')
 
 
 def dataqc_condcompress(p_orig, p_new, c_orig, cpcor=-9.57e-8):

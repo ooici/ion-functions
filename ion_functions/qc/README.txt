@@ -55,7 +55,9 @@ Data Processing Functions.
        and altitude from date and time stamp and position data (function and
        test function implemented in April 2013).
      
-     * dataqc_condcompress
+     * dataqc_condcompress -- Implementation of the Sea-Bird conductivity
+       compressibility correction, scaling the input conductivity based on
+       ratio of the original pressure and the updated pressure. 
      
 Additional Functions, available in ../utils.py, provide Matlab-based test
 utilities (e.g. isvector) used in the various QC functions. These are intended
