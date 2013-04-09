@@ -165,6 +165,33 @@ def isvector(dat):
     return np.atleast_1d(dat).size > 1
 
 
+def ismatrix(dat):
+    """
+    ismatrix - test if input array is formatted as a matrix
+    
+    Syntax
+    
+        flag = ismatrix(dat)
+        
+    Description
+    
+        ismatrix(dat) returns logical 1 (true) if np.atleast_1d(dat).shape
+        returns (m, n) with nonnegative integer values m and n, and logical 0
+        (false) otherwise.
+
+    Examples
+        
+        dat = np.array([0, 1]);
+        ismatrix(dat)
+        0
+        dat = np.array([[0,1]])
+        ismatrix(dat)
+        1
+        
+    """
+    return len(np.atleast_1d(dat).shape) == 2
+
+
 def isempty(dat):
     """
     isempty - Test if array is empty
@@ -182,3 +209,36 @@ def isempty(dat):
     """
 
     return np.atleast_1d(dat).size == 0
+
+
+def islogical(inflags):
+    """
+    islogical - test if input array is a boolean array (all values are either a
+    "0" or "1")
+    
+    Syntax
+    
+        flag = islogical(inflags)
+        
+    Description
+    
+        ismatrix(inflags) returns logical 1 (true) if all values in the inflag
+        array are either a 0 or a 1 with the type encoding set to an int8
+
+    Examples
+        
+        inflags = np.array([0, 1]).astype('np.int8')
+        islogical(inflags)
+        True
+        inflags = np.array([[0, 2]]).astype('np.int8')
+        islogical(inflags)
+        False
+        inflags = np.array([[0, 1]]).astype('np.float')
+        islogical(inflags)
+        False
+        
+    """
+    inflags = np.atleast_1d(inflags)
+    flag = (all(np.in1d(inflags.flatten(), [0,1])) and
+            all(isinstance(n, np.int8) for n in inflags.flatten()))
+    return flag

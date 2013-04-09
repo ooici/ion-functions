@@ -13,8 +13,8 @@ def ctd_pracsal(c, t, p):
 
         OOI Level 2 Practical Salinity core data product, which is calculated
         using the Thermodynamic Equations of Seawater - 2010 (TEOS-10) Version
-        3.0, with data from the conductivity, temperature and depth (CTD) family
-        of instruments. This calculation is defined in the Data Product
+        3.0, with data from the conductivity, temperature and depth (CTD)
+        family of instruments. This calculation is defined in the Data Product
         Specification for Salinty - DCN 1341-00040.
 
     Implemented by:
@@ -75,7 +75,8 @@ def ctd_density(SP, t, p, lat, lon):
     Implemented by:
     
         2013-03-11: Christopher Mueller. Initial code.
-        2013-03-13: Christopher Wingard. Added commenting and moved to ctd_functions
+        2013-03-13: Christopher Wingard. Added commenting and moved to
+            ctd_functions
 
     Usage:
     
@@ -114,7 +115,8 @@ def ctd_density(SP, t, p, lat, lon):
     """
     from pygsw import vectors as gsw
 
-    # Calculate the Absolute Salinity (SA) from the Practical Salinity (SP) [g kg^-1]
+    # Calculate the Absolute Salinity (SA) from the Practical Salinity (SP)
+    # [g kg^-1]
     SA = gsw.sa_from_sp(SP, p, lon, lat)
     
     # Calculate the Conservative Temperature (CT) [deg_C]
