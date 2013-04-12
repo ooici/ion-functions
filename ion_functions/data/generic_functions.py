@@ -8,3 +8,5 @@
 """
 
 
+def magnetic_declination(*args, **kwargs):
+    pass
