@@ -7,6 +7,79 @@
 @brief Module containing CTD related data-calculations.
 """
 
+# Wrapper functions to create 1:1 outputs for ParameterFunctions in Preload
+def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
+    """
+    Wrapper function to compute the Eastward Velocity Profile (VELPROF-VLE)
+    from the beam coordinate transformed data.
+    """
+    from ion_functions.data import generic_functions as gfunc
+    
+    # compute the beam to instrument transform
+    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
+    
+    # compute the instrument to earth beam transform
+    uu, vv, ww = adcp_ins2earth(u, v, w, h, p, r, v)
+    
+    # calculate the magnetic variation and correct the velocity profiles
+    zflag = -1      # sets depth to negative for below sea surface
+    theta = gfunc.magnetic_declination(lat, lon, z, dt, zflag)
+    uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
+    
+    # return the Eastward Velocity Profile
+    return uu_cor    
+
+
+def adcp_beam_northward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
+    """
+    Wrapper function to compute the Northward Velocity Profile (VELPROF-VLN)
+    from the beam coordinate transformed data.
+    """
+    from ion_functions.data import generic_functions as gfunc
+    
+    # compute the beam to instrument transform
+    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
+    
+    # compute the instrument to earth beam transform
+    uu, vv, ww = adcp_ins2earth(u, v, w, h, p, r, v)
+    
+    # calculate the magnetic variation and correct the velocity profiles
+    zflag = -1      # sets depth to negative for below sea surface
+    theta = gfunc.magnetic_declination(lat, lon, z, dt, zflag)
+    uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
+    
+    # return the Northward Velocity Profile
+    return vv_cor    
+
+
+def adcp_beam_vertical(b1, b2, b3, b4, h, p, r, v):
+    """
+    Wrapper function to compute the Upward Velocity Profile (VELPROF-VLU)
+    from the beam coordinate transformed data.
+    """
+    # compute the beam to instrument transform
+    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
+    
+    # compute the instrument to earth beam transform
+    uu, vv, ww = adcp_ins2earth(u, v, w, h, p, r, v)
+    
+    # return the Upward Velocity Profile
+    return ww    
+
+
+def adcp_beam_error(b1, b2, b3, b4):
+    """
+    Wrapper function to compute the Error Velocity (VELPROF-ERR) from the beam
+    coordinate transformed data.
+    """
+    # compute the beam to instrument transform
+    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)    
+
+    # return the Error Velocity Profile
+    return e
+
+
+##### ADCP Beam to Earth Transform and Magnetic Variation Correction Functions 
 def adcp_beam2ins(b1, b2, b3, b4):
     """
     Description:
@@ -29,7 +102,7 @@ def adcp_beam2ins(b1, b2, b3, b4):
         u = "east" velocity profiles in instrument coordinates [mm s-1]
         v = "north" velocity profiles in instrument coordinates [mm s-1]
         w = "vertical" velocity profiles in instrument coordinates [mm s-1]
-        e = "error" velocity profiles in instrument coordinates [mm s-1]
+        e = "error" velocity profiles [mm s-1]
         
         b1 = "beam 1" velocity profiles in beam coordinates [mm s-1]
         b2 = "beam 2" velocity profiles in beam coordinates [mm s-1]
@@ -50,11 +123,11 @@ def adcp_beam2ins(b1, b2, b3, b4):
     # Import Numpy 
     import numpy as np
 
-    theta = 20 / 180 * np.pi
-    a = 1 / (2 * np.sin(theta))
-    b = 1 / (4 * np.cos(theta))
-    c = 1
-    d = a / np.sqrt(2)
+    theta = 20.0 / 180.0 * np.pi
+    a = 1.0 / (2.0 * np.sin(theta))
+    b = 1.0 / (4.0 * np.cos(theta))
+    c = 1.0
+    d = a / np.sqrt(2.0)
     
     u = c * a * (b1 - b2)
     v = c * a * (b4 - b3)
@@ -86,11 +159,15 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
         vv = "north" velocity profiles in earth coordinates [mm s-1]
         ww = "vertical" velocity profiles in earth coordinates [mm s-1]
         
-        b1 = "beam 1" velocity profiles in beam coordinates [mm s-1]
-        b2 = "beam 2" velocity profiles in beam coordinates [mm s-1]
-        b3 = "beam 3" velocity profiles in beam coordinates [mm s-1]
-        b4 = "beam 4" velocity profiles in beam coordinates [mm s-1]
-
+        u = east velocity profiles in instrument coordinates [mm s-1]
+        v = north velocity profiles in instrument coordinates [mm s-1]
+        w = vertical velocity profiles in instrument coordinates [mm s-1]
+        heading = instrument's uncorrected magnetic heading [degrees]
+        pitch = instrument pitch [degrees]
+        roll = instrument roll [degrees]
+        vertical = instrument's vertical orientation (0 = downward looking and
+            1 = upward looking)
+        
     Example:
 
 
@@ -104,26 +181,34 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
     """
     # Import Numpy 
     import numpy as np
-    
+        
     if vertical == 1:
         R = roll + 180.0
     else:
         R = roll
-    
+        
     Rrad = np.radians(R)
     Hrad = np.radians(heading)
     t1rad = np.radians(pitch)
     t2rad = np.radians(roll)
     P = np.arctan(np.tan(t1rad) * np.cos(t2rad))
-    
+        
     # create the multiplication matrix
-    M1 = np.array([[np.cos(Hrad), np.sin(Hrad), 0],
-                  [-np.sin(Hrad), np.cos(Hrad), 0],
-                  [0, 0, 1]])
-    M2 = np.array([[1, 0, 0], [0, np.cos(P), -np.sin(P)],
-                  [0, np.sin(P), np.cos(P)]]);
-    M3 = np.array([[np.cos(Rrad), 0, np.sin(Rrad)], [0, 1, 0],
-                  [-np.sin(Rrad), 0, np.cos(Rrad)]]);
+    M1 = np.array([
+        [np.cos(Hrad), np.sin(Hrad), 0.0],
+        [-np.sin(Hrad), np.cos(Hrad), 0.0],
+        [0.0, 0.0, 1.0]
+        ])
+    M2 = np.array([
+        [1.0, 0.0, 0.0],
+        [0.0, np.cos(P), -np.sin(P)],
+        [0.0, np.sin(P), np.cos(P)]    
+        ])
+    M3 = np.array([
+        [np.cos(Rrad), 0.0, np.sin(Rrad)],
+        [0.0, 1.0, 0.0],
+        [-np.sin(Rrad), 0.0, np.cos(Rrad)]
+        ])
     M = M1 * M2 * M3
     
     # apply the Earth transform
@@ -135,17 +220,19 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
         uu[i] = vel[0]
         vv[i] = vel[1]
         ww[i] = vel[2]
-    
+        
     return (uu, vv, ww)
 
-def adcp_magvar(decln, uu, vv):
+
+def adcp_magvar(theta, uu, vv):
     """
     Description:
 
-        This function applies the magnetic declination correction to the Earth
-        coordinate velocity profiles. The calculation is defined in the Data
-        Product Specification for Velocity Profile and Echo Intensity
-        - DCN 1341-00750.
+        This function corrects the velocity profiles for the magnetic
+        declination at the measurement location. The calculation is defined in
+        the Data Product Specification for Velocity Profile and Echo Intensity
+        - DCN 1341-00750. Magnetic declination is obtained from the geomag
+        toolbox.
 
     Implemented by:
 
@@ -153,6 +240,22 @@ def adcp_magvar(decln, uu, vv):
 
     Usage:
 
+        uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
+
+            where
+
+        uu_cor = eastward velocity profiles in earth coordinates [mm s-1], with
+            the correction for magnetic variation applied.
+        vv_cor = northward velocity profiles in earth coordinates [mm s-1],
+            with the correction for magnetic variation applied.
+        
+        theta = magnetic variation based on location (latitude, longitude and
+            altitude) and date [degrees]
+        uu = uncorrected eastward velocity profiles in Earth coordinates
+            [mm s-1]
+        vv = uncorrected northward velocity profiles in Earth coordinates
+            [mm s-1]
+    
     Example:
 
 
@@ -167,17 +270,17 @@ def adcp_magvar(decln, uu, vv):
     # Import Numpy 
     import numpy as np
     
-    decln_rad = np.radians(dcln)
+    theta_rad = np.radians(theta)
     M = np.array([
-        [np.cos(decln.rad), np.sin(decln_rad)],
-        [-np.sin(decln.rad), np.cos(decln_rad)]
+        [np.cos(theta_rad), np.sin(theta_rad)],
+        [-np.sin(theta_rad), np.cos(theta_rad)]
     ])
 
     nbins = len(uu)
     uu_cor = vv_cor = np.zeros(nbins)
     for i in range(nbins):
         vel = np.array([uu[i], vv[i]]).reshape(2,1)
-        cor = np.dot(M, vel)
+        cor = np.dot(M, vel).reshape(2)
         uu_cor[i] = cor[0]
         vv_cor[i] = cor[1]
         
