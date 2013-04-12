@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-
 """
 @package ion_functions.data.ctd_functions
 @file ion_functions/data/ctd_functions.py
 @author Christopher Wingard
 @brief Module containing CTD related data-calculations.
 """
+
+import numpy as np
 
 def ctd_pracsal(c, t, p):
     """
@@ -50,7 +51,7 @@ def ctd_pracsal(c, t, p):
         OOI (2012). Data Product Specification for Salinty. Document Control
             Number 1341-00040. https://alfresco.oceanobservatories.org/ (See: 
             Company Home >> OOI >> Controlled >> 1000 System Level >>
-            1341-00050_Data_Product_SPEC_PRACSAL_OOI.pdf)
+            1341-00040_Data_Product_SPEC_PRACSAL_OOI.pdf)
     """
     # Import GSW libraries
     from pygsw import vectors as gsw
@@ -125,3 +126,59 @@ def ctd_density(SP, t, p, lat, lon):
     # Calculate the Density (rho) [kg m^-3]
     rho = gsw.rho(SA, CT, p)
     return rho
+
+def sbe16p_v2_tempwat(t0, a0, a1, a2, a3):
+    """
+    Description:
+
+        OOI Level 1 Water Temperature data product, which is calculated using
+        data from the Sea-Bird Electronics conductivity, temperature and depth
+        (CTD) family of instruments. This document is intended to be used by
+        OOI programmers to construct appropriate processes to create the L1
+        water temperature product. 
+
+    Implemented by:
+
+        2013-04-12: Luke Campbell. Initial Code
+
+    Usage:
+
+        t = ctd_tempwat(t0, a0, a1, a2, a3)
+
+            where
+
+        t0 = temp (temperature) [unitless] (see
+            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
+        
+        a0 = a0 (a0 calibration coefficient) [unitless] (see
+            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
+        
+        a1 = a1 (a1 calibration coefficient) [unitless] (see
+            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
+        
+        a2 = a2 (a2 calibration coefficient) [unitless] (see
+            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
+        
+        a3 = a3 (a3 calibration coefficient) [unitless] (see
+            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
+
+    Example:
+
+        [TODO]
+
+    References:
+    
+        OOI (2012). Data Product Specification for Water Temperature. Document
+            Control Number 1341-00010. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
+    """
+
+
+    mv = (t0 - 524288) / 1.6e7
+    r = (mv * 2.9e9 + 1.024e8)/(2.048e4 - mv * 2.0e5)
+    t = 1/(a0 + a1 * np.log(r) + a2 * np.power(np.log(r),2) + a3 * np.power(np.log(r),3)) - 273.15
+    return t
+    
+
+
