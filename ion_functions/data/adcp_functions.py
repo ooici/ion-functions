@@ -7,14 +7,15 @@
 @brief Module containing CTD related data-calculations.
 """
 
+from ion_functions.data.generic_functions import magnetic_declination
+import numpy as np
+
 # Wrapper functions to create 1:1 outputs for ParameterFunctions in Preload
 def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
     """
     Wrapper function to compute the Eastward Velocity Profile (VELPROF-VLE)
     from the beam coordinate transformed data.
     """
-    from ion_functions.data import generic_functions as gfunc
-    
     # compute the beam to instrument transform
     u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
     
@@ -23,7 +24,7 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
     
     # calculate the magnetic variation and correct the velocity profiles
     zflag = -1      # sets depth to negative for below sea surface
-    theta = gfunc.magnetic_declination(lat, lon, z, dt, zflag)
+    theta = magnetic_declination(lat, lon, z, dt, zflag)
     uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
     
     # return the Eastward Velocity Profile
@@ -35,8 +36,6 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
     Wrapper function to compute the Northward Velocity Profile (VELPROF-VLN)
     from the beam coordinate transformed data.
     """
-    from ion_functions.data import generic_functions as gfunc
-    
     # compute the beam to instrument transform
     u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
     
@@ -45,7 +44,7 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
     
     # calculate the magnetic variation and correct the velocity profiles
     zflag = -1      # sets depth to negative for below sea surface
-    theta = gfunc.magnetic_declination(lat, lon, z, dt, zflag)
+    theta = magnetic_declination(lat, lon, z, dt, zflag)
     uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
     
     # return the Northward Velocity Profile
@@ -120,8 +119,6 @@ def adcp_beam2ins(b1, b2, b3, b4):
             >> Controlled >> 1000 System Level >>
             1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
     """
-    # Import Numpy 
-    import numpy as np
 
     theta = 20.0 / 180.0 * np.pi
     a = 1.0 / (2.0 * np.sin(theta))
@@ -179,8 +176,6 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
             >> Controlled >> 1000 System Level >>
             1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
     """
-    # Import Numpy 
-    import numpy as np
         
     if vertical == 1:
         R = roll + 180.0
@@ -267,8 +262,6 @@ def adcp_magvar(theta, uu, vv):
             >> Controlled >> 1000 System Level >>
             1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
     """
-    # Import Numpy 
-    import numpy as np
     
     theta_rad = np.radians(theta)
     M = np.array([
@@ -285,3 +278,4 @@ def adcp_magvar(theta, uu, vv):
         vv_cor[i] = cor[1]
         
     return (uu_cor, vv_cor)
+
