@@ -6,7 +6,6 @@
 @brief Module containing CTD related data-calculations.
 """
 
-
 def ctd_sbe16plus_tempwat(t0, a0, a1, a2, a3):
     """
     Description:

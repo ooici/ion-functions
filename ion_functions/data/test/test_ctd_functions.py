@@ -102,7 +102,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         cpcor = -9.57000000e-008
         ctcor = 3.2500e-006
 
-        c = ctd_sbe16plus_condwat(c0, t1, p1, g, h, i, j, cpcor, ctcor)
+        c = ctdfunc.ctd_sbe16plus_condwat(c0, t1, p1, g, h, i, j, cpcor, ctcor)
         self.assertTrue(np.allclose(c, 4.969069, rtol=1e-6, atol=0))
 
 
