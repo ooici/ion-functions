@@ -133,3 +133,5 @@ def ntp_to_unix_time(ntp_timestamp):
     unix_timestamp = ntp_timestamp - NTP_DELTA
     return unix_timestamp
 
+def magnetic_declination(*args, **kwargs):
+    pass
