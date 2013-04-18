@@ -27,6 +27,9 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
     theta = magnetic_declination(lat, lon, z, dt, zflag)
     uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
     
+    # scale eastward velocity to m/s
+    uu_cor = uu_cor/1000.  # mm/s/1000 = m/s
+    
     # return the Eastward Velocity Profile
     return uu_cor    
 
@@ -47,6 +50,9 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
     theta = magnetic_declination(lat, lon, z, dt, zflag)
     uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
     
+    # scale northward velocity to m/s
+    vv_cor = vv_cor/1000.  # mm/s/1000 = m/s
+    
     # return the Northward Velocity Profile
     return vv_cor    
 
@@ -62,6 +68,9 @@ def adcp_beam_vertical(b1, b2, b3, b4, h, p, r, v):
     # compute the instrument to earth beam transform
     uu, vv, ww = adcp_ins2earth(u, v, w, h, p, r, v)
     
+    # scale vertical velocity to m/s
+    ww = ww/1000.  # mm/s/1000 = m/s
+    
     # return the Upward Velocity Profile
     return ww    
 
@@ -72,7 +81,10 @@ def adcp_beam_error(b1, b2, b3, b4):
     coordinate transformed data.
     """
     # compute the beam to instrument transform
-    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)    
+    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
+    
+    # scale error velocity to m/s
+    e = e/1000.  # mm/s
 
     # return the Error Velocity Profile
     return e
@@ -278,4 +290,5 @@ def adcp_magvar(theta, uu, vv):
         vv_cor[i] = cor[1]
         
     return (uu_cor, vv_cor)
+    # TODO: Bug in array assignments uv_cor[i] = cor[k].  Returns incorrectly
 
