@@ -220,7 +220,9 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
     
     # apply the Earth transform
     nbins = len(u)
-    uu = vv = ww = np.zeros(nbins)
+    uu = np.zeros(nbins)
+    vv = np.zeros(nbins)
+    ww = np.zeros(nbins)
     for i in range(nbins):
         inst = np.array([u[i], v[i], w[i]]).reshape(3,1)
         vel = np.dot(M,inst).reshape(3)
@@ -282,7 +284,8 @@ def adcp_magvar(theta, uu, vv):
     ])
 
     nbins = len(uu)
-    uu_cor = vv_cor = np.zeros(nbins)
+    uu_cor = np.zeros(nbins)
+    vv_cor = np.zeros(nbins)
     for i in range(nbins):
         vel = np.array([uu[i], vv[i]]).reshape(2,1)
         cor = np.dot(M, vel).reshape(2)
