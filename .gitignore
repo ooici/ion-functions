@@ -6,3 +6,4 @@ develop-eggs
 ion_functions.egg-info
 parts
 .installed.cfg
+ion_functions/data/tmp/
