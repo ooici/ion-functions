@@ -7,7 +7,7 @@
 @brief Module containing pH family instrument related functions
 """
 
-def pH_phwater(ref, light, traw, sal=35):
+def pH_phwater(ref, light, tstrt, tend, psal=35.0):
     """
     Description:
 
@@ -23,17 +23,19 @@ def pH_phwater(ref, light, traw, sal=35):
 
     Usage:
 
-        pH, tfinal = ph_phwater(ref, light, traw, absal=35)
+        pH, tfinal = ph_phwater(ref, light, traw, psal=35)
 
             where
 
-        pH = measured pH of seawater
-        tfinal = Water temperature measured at end of the measurement
-            cycle [deg_C]
-        ref = raw signal and reference measurements during blank cycle 
+        pH = measured pH of seawater [unitless]
+        tfinal = temperature measured at end of cycle [deg_C]
+        ref = raw signal and reference measurements during blank cycle [counts] 
         light = raw signal and reference measurements during measurement cycle
-        traw = raw thermistor reading at end of measurement cycle
-        psal = practical salinity estimate used in calculcations, default is 35.
+            [counts]
+        traw = raw thermistor reading at end of measurement cycle [counts]
+        psal = practical salinity estimate used in calculcations, default is
+            35.0 [unitless]
+        
     
     References: 
     
@@ -42,147 +44,130 @@ def pH_phwater(ref, light, traw, sal=35):
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00510_Data_Product_SPEC_PHWATER_OOI.pdf)
     """
+    from scipy import stats
     import numpy as np
-
+    
     # set constants
+    cp = 1. # cell path length
     
     # [TODO] these are actually inputs and are instrument/reagent bag specific
-    cp = 1. # cell path length
     ea434 = 17709.
     ea578 = 107.
     eb434 = 2287.
     eb578 = 38913.
 
-    # calculate blanks from 16 sets of reference light measurements 
-    Ref434A = ref[0]
-    Sig434A = ref[1]
-    Ref578A = ref[2]
-    Sig578A = ref[3]
+    # calculate blanks from the 16 sets of reference light measurements 
+    arr434 = np.array([
+        (ref[1] / ref[0]),
+        (ref[5] / ref[4]),
+        (ref[9] / ref[8]),
+        (ref[13] / ref[12]),
+    ])
+    blank434 = np.mean(arr434)
 
-    Ref434B = ref[4]
-    Sig434B = ref[5]
-    Ref578B = ref[6]
-    Sig578B = ref[7]
+    arr578 = np.array([
+        (ref[3] / ref[2]),
+        (ref[7] / ref[6]),
+        (ref[11] / ref[10]),
+        (ref[15] / ref[14]),
+    ])
+    blank578 = np.mean(arr578)
 
-    Ref434C = ref[8]
-    Sig434C = ref[9]
-    Ref578C = ref[10]
-    Sig578C = ref[11]
-
-    Ref434D = ref[12]
-    Sig434D = ref[13]
-    Ref578D = ref[14]
-    Sig578D = ref[15]
-
-    Blank434A = Sig434A / Ref434A
-    Blank578A = Sig578A / Ref578A
-    Blank434B = Sig434B / Ref434B
-    Blank578B = Sig578B / Ref578B
-    Blank434C = Sig434C / Ref434C
-    Blank578C = Sig578C / Ref578C
-    Blank434D = Sig434D / Ref434D
-    Blank578D = Sig578D / Ref578D
-
-    blank434 = (Blank434A + Blank434B + Blank434C + Blank434D) / 4
-    blank578 = (Blank578A + Blank578B + Blank578C + Blank578D) / 4
-
-    # convert the final thermistor reading, taken after the end of the
-    # measurement cycle, from volts to degrees Centigrade.
-    Rt = (traw / (4096. - traw)) * 17400.
-    InvT = 0.0010183 + 0.000241 * np.log(Rt) + 0.00000015 * np.power(np.log(Rt),3)
+    # convert the thermistor readings, taken before and after the end of the
+    # measurement cycle, from counts to degrees Centigrade.
+    Rt = (tstrt / (4096. - tstrt)) * 17400.
+    InvT = 0.0010183 + 0.000241 * np.log(Rt) + 0.00000015 * np.log(Rt)**3
     TempK = 1 / InvT
-    tfinal = TempK2 - 273.15
+    tfinal1 = TempK - 273.15
  
- 
-[d3,d4]=size(I434);
+    Rt = (tend / (4096. - tend)) * 17400.
+    InvT = 0.0010183 + 0.000241 * np.log(Rt) + 0.00000015 * np.log(Rt)**3
+    TempK = 1 / InvT
+    tfinal2 = TempK - 273.15
 
-for j=1:d4
-    % Absorbance
-    A434(:,j) = -log10(I434(:,j)./Ref434(:,j) );
-    A578(:,j)  = -log10(I578(:,j)./Ref578(:,j) );
-
-    A434blank(:,j) =-log10(blank434(:,j) );
-    A578blank(:,j) =-log10(blank578(:,j) );
-       
-    Abs434(:,j) =A434(:,j) -A434blank(:,j) ;
-    Abs578(:,j) =A578(:,j) -A578blank(:,j) ;
+    # per comments in DPS, use the final temperature measurement
+    # tfinal = np.mean([tfinal1, tfinal2])
+    tfinal = tfinal2
     
-    pKa(1:d3,j)=(1245.69./(TempFinal(j)+273.15))+3.8275+(0.0021*(35-Salinity));
-    R(:,j) = (A578(:,j)-A578blank(:,j))./(A434(:,j)-A434blank(:,j));
-    
-    % Molar absorptivities
-    Ea434(1:d3,j) = ea434-(26*(TempFinal(j)-24.788));
-    Ea578(1:d3,j) = ea578+(TempFinal(j)-24.788);
-    Eb434(1:d3,j) = eb434+(12*(TempFinal(j)-24.788));
-    Eb578(1:d3,j) = eb578-(71*(TempFinal(j)-24.788));
-    e1(:,j) =Ea578(:,j)./Ea434(:,j);
-    e2(:,j) =Eb578(:,j)./Ea434(:,j);
-    e3(:,j) =Eb434(:,j)./Ea434(:,j);
-    
-    V1(:,j)=R(:,j)-e1(:,j);
-    V2(:,j)=e2(:,j)-R(:,j).*e3(:,j) ;
-    
-    HI(:,j)=((Abs434(:,j).*Eb578(:,j))-(Abs578(:,j).*Eb434(:,j)))./((Ea434(:,j).*Eb578(:,j))-(Eb434(:,j).*Ea578(:,j)));
-    I(:,j)=((Abs578(:,j).*Ea434(:,j))-(Abs434(:,j).*Ea578(:,j)))./((Ea434(:,j).*Eb578(:,j))-(Eb434(:,j).*Ea578(:,j)));
-
-    % Use data points that are in linear region
-    IndConc(:,j)=HI(:,j)+I(:,j);
-    pointpH(:,j)=real(pKa(:,j)+log10(V1(:,j)./V2(:,j)));
-
-  % **********************************************************************
-  % Determine the most linear region of points for seawater calculation
-  % Skip first 5 points
-  IndConca(:,j)=IndConc(6:d3,j);
-  Y(:,j)=pointpH(6:d3,j);
-  X=[1:1:d3-5]';
+    # extract 23 sets of 4 light measurements into arrays corresponding to the
+    # raw reference and signal measurements at 434 and 578 nm. Input is an
+    # array of length 92 (23 sets * 4 measurements per set). Can reshape and
+    # slice to extract the parameters.
+    new = np.reshape(light,(23,4))
+    ref434 = new[:,0]   # reference signal, 434 nm
+    int434 = new[:,1]   # signal intensity, 434 nm (PH434SI_L0)
+    ref578 = new[:,2]   # reference signal, 578 nm
+    int578 = new[:,3]   # signal intensity, 578 nm (PH578SI_L0) 
   
-  step=7; % # of pts to use 
-  count=step+1;
-  for ii=1:length(X)-step 
-      sumxa(ii,j)=sum(X(ii:ii+step));
-      sumya(ii,j)=sum(Y(ii:ii+step,j));
-      sumxya(ii,j)=sum(X(ii:ii+step).*Y(ii:ii+step,j));
-      sumx2a(ii,j)=sum(X(ii:ii+step).^2);
-      sumy2a(ii,j)=sum(Y(ii:ii+step,j).^2);
-      avgxa(ii,j)=mean(X(ii:ii+step));
-      avgya(ii,j)=mean(Y(ii:ii+step,j));
-      
-      sumxx2a(ii,j)=sumxa(ii,j).*sumxa(ii,j);
-      sumyy2a(ii,j)=sumya(ii,j).*sumya(ii,j);
-      ssxya(ii,j)=sumxya(ii,j)-(sumxa(ii,j).*sumya(ii,j))/count;
-      ssxa(ii,j)=sumx2a(ii,j)-(sumxx2a(ii,j)/count);
-      ssya(ii,j)=sumy2a(ii,j)-(sumyy2a(ii,j)/count);
-      slopea(ii,j)=ssxya(ii,j)./ssxa(ii,j);
-      r2a(ii,j)=((ssxya(ii,j).^2)./(ssxa(ii,j).*ssya(ii,j)));
-  end
-      
-  % Range of seawater points to use
-  [xia,yia]=max(r2a(:,j));  % Find start point of the best fit using best R-squared
-  cutoff1(j)=yia;           % Start point
-  cutoff2(j)=yia+step;      % End point
-  
-  IndConcS(:,j)=IndConca(cutoff1(j):cutoff2(j),j);
-  pointpHS(:,j)=real(Y(cutoff1(j):cutoff2(j),j));
-      
-  [a1(j) a2(j)]=size(pointpHS);
+    # Absorbance
+    A434 = -np.log10(int434 / ref434)
+    A434blank = -np.log10(blank434)
+    abs434 = A434 - A434blank
     
-% ************************* Final pH Calcs ********************************
-   sumx(1,j)=sum(IndConcS(:,j));
-   sumy(1,j)=sum(pointpHS(:,j));
-   sumxy(1,j)=sum((pointpHS(:,j).*IndConcS(:,j)));
-   sumx2(1,j)=sum((IndConcS(:,j).^2));
-   sumy2(1,j)=sum((pointpHS(:,j).^2));
-            
-   xbar(1,j)=mean(IndConcS(:,j));
-   ybar(1,j)=mean(pointpHS(:,j));
+    A578 = -np.log10(int578 / ref578)
+    A578blank = -np.log10(blank578)
+    abs578 = A578 - A578blank
 
-   sumxx2(:,j)=sumx(1,j).*sumx(1,j);
-   sumyy2(:,j)=sumy(1,j).*sumy(1,j);
-   ssxy(1,j)=sumxy(1,j)-(sumx(:,j)*sumy(:,j))/a1(j);
-   ssx(1,j)=sumx2(1,j)-(sumxx2(:,j)/a1(j));
-   ssy(1,j)=sumy2(1,j)-(sumyy2(:,j)/a1(j));
+    # pka from Clayton and Byrne, 1993    
+    pKa = (1245.69 / (tfinal + 273.15)) + 3.8275 + (0.0021 * (35 - psal))
+    R = (A578 - A578blank) / (A434 - A434blank)
+    
+    # Molar absorptivities
+    inta434 = ea434 + 24.5250 * 24.8000
+    inta578 = ea578 - 0.5869 * 24.8000
+    intb434 = eb434 - 6.2231 * 24.8600
+    intb578 = eb578 + 99.6170 * 24.8600
+    ea434 = -24.525 * tfinal + inta434
+    ea578 = 0.5869 * tfinal + inta578
+    eb434 = 6.2231 * tfinal + intb434
+    eb578 = -99.6170 * tfinal + intb578
+    #ea434 = ea434 - (26 * (tfinal - 24.788))
+    #ea578 = ea578 + (tfinal - 24.788)
+    #eb434 = eb434 + (12 * (tfinal - 24.788))
+    #eb578 = eb578 - (71 * (tfinal - 24.788))
+    e1 = ea578 / ea434
+    e2 = eb578 / ea434
+    e3 = eb434 / ea434
+    
+    V1 = R - e1
+    V2 = e2 - R * e3 
+    
+    # indicator concentration calculations
+    HI = (abs434 * eb578 - abs578 * eb434) / (ea434 * eb578 - eb434 * ea578)
+    I = (abs578 * ea434 - abs434 * ea578) / (ea434 * eb578 - eb434 * ea578)
+    IndConc = HI + I
+    #pointpH = np.real(pKa + np.log10(V1 / V2))
+    pointpH = pKa + np.log10(V1 / V2)
+    print pointpH
+    
+    # ************************ Initial pH Calcs ************************
+    # determine the most linear region of points for pH of seawater
+    # calculation, skipping the first 5 points.
+    IndConca = IndConc[5:]
+    Y = pointpH[5:]
+    X = np.linspace(1, 18, 18)
+    
+    step = 7 # number of points to use 
+    npts = np.size(X) - step
+    slp = np.zeros(npts)
+    r2 = np.zeros(npts)
+    for i in range(npts):
+        m, b, r, p, serr = stats.linregress(X[i:i+step], Y[i:i+step])
+        slp[i]= m
+        r2[i] = r**2
+        
+    # Range of seawater points to use
+    cutoff1 = np.argmax(r2)  # Find the first, best R-squared value
+    cutoff2 = cutoff1 + step
+    
+    # Indicator and pH range limited to best points
+    IndConcS = IndConca[cutoff1:cutoff2]
+    pointpHS = np.real(Y[cutoff1:cutoff2])
 
-   slope(1,j)=ssxy(1,j)./ssx(1,j);
-            
-   FinalpH1(1,j)=ybar(1,j)-(slope(1,j).*xbar(1,j));
-end
+    # ************************* Final pH Calcs *************************
+    xbar = np.mean(IndConcS)
+    ybar = np.mean(pointpHS)
+    m, b, r, p, serr = stats.linregress(IndConcS, pointpHS)
+    pH = ybar - m * xbar
+
+    return pH, tfinal

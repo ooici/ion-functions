@@ -133,3 +133,32 @@ def ntp_to_unix_time(ntp_timestamp):
     unix_timestamp = ntp_timestamp - NTP_DELTA
     return unix_timestamp
 
+def extract_parameter(in_array, index):
+    """
+    Description:
+
+        Extracts and returns a single value from an array. Used, for example,
+        to extract the L0 PH434SI from the array holding the 24 sets of 4 light
+        measurements made by the Sunburst SAMI-II pH instrument (PHSEN).
+
+    Implemented by:
+
+        2013-04-19: Christopher Wingard. Initial code.
+
+    Usage:
+
+        out_value = extract_parameter(in_array, index)
+
+            where
+
+        out_value = the desired parameter.
+        in_array = the input array holding the value.
+        index = 0-based index in array to value.
+    
+    References: 
+    
+        None.
+    """
+
+    out_value = in_array[index]
+    return out_value
