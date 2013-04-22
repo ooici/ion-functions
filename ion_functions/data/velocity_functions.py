@@ -6,6 +6,7 @@
 @author Stuart Pearce
 @brief Module containing velocity family instrument related functions
 """
+# TODO:  unittests in test_velocity_functions.py
 
 from ion_functions.data.adcp_functions import adcp_magvar
 from ion_functions.data.generic_functions import magnetic_declination

@@ -1,17 +1,16 @@
 #!/usr/bin/env python
-
 """
-@package ion_functions.test.generic_functions
-@file ion_functions/test/generic_functions.py
-@author Christopher Mueller
-@brief Unit tests for generic_functions module
+@package ion_functions.test.velocity_functions
+@file ion_functions/test/velocity_functions.py
+@author Stuart Pearce
+@brief Unit tests for velocity_functions module
 """
 
 from nose.plugins.attrib import attr
 from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
-from ion_functions.data import generic_functions as gfunc
+from ion_functions.data import velocity_functions as velfunc
 
 
 @attr('UNIT', group='func')
@@ -23,19 +22,17 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
     def tearDown(self):
         pass
 
-    def test_magnetic_declination(self):
+    def test_vel3d_b_mag_correction(self):
             """
-            Test magnetic_declination function.
+            Test the vel3d_b_mag_correction function.
     
-            Some values based on those defined in the WMM document,
-            WMM2010testvalues.pdf which accompanies the software.  Others
-            were created and checked using online calculators.
+            Description: test values from DPS
             
             Implemented by Stuart Pearce, April 2013
             """
     
             lat = np.array([45.0, 45.0, 80.0, 0.0, -80.0, 80.0, 0.0, -80.0])
-            lon = np.array([-128.0, -128.0, 0.0, 120.0,
+            lon = np.array([-128.0, -128.0, 0.0,120.0,
                             240.0, 0.0, 120.0, 240.0])
             z = np.array([0.0, 1000.0, 0.0, 0.0,
                           0.0, 100000.0, 100000.0, 100000.0])
@@ -48,10 +45,13 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
                                   3471292800.0,
                                   3471292800.0])
             zflag = np.array([-1, -1, -1, -1, -1, 1, 1, 1])
+            
+            
             output = []
             for ii in range(len(lat)):
-                out_ = gfunc.magnetic_declination(lat[ii],lon[ii],z[ii],
-                                                  timestamp[ii],zflag[ii])
+                out_ = velfunc.vel3d_b_mag_correction(uu,vv,ww,
+                                                      lat[ii],lon[ii],z[ii],
+                                                      timestamp[ii],zflag[ii])
                 output.append(out_)
             output = np.array(output)
             
@@ -65,26 +65,3 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
                                      69.62])
             self.assertTrue(np.allclose(output, check_values,
                                         rtol=0, atol=1e-2))
-    
-    
-    def test_ntp_to_unix_time(self):
-            """
-            Test ntp_to_unix_time function.
-    
-            Timestamp Values gathered from various internet sources
-            including the NTP FAQ and HOWTO.
-            
-            Implemented by Stuart Pearce, April 2013
-            """
-    
-            ntp_timestamps = np.array([3176736750.7358608,
-                                       3359763506.2082224,
-                                       3575049755.4380851])
-    
-            output = gfunc.ntp_to_unix_time(ntp_timestamps)
-            
-            check_values = np.array([967747950.735861,
-                                     1150774706.2082224,
-                                     1366060955.438085])
-            self.assertTrue(np.allclose(output, check_values,
-                                        rtol=0, atol=1e-6))
