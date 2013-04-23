@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
 """
-@package ion_functions.test.pco2_functions
-@file ion_functions/test/pco2_functions.py
+@package ion_functions.test.co2_functions
+@file ion_functions/test/co2_functions.py
 @author Christopher Wingard
-@brief Unit tests for pco2_functions module
+@brief Unit tests for co2_functions module
 """
 
 from nose.plugins.attrib import attr
 from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
-from ion_functions.data import pco2_functions as pco2func
+from ion_functions.data import co2_functions as co2func
 
 @attr('UNIT', group='func')
 class Testpco2FunctionsUnit(BaseUnitTestCase):
@@ -22,9 +22,9 @@ class Testpco2FunctionsUnit(BaseUnitTestCase):
     def tearDown(self):
         pass
 
-    def test_pco2_pco2wat(self):
+    def test_co2_pco2wat(self):
         """
-        Test pco2_pco2wat function.
+        Test co2_pco2wat function.
 
         Values based on those described in DPS as available on Alfresco:
         
@@ -88,13 +88,13 @@ class Testpco2FunctionsUnit(BaseUnitTestCase):
                 strt += step            
             
             # compute the thermistor temperature in deg_C, blanks and pco2
-            tout[i] = pco2func.pco2_thermistor(traw)
-            a434blnk = pco2func.pco2_abs434_blank(mtype, light, a434blnk)
-            a620blnk = pco2func.pco2_abs620_blank(mtype, light, a620blnk)
-            pco2out[i] = pco2func.pco2_pco2wat(mtype, light, tout[i], ea434,
+            tout[i] = co2func.pco2_thermistor(traw)
+            a434blnk = co2func.pco2_abs434_blank(mtype, light, a434blnk)
+            a620blnk = co2func.pco2_abs620_blank(mtype, light, a620blnk)
+            pco2out[i] = co2func.pco2_pco2wat(mtype, light, tout[i], ea434,
                                                eb434, ea620, eb620, calt, cala,
                                                calb, calc, a434blnk, a620blnk)
         
+        print pco2out
         self.assertTrue(np.allclose(pco2out, pco2, rtol=1e-4, atol=0))
         self.assertTrue(np.allclose(tout, therm, rtol=1e-4, atol=0))
-

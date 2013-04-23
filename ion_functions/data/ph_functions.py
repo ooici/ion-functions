@@ -11,7 +11,7 @@
 def ph_434_intensity(light):
     """
     Wrapper function to extract the signal intensity at 434 nm (PH434SI_L0)
-    from the ph instrument light measurements.
+    from the pH instrument light measurements.
     """
     light = light.astype(np.float)
     new = np.reshape(light,(23,4))
@@ -57,14 +57,13 @@ def ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0):
         intended to be used by OOI programmers to construct appropriate
         processes to create the L1 pH of seawater core data product. 
 
-
     Implemented by:
 
         2013-04-19: Christopher Wingard. Initial code.
 
     Usage:
 
-        ph = ph_phwater(ref, light, tend, psal=35)
+        ph = ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35)
 
             where
 
@@ -73,10 +72,11 @@ def ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0):
         light = raw signal and reference measurements during measurement cycle
             [counts]
         therm = thermistor reading at end of measurement cycle [deg_C]
-        ea434 = mCP molar absorptivities provided by vendor
-        eb434 = mCP molar absorptivities provided by vendor
-        ea578 = mCP molar absorptivities provided by vendor
-        eb578 = mCP molar absorptivities provided by vendor
+        ea434 = mCP molar absorptivities provided by vendor, specific to a
+            reagent bag with a defined shelflife.
+        eb434 = mCP molar absorptivities as above
+        ea578 = mCP molar absorptivities as above
+        eb578 = mCP molar absorptivities as above
         psal = practical salinity estimate used in calculcations, default is
             35.0 [unitless]
            

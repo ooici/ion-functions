@@ -26,8 +26,10 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
         """
         Test ph_phwater function.
 
-        Values based on test strings (had to recompute outputs in Matlab as
-        those in DPS have no basis in reality) in DPS as available on Alfresco:
+        Values based on test strings in DPS and available on Alfresco. Note,
+        had to recompute output values using original Matlab code as those
+        provided in DPS do not match the output calculateded from those input
+        strings.
         
         OOI (2012). Data Product Specification for pH of Seawater. Document
             Control Number 1341-00510. https://alfresco.oceanobservatories.org/
@@ -69,23 +71,23 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
             # parse the raw strings into subelements, such as the driver would
             # provide.
             s = raw_strings[i]
-            braw = int(s[456:459], 16)
-            tend = int(s[460:463], 16)
-            strt = 20; step = 4
+            braw = int(s[455:459], 16)
+            tend = int(s[459:463], 16)
+            strt = 19; step = 4
             for j in range(16):
-                ref[j] = int(s[strt:strt+3], 16)
+                ref[j] = int(s[strt:strt+step], 16)
                 strt += step            
 
-            strt = 84; step = 4
+            strt = 83; step = 4
             for j in range(92):
-                light[j] = int(s[strt:strt+3], 16)
+                light[j] = int(s[strt:strt+step], 16)
                 strt += step            
 
             # compute the battery voltage, final temperature in deg_C and pH
             vbout[i] = braw * 15. / 4096.
             tout[i] = phfunc.ph_thermistor(tend)
             pHout[i] = phfunc.ph_phwater(ref, light, tout[i], ea434, eb434, ea578, eb578)
-               
+            
         self.assertTrue(np.allclose(pHout, pH, rtol=1e-4, atol=0))
         self.assertTrue(np.allclose(tout, therm, rtol=1e-4, atol=0))
         self.assertTrue(np.allclose(vbout, vbatt, rtol=1e-4, atol=0))
