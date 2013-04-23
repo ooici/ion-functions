@@ -16,12 +16,6 @@ from ion_functions.data import ctd_functions as ctdfunc
 @attr('UNIT', group='func')
 class TestCTDFunctionsUnit(BaseUnitTestCase):
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_ctd_sbe16plus_tempwat(self):
         """
         Test ctd_sbe16plus_tempwat function.

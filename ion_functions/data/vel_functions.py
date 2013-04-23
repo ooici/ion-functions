@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 """
-@package ion_functions.data.velocity_functions
-@file ion_functions/data/velocity_functions.py
+@package ion_functions.data.vel_functions
+@file ion_functions/data/vel_functions.py
 @author Stuart Pearce
 @brief Module containing velocity family instrument related functions
 """
