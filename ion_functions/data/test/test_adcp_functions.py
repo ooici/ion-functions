@@ -14,12 +14,6 @@ from ion_functions.data import adcp_functions as adcpfunc
 @attr('UNIT', group='func')
 class TestCTDFunctionsUnit(BaseUnitTestCase):
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_adcp_beam2earth(self):
         """
         Test adcp_beam2ins and adcp_ins2earth functions.

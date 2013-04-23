@@ -17,12 +17,6 @@ from ion_functions.data import generic_functions as gfunc
 @attr('UNIT', group='func')
 class TestGenericFunctionsUnit(BaseUnitTestCase):
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_magnetic_declination(self):
             """
             Test magnetic_declination function.
@@ -88,3 +82,22 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
                                      1366060955.438085])
             self.assertTrue(np.allclose(output, check_values,
                                         rtol=0, atol=1e-6))
+            
+    def test_extract_parameters(self):
+            """
+            Test extract_parameter function.
+    
+            Array values created by author.
+            
+            Implemented by Christopher Wingard, April 2013
+            """
+    
+            in_array = np.array([34, 67, 12, 15, 89, 100, 54, 36])
+            self.assertTrue(np.equal(34, gfunc.extract_parameter(in_array, 0)))
+            self.assertTrue(np.equal(67, gfunc.extract_parameter(in_array, 1)))
+            self.assertTrue(np.equal(12, gfunc.extract_parameter(in_array, 2)))
+            self.assertTrue(np.equal(15, gfunc.extract_parameter(in_array, 3)))
+            self.assertTrue(np.equal(89, gfunc.extract_parameter(in_array, 4)))
+            self.assertTrue(np.equal(100, gfunc.extract_parameter(in_array, 5)))
+            self.assertTrue(np.equal(54, gfunc.extract_parameter(in_array, 6)))
+            self.assertTrue(np.equal(36, gfunc.extract_parameter(in_array, 7)))
