@@ -16,12 +16,6 @@ from ion_functions.data import ph_functions as phfunc
 @attr('UNIT', group='func')
 class TestpHFunctionsUnit(BaseUnitTestCase):
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_ph_phwater(self):
         """
         Test ph_phwater function.

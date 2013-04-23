@@ -16,12 +16,6 @@ from ion_functions.data import co2_functions as co2func
 @attr('UNIT', group='func')
 class Testpco2FunctionsUnit(BaseUnitTestCase):
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_co2_pco2wat(self):
         """
         Test co2_pco2wat function.

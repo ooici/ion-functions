@@ -163,19 +163,3 @@ def extract_parameter(in_array, index):
     out_value = in_array[index]
     return out_value
 
-
-def sint(hStr,base):
-    """
-    Converts a hex string to a signed integer. Note, if the encoded value is an
-    unsigned integer, just use int(hex_string,base).
-    """
-    sLen = hStr.__len__()               # determine length of input hex string
-    mVal = "0x8" + "0" * (sLen - 1)     # create maximum value hex string
-    nVal = "0x" + "f" * sLen            # create negative value hex string
-    if int(hStr,base) < int(mVal,base):
-        num = int(hStr,base)
-    else:
-        num = -int(nVal,base) + int(hStr,base) - 1    
-
-    return num
-

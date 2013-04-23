@@ -17,12 +17,6 @@ from ion_functions.data import generic_functions as gfunc
 @attr('UNIT', group='func')
 class TestGenericFunctionsUnit(BaseUnitTestCase):
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_magnetic_declination(self):
             """
             Test magnetic_declination function.
