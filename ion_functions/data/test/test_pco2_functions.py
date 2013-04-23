@@ -67,7 +67,7 @@ class Testpco2FunctionsUnit(BaseUnitTestCase):
                           18.9485, 18.9485, 18.8765, 19.0686,
                           19.0686, 19.0446, 18.9725])
         pco2 = np.array([-99999999., 294.1720, 311.3361, 319.0101,
-                         319.8925, 319.9850, 305.8104, 317.9661,
+                         319.8925, 319.8950, 305.8104, 317.9661,
                          284.3676, 280.2324, 280.0354
                          ])
 
@@ -80,24 +80,21 @@ class Testpco2FunctionsUnit(BaseUnitTestCase):
             # parse the raw strings into subelements, such as the driver would
             # provide.
             s = raw_strings[i]
-            mtype = int(s[6:7], 16)
-            traw = int(s[76:79], 16)
-            strt = 16; step = 4
+            mtype = int((s[5:7]), 16)
+            traw = int((s[75:79]), 16)
+            strt = 15; step = 4
             for j in range(14):
-                light[j] = int(s[strt:strt+3], 16)
+                light[j] = int((s[strt:strt+step]), 16)
                 strt += step            
             
-            print light
             # compute the thermistor temperature in deg_C, blanks and pco2
-            print mtype, a434blnk, a620blnk
             tout[i] = pco2func.pco2_thermistor(traw)
             a434blnk = pco2func.pco2_abs434_blank(mtype, light, a434blnk)
             a620blnk = pco2func.pco2_abs620_blank(mtype, light, a620blnk)
             pco2out[i] = pco2func.pco2_pco2wat(mtype, light, tout[i], ea434,
                                                eb434, ea620, eb620, calt, cala,
                                                calb, calc, a434blnk, a620blnk)
-            
-        print tout, pco2out    
+        
         self.assertTrue(np.allclose(pco2out, pco2, rtol=1e-4, atol=0))
         self.assertTrue(np.allclose(tout, therm, rtol=1e-4, atol=0))
 

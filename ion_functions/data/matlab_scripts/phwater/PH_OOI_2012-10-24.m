@@ -26,7 +26,6 @@ end
  
 fclose(fid);
 
-
 % ******************* Dialog box for Indicator Selection *********************
 prompt = {'Enter 0 for 07005HH(old), 1 for MKBC2604V(new), 2 for purified'};
 dlg_title = 'Indicator Batch';
@@ -35,10 +34,9 @@ Ind1 = inputdlg(prompt,dlg_title,num_lines);
 Ind = str2double(Ind1);
 % ****************************************************************************
 
-[s1,s2]=size(AA);
-
+[s1,s2] = size(AA);
 for i=1:s1
-    Type(i)=hex2dec(AA(i,5:6));
+    Type(i) = hex2dec(AA(i,5:6));
     Time(i)=hex2dec(AA(i,7:14));
     dt(i)=(Time(i)/(60*60*24));
     [y(i) m(i) d(i) h(i) mn(i) s(i)]=datevec(dt(i));

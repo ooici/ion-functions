@@ -11,7 +11,7 @@ from nose.plugins.attrib import attr
 from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
-from ion_functions.data import pH_functions as pHfunc
+from ion_functions.data import ph_functions as phfunc
 
 @attr('UNIT', group='func')
 class TestpHFunctionsUnit(BaseUnitTestCase):
@@ -22,11 +22,12 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
     def tearDown(self):
         pass
 
-    def test_pH_phwater(self):
+    def test_ph_phwater(self):
         """
-        Test pH_phwater function.
+        Test ph_phwater function.
 
-        Values based on those described in DPS as available on Alfresco:
+        Values based on test strings (had to recompute outputs in Matlab as
+        those in DPS have no basis in reality) in DPS as available on Alfresco:
         
         OOI (2012). Data Product Specification for pH of Seawater. Document
             Control Number 1341-00510. https://alfresco.oceanobservatories.org/
@@ -82,8 +83,8 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
 
             # compute the battery voltage, final temperature in deg_C and pH
             vbout[i] = braw * 15. / 4096.
-            tout[i] = pHfunc.ph_thermistor(tend)
-            pHout[i] = pHfunc.ph_phwater(ref, light, tout[i], ea434, eb434, ea578, eb578)
+            tout[i] = phfunc.ph_thermistor(tend)
+            pHout[i] = phfunc.ph_phwater(ref, light, tout[i], ea434, eb434, ea578, eb578)
                
         self.assertTrue(np.allclose(pHout, pH, rtol=1e-4, atol=0))
         self.assertTrue(np.allclose(tout, therm, rtol=1e-4, atol=0))

@@ -56,24 +56,24 @@ def pco2_thermistor(traw):
      return therm
 
 
-def pco2_pco2wat(mtype, light, therm, calt, cala, calb, calc,
-                    ea434, eb434, ea620, eb620, a434blnk, a620blnk):
+def pco2_pco2wat(mtype, light, therm, ea434, eb434, ea620, eb620, 
+                    calt, cala, calb, calc, a434blnk, a620blnk):
      """
      Wrapper function to calculate the L1 PCO2WAT core data from the pCO2
      instrument.
      """
      if mtype == 4:
-          pco2 = pco2_calc_pco2(light, therm, calt, cala, calb, calc,
-                    ea434, eb434, ea620, eb620, a434blnk, a620blnk)
+          pco2 = pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,  
+                    calt, cala, calb, calc, a434blnk, a620blnk)
      else:
-          pco2 = -99999999
+          pco2 = -99999999.
           
      return pco2
 
 
 # L1a PCO2WAT calculation 
-def pco2_calc_pco2(light, therm, calt, cala, calb, calc,
-                    ea434, eb434, ea620, eb620, a434blnk, a620blnk):
+def pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
+                   calt, cala, calb, calc, a434blnk, a620blnk):
      """
      Description:
      
@@ -115,13 +115,13 @@ def pco2_calc_pco2(light, therm, calt, cala, calb, calc,
      light = light.astype(np.float)
      DRef1 = light[0]  # Dark Reference LED 
      DSig1 = light[1]  # Dark Signal LED 
-     R434 = light[3]   # 434nm Reference LED intensity
-     S434 = light[2]   # 434nm Signal Signal LED intensity
-     R620 = light[5]   # 620nm Reference LED intensity
-     S620 = light[4]   # 434nm Signal Signal LED intensity
-     Ratio434 = light[7] # 434nm Ratio
-     Ratio620 = light[6] # 620nm Ratio
-
+     R434 = light[2]   # 434nm Reference LED intensity
+     S434 = light[3]   # 434nm Signal Signal LED intensity
+     R620 = light[4]   # 620nm Reference LED intensity
+     S620 = light[5]   # 434nm Signal Signal LED intensity
+     Ratio434 = light[6] # 434nm Ratio
+     Ratio620 = light[7] # 620nm Ratio
+     
      # calculate absorbance ratio, correcting for blanks
      A434 = -1. * np.lib.scimath.log10(Ratio434 / a434blnk) # 434 absorbance
      A620 = -1. * np.lib.scimath.log10(Ratio620 / a620blnk) # 620 absorbance
@@ -135,5 +135,5 @@ def pco2_calc_pco2(light, therm, calt, cala, calb, calc,
      Tcoeff = 0.0075778 - 0.0012389 * RCO22 - 0.00048757 * RCO22**2
      Tcor_RCO2 =  RCO21 + Tcoeff * (therm - calt)
      pco2 = 10.**((-1. * calb + (calb**2 - (4. * cala * (calc - Tcor_RCO2)))**0.5) / (2. * cala))
-
+     
      return np.real(pco2)
