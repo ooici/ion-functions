@@ -10,35 +10,40 @@
 # wrapper functions to extract parameters from SAMI-II CO2 instruments (PCO2W)
 def pco2_abs434_blank(mtype, light, a434blnk):
      """
-     [TODO]
+     Wrapper function to extract the blank absorbance at 434 nm from the pCO2
+     instrument light measurements.
      """
      import numpy as np
      
      # if the measurement type is 5 = blank, then return the new blank
      if mtype == 5:
-          a434blnk = -np.log10(light[6] / 16384.)
-     
-     # return new blank, or existing if new was not reset
+          #a434blnk = -1. * np.log10(light[6] / 16384.)
+          a434blnk = -1. * np.log10(light[6])
+          
+     # return new blank, or existing if not reset
      return a434blnk
 
 
 def pco2_abs620_blank(mtype, light, a620blnk):
      """
-     [TODO]
+     Wrapper function to extract the blank absorbance at 620 nm from the pCO2
+     instrument light measurements.
      """
      import numpy as np
      
      # if the measurement type is 5 = blank, then return the new blank
      if mtype == 5:
-          a620blnk = -np.log10(light[7] / 16384.)
+          #a620blnk = -1. * np.log10(light[7] / 16384.)
+          a620blnk = -1. * np.log10(light[7])
           
-     # return new blank, or existing if new was not reset
+     # return new blank, or existing if not reset
      return a620blnk
 
 
 def pco2_thermistor(traw):
      """
-     [TODO]
+     Wrapper function to convert the thermistor data from counts to degrees
+     Centigrade from the pCO2 instrument.
      """
      import numpy as np
      
@@ -46,18 +51,19 @@ def pco2_thermistor(traw):
      Rt = (traw / (4096. - traw)) * 17400.
      InvT = 0.0010183 + 0.000241 * np.log(Rt) + 0.00000015 * np.log(Rt)**3
      TempK = 1 / InvT
-     tfinal = TempK - 273.15
+     therm = TempK - 273.15
      
-     return tfinal
+     return therm
 
 
-def pco2_pco2wat(mtype, light, traw, calt, cala, calb, calc,
+def pco2_pco2wat(mtype, light, therm, calt, cala, calb, calc,
                     ea434, eb434, ea620, eb620, a434blnk, a620blnk):
      """
-     [TODO]
+     Wrapper function to calculate the L1 PCO2WAT core data from the pCO2
+     instrument.
      """
      if mtype == 4:
-          pco2 = pco2_pco2wat(light, traw, calt, cala, calb, calc,
+          pco2 = pco2_calc_pco2(light, therm, calt, cala, calb, calc,
                     ea434, eb434, ea620, eb620, a434blnk, a620blnk)
      else:
           pco2 = -99999999
@@ -66,7 +72,7 @@ def pco2_pco2wat(mtype, light, traw, calt, cala, calb, calc,
 
 
 # L1a PCO2WAT calculation 
-def pco2_calc_pco2(light, traw, calt, cala, calb, calc,
+def pco2_calc_pco2(light, therm, calt, cala, calb, calc,
                     ea434, eb434, ea620, eb620, a434blnk, a620blnk):
      """
      Description:
@@ -81,7 +87,7 @@ def pco2_calc_pco2(light, traw, calt, cala, calb, calc,
      
      Usage:
      
-          pco2, tfinal = pco2_pco2wat(ref, light, traw, psal=35)
+          pco2, therm = pco2_pco2wat(ref, light, therm, psal=35)
      
                where
      
@@ -98,40 +104,36 @@ def pco2_calc_pco2(light, traw, calt, cala, calb, calc,
      """
      import numpy as np
     
-     # set constants     
+     # set constants
+     ea434 = ea434 - 29.3 * calt
+     eb620 = eb620 - 70.6 * calt
      e1 = ea620 / ea434
      e2 = eb620 / ea434
      e3 = eb434 / ea434
 
      # Extract variables from light array
+     light = light.astype(np.float)
      DRef1 = light[0]  # Dark Reference LED 
      DSig1 = light[1]  # Dark Signal LED 
-     R434 = light[2]   # 434nm Reference LED intensity
-     S434 = light[3]   # 434nm Signal Signal LED intensity
-     R620 = light[4]   # 620nm Reference LED intensity
-     S620 = light[5]   # 434nm Signal Signal LED intensity
-     Ratio434 = light[6] # 434nm Ratio
-     Ratio620 = light[7] # 620nm Ratio
-
-     # convert thermistor reading from counts to deg_C
-     Rt = (traw / (4096. - traw)) * 17400.
-     InvT = 0.0010183 + 0.000241 * np.log(Rt) + 0.00000015 * np.log(Rt)**3
-     TempK = 1 / InvT
-     tfinal = TempK - 273.15
+     R434 = light[3]   # 434nm Reference LED intensity
+     S434 = light[2]   # 434nm Signal Signal LED intensity
+     R620 = light[5]   # 620nm Reference LED intensity
+     S620 = light[4]   # 434nm Signal Signal LED intensity
+     Ratio434 = light[7] # 434nm Ratio
+     Ratio620 = light[6] # 620nm Ratio
 
      # calculate absorbance ratio, correcting for blanks
-     A434 = -np.log10(Ratio434 / a434blnk) # 434 absorbance
-     A620 = -np.log10(Ratio620 / a620blnk) # 620 absorbance
+     A434 = -1. * np.lib.scimath.log10(Ratio434 / a434blnk) # 434 absorbance
+     A620 = -1. * np.lib.scimath.log10(Ratio620 / a620blnk) # 620 absorbance
      Ratio = A620 / A434      # Absorbance ratio
-
+     
      # calculate pCO2
      V1 = Ratio - e1
      V2 = e2 - e3 * Ratio
-     RCO21 = -1 * np.log10(V1 / V2)
-     RCO22 = (tfinal - calt) * 0.007 + RCO21
+     RCO21 = -1. * np.lib.scimath.log10(V1 / V2)
+     RCO22 = (therm - calt) * 0.007 + RCO21
      Tcoeff = 0.0075778 - 0.0012389 * RCO22 - 0.00048757 * RCO22**2
-     Tcor_RCO2 =  RCO21 + Tcoeff * (tfinal - calt)
-     pCO2 = 10**((-1. * calb + (calb**2 - (4. * cala * (calc - Tcor_RCO2)))**0.5)
-          / (2 * cala))
+     Tcor_RCO2 =  RCO21 + Tcoeff * (therm - calt)
+     pco2 = 10.**((-1. * calb + (calb**2 - (4. * cala * (calc - Tcor_RCO2)))**0.5) / (2. * cala))
 
-     return pC02
+     return np.real(pco2)
