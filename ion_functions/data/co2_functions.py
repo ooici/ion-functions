@@ -8,6 +8,28 @@
 """
 
 # wrapper functions to extract parameters from SAMI-II CO2 instruments (PCO2W)
+def pco2_abs434_ratio(light):
+     """
+     Wrapper function to extract the absorbance ratio at 434 nm from the pCO2
+     instrument light measurements.
+     """
+     a434ratio = light[6]
+          
+     # return new blank, or existing if not reset
+     return a434ratio
+
+
+def pco2_abs620_ratio(light):
+     """
+     Wrapper function to extract the absorbance ratio at 620 nm from the pCO2
+     instrument light measurements.
+     """
+     a620ratio = light[7]
+          
+     # return new blank, or existing if not reset
+     return a620ratio
+
+
 def pco2_abs434_blank(mtype, light, a434blnk):
      """
      Wrapper function to extract the blank absorbance at 434 nm from the pCO2
