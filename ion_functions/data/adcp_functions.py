@@ -282,8 +282,14 @@ def adcp_magvar(theta, uu, vv):
         [np.cos(theta_rad), np.sin(theta_rad)],
         [-np.sin(theta_rad), np.cos(theta_rad)]
     ])
-
-    nbins = len(uu)
+    
+    if np.size(uu) is 1 and isinstance(uu,float):
+        uu = np.array([uu])
+    if np.size(vv) is 1 and isinstance(vv,float):
+        vv = np.array([vv])
+    
+    #nbins = len(uu)
+    nbins = np.size(uu)
     uu_cor = np.zeros(nbins)
     vv_cor = np.zeros(nbins)
     for i in range(nbins):
@@ -293,5 +299,4 @@ def adcp_magvar(theta, uu, vv):
         vv_cor[i] = cor[1]
         
     return (uu_cor, vv_cor)
-    # TODO: Bug in array assignments uv_cor[i] = cor[k].  Returns incorrectly
 
