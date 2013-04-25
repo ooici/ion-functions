@@ -11,7 +11,7 @@ from ion_functions.data.generic_functions import magnetic_declination
 import numpy as np
 
 # Wrapper functions to create 1:1 outputs for ParameterFunctions in Preload
-def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
+def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     """
     Wrapper function to compute the Eastward Velocity Profile (VELPROF-VLE)
     from the beam coordinate transformed data.
@@ -20,7 +20,7 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
     u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
     
     # compute the instrument to earth beam transform
-    uu, vv, ww = adcp_ins2earth(u, v, w, h, p, r, v)
+    uu, vv, ww = adcp_ins2earth(u, v, w, h, p, r, vf)
     
     # calculate the magnetic variation and correct the velocity profiles
     zflag = -1      # sets depth to negative for below sea surface
@@ -34,7 +34,7 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
     return uu_cor    
 
 
-def adcp_beam_northward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
+def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     """
     Wrapper function to compute the Northward Velocity Profile (VELPROF-VLN)
     from the beam coordinate transformed data.
@@ -43,7 +43,7 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
     u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
     
     # compute the instrument to earth beam transform
-    uu, vv, ww = adcp_ins2earth(u, v, w, h, p, r, v)
+    uu, vv, ww = adcp_ins2earth(u, v, w, h, p, r, vf)
     
     # calculate the magnetic variation and correct the velocity profiles
     zflag = -1      # sets depth to negative for below sea surface
@@ -57,7 +57,7 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, v, lat, lon, z, dt):
     return vv_cor    
 
 
-def adcp_beam_vertical(b1, b2, b3, b4, h, p, r, v):
+def adcp_beam_vertical(b1, b2, b3, b4, h, p, r, vf):
     """
     Wrapper function to compute the Upward Velocity Profile (VELPROF-VLU)
     from the beam coordinate transformed data.
@@ -66,7 +66,7 @@ def adcp_beam_vertical(b1, b2, b3, b4, h, p, r, v):
     u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
     
     # compute the instrument to earth beam transform
-    uu, vv, ww = adcp_ins2earth(u, v, w, h, p, r, v)
+    uu, vv, ww = adcp_ins2earth(u, v, w, h, p, r, vf)
     
     # scale vertical velocity to m/s
     ww = ww/1000.  # mm/s/1000 = m/s
@@ -293,5 +293,4 @@ def adcp_magvar(theta, uu, vv):
         vv_cor[i] = cor[1]
         
     return (uu_cor, vv_cor)
-    # TODO: Bug in array assignments uv_cor[i] = cor[k].  Returns incorrectly
 
