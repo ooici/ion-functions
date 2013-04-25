@@ -8,4 +8,4 @@ from data.ctd_functions import ctd_sbe16plus_condwat, ctd_sbe16plus_preswat, ctd
 from data.ph_functions import ph_434_intensity, ph_578_intensity, ph_thermistor, ph_phwater
 from data.vel_functions import vel3d_b_mag_correction
 
-from data.generic_functions import extract_parameter, magnetic_declination, ntp_to_unix_time, sint
+from data.generic_functions import extract_parameter, magnetic_declination, ntp_to_unix_time
