@@ -24,7 +24,8 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     
     # calculate the magnetic variation and correct the velocity profiles
     zflag = -1      # sets depth to negative for below sea surface
-    theta = magnetic_declination(lat, lon, z, dt, zflag)
+    zm = z / 10.    # scale decimeter depth input to meters
+    theta = magnetic_declination(lat, lon, zm, dt, zflag)
     uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
     
     # scale eastward velocity to m/s
@@ -47,7 +48,8 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     
     # calculate the magnetic variation and correct the velocity profiles
     zflag = -1      # sets depth to negative for below sea surface
-    theta = magnetic_declination(lat, lon, z, dt, zflag)
+    zm = z / 10.    # scale decimeter depth input to meters
+    theta = magnetic_declination(lat, lon, zm, dt, zflag)
     uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
     
     # scale northward velocity to m/s
@@ -97,7 +99,8 @@ def adcp_earth_eastward(u, v, z, lat, lon, dt):
     """
     # calculate the magnetic variation and correct the velocity profiles
     zflag = -1      # sets depth to negative for below sea surface
-    theta = magnetic_declination(lat, lon, z, dt, zflag)
+    zm = z / 10.    # scale decimeter depth input to meters
+    theta = magnetic_declination(lat, lon, zm, dt, zflag)
     u_cor, v_cor = adcp_magvar(theta, u, v)
     
     # scale eastward velocity from [mm s-1] to [m s-1]
@@ -114,7 +117,8 @@ def adcp_earth_northward(u,v,z,lat,lon,dt):
     """
     # calculate the magnetic variation and correct the velocity profiles
     zflag = -1      # sets depth to negative for below sea surface
-    theta = magnetic_declination(lat, lon, z, dt, zflag)
+    zm = z / 10.    # scale decimeter depth input to meters
+    theta = magnetic_declination(lat, lon, zm, dt, zflag)
     u_cor, v_cor = adcp_magvar(theta, u, v)
     
     # scale northward velocity from [mm s-1] to [m s-1]
