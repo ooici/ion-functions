@@ -716,6 +716,12 @@ def dataqc_stuckvaluetest(x, reso, num=10):
     if not utils.isreal(dat).all():
         raise ValueError('\'x\' must be real')
 
+    if isinstance(reso,np.ndarray):
+        reso = reso[0]
+    
+    if isinstance(num, np.ndarray):
+        num = num[0]
+
     for k, arg in {'reso': reso, 'num': num}.iteritems():
         if not utils.isnumeric(arg).all():
             raise ValueError('\'{0}\' must be numeric'.format(k))
@@ -735,7 +741,7 @@ def dataqc_stuckvaluetest(x, reso, num=10):
         pass
     else:
         out.fill(1)
-        iimax = ll - num+1
+        iimax = int(ll - num+1)
         for ii in xrange(iimax):
             slice_ = slice(ii, ii + num)
             tmp = np.abs(dat[ii] - dat[slice_])
