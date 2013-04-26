@@ -419,6 +419,13 @@ def dataqc_spiketest(dat, acc, N=5, L=5):
     if not utils.isreal(dat).all():
         raise ValueError('\'dat\' must be real')
 
+    if isinstance(acc,np.ndarray):
+        acc = acc[0]
+    if isinstance(N,np.ndarray):
+        N = N[0]
+    if isinstance(L,np.ndarray):
+        L = L[0]
+
     for k, arg in {'acc': acc, 'N': N, 'L': L}.iteritems():
         if not utils.isnumeric(arg).all():
             raise ValueError('\'{0}\' must be numeric'.format(k))
