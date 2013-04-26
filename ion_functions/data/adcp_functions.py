@@ -283,10 +283,8 @@ def adcp_magvar(theta, uu, vv):
         [-np.sin(theta_rad), np.cos(theta_rad)]
     ])
     
-    if np.size(uu) is 1 and isinstance(uu,float):
-        uu = np.array([uu])
-    if np.size(vv) is 1 and isinstance(vv,float):
-        vv = np.array([vv])
+    uu = np.atleast_1d([uu])
+    vv = np.atleast_1d([vv])
     
     #nbins = len(uu)
     nbins = np.size(uu)
