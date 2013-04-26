@@ -312,8 +312,12 @@ def adcp_magvar(theta, uu, vv):
         [np.cos(theta_rad), np.sin(theta_rad)],
         [-np.sin(theta_rad), np.cos(theta_rad)]
     ])
-
-    nbins = len(uu)
+    
+    uu = np.atleast_1d([uu])
+    vv = np.atleast_1d([vv])
+    
+    #nbins = len(uu)
+    nbins = np.size(uu)
     uu_cor = np.zeros(nbins)
     vv_cor = np.zeros(nbins)
     for i in range(nbins):
