@@ -10,6 +10,7 @@
 if 'tscor' not in locals():
     from ion_functions.data.opt_functions_tscor import tscor
 
+
 def opt_pressure(praw, offset, sfactor):
     """
     Description:
@@ -88,3 +89,95 @@ def opt_internal_temp(traw):
     
     return degC
 
+
+def opt_external_temp(traw):
+    """
+    Description:
+
+        [TODO]
+        
+    Implemented by:
+
+        2013-04-25: Christopher Wingard. Initial implementation.
+        
+    Usage:
+
+        [TODO]
+    
+    References:
+    
+        OOI (2013). Data Product Specification for Optical Beam Attenuation
+            Coefficient. Document Control Number 1341-00690.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00690_Data_Product_SPEC_OPTATTN_OOI.pdf)
+        
+        OOI (2013). Data Product Specification for Optical Absorption
+            Coefficient. Document Control Number 1341-00700.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00700_Data_Product_SPEC_OPTABSN_OOI.pdf)
+    """
+    # convert counts to degrees Centigrade
+    a = -7.1023317e-13
+    b = 7.09341920e-08
+    c = -3.87065673e-03
+    d = 95.8241397
+    
+    degC = a * traw**3 + b * traw**2 + c * traw + d 
+    
+    return degC
+
+
+def opt_pd_calc(ref, sig, offset, wvlngth, Tbins, Tarray):
+    """
+    Description:
+
+        [TODO]
+        
+    Implemented by:
+
+        2013-04-25: Christopher Wingard. Initial implementation.
+        
+    Usage:
+
+        [TODO]
+    
+    References:
+    
+        OOI (2013). Data Product Specification for Optical Beam Attenuation
+            Coefficient. Document Control Number 1341-00690.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00690_Data_Product_SPEC_OPTATTN_OOI.pdf)
+        
+        OOI (2013). Data Product Specification for Optical Absorption
+            Coefficient. Document Control Number 1341-00700.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00700_Data_Product_SPEC_OPTABSN_OOI.pdf)
+    """
+    import numpy as np
+    
+    # raw reference and signal values are imported as 1D arrays, comprised of a
+    # single row, reshaped to column. They must be the same length.
+    ref = np.atleast_1d(ref).reshape(-1)
+    sig = np.atleast_1d(sig)
+    
+    # the offsets are imported as a 1D array, need to make sure it is a "column
+    # vector". They must be the same length as ref and sig.
+    
+    # the wavelengths are imported as a 1D array, need to make sure it is a
+    # "column vector". they must be the same length as ref, sig and offsets.
+    
+    # Tint is a scalar
+    
+    # the Tbins are imported as a 1D array, need to make sure it is a row
+    # vector.
+    
+    # the Tarray, is a 2D array. The # of columns must equal the length of
+    # Tbins. The number of rows must equal the number of wvlngths.
+    
+    
+    
+    

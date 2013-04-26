@@ -13,8 +13,15 @@ import numpy as np
 # from published literature and are available in:
 #
 #   WET Labs, Inc. 2009. AC Meter Protocol Document, Revision P.
+# 
+# The array is composed of 4 columns corresponding to the wavelength (nm) and
+# the wavelength dependent temperature correction coefficients, salinity
+# correction coefficients for the 'a' channel, and salinity correction
+# coefficients for the 'c' channel.
 #
-# Created April 25, 2013 by Christopher Wingard
+# Created April 25, 2013 by Christopher Wingard from vendor provided TS4.cor
+# file, available in ion_functions/data/matlab_scripts/optaa. 
+
 tscor = np.array([
     [400.0,0.00010,-0.000012,0.000033],
     [400.1,0.00010,-0.000012,0.000033],
