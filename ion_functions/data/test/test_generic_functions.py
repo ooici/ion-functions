@@ -29,10 +29,12 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
             """
     
             lat = np.array([45.0, 45.0, 80.0, 0.0, -80.0, 80.0, 0.0, -80.0])
-            lon = np.array([-128.0, -128.0, 0.0, 120.0, 240.0, 0.0, 120.0, 240.0])
-            z = np.array([0.0, 1000.0, 0.0, 0.0, 0.0, 100000.0, 100000.0, 100000.0])
-            timestamp = np.array([3575053740.7382507,  # 2013-04-15 22:29:00 UTC
-                                  3575053740.7382507,
+            lon = np.array([-128.0, -128.0, 0.0, 120.0,
+                            240.0, 0.0, 120.0, 240.0])
+            z = np.array([0.0, 1000.0, 0.0, 0.0,
+                          0.0, 100000.0, 100000.0, 100000.0])
+            timestamp = np.array([3575053740.7382507,  # 2013-04-15 22:29:00
+                                  3575053740.7382507,  # UTC
                                   3471292800.0,        # 2010-01-01 UTC
                                   3471292800.0,
                                   3471292800.0,
@@ -55,7 +57,8 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
                                      -6.57,
                                      0.94,
                                      69.62])
-            self.assertTrue(np.allclose(output, check_values, rtol=0, atol=1e-2))
+            self.assertTrue(np.allclose(output, check_values,
+                                        rtol=0, atol=1e-2))
     
     
     def test_ntp_to_unix_time(self):
@@ -77,7 +80,8 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
             check_values = np.array([967747950.735861,
                                      1150774706.2082224,
                                      1366060955.438085])
-            self.assertTrue(np.allclose(output, check_values, rtol=0, atol=1e-6))
+            self.assertTrue(np.allclose(output, check_values,
+                                        rtol=0, atol=1e-6))
             
     def test_extract_parameters(self):
             """
