@@ -7,67 +7,59 @@
     attenuation and the optical absorption.
 """
 
-
 # wrapper functions to calculate the beam attenuation and optical absorption
 # from the WET Labs, Inc. ACS (OPTAA).
-
-def opt_beam_attenuation():
-    # Raw reference and signal values are imported as 1D arrays. They must be
-    # the same length.
-    ref = np.atleast_1d(ref)
-    sig = np.atleast_1d(sig)
-    lFlag = np.size(ref) == np.size(sig)
-    if ~lFlag:
-        raise ValueError('Reference and Signal arrays must be the same length')
+def opt_beam_attenuation(cref, csig, traw, cwl, coff, tcal, tbins, tc_arr,
+                         T, PS):
+    """
+    Wrapper function to calculate the L2 beam attenuation coefficient from the
+    WET Labs, Inc. ACS instrument.
+    """ 
+    # calculate the internal instrument temperature [deg_C]
+    tintrn = opt_internal_temp(traw)
     
-    nValues = np.size(sig)
+    # calculate the beam attenuation coefficient [m^-1]   
+    cpd = opt_pd_calc(cref, csig, coff, tintrn, tbins, tc_arr)
     
-    # The offsets are imported as a 1D array. They must be the same length as
-    # ref and sig.
-    offset = np.atleast_1d(offset)
-    lFlag = np.size(offset) == nValues
-    if ~lFlag:
-        raise ValueError('The number of offsets must match the number of ',
-                         'Signal and Reference values.')
+    # correct the beam attenuation coefficient for temperature and salinity.
+    cpd_ts = opt_tempsal_corr('c', cpd, cwl, tcal, T, PS)
     
-    # The wavelengths are imported as a 1D array. They must be the same length
-    # as ref, sig and offsets.
-    wlngth = np.atleast_1d(wlngth)
-    lFlag = np.size(wlngth) == nValues
-    if ~lFlag:
-        raise ValueError('The number of wavelengths must match the number of ',
-                         'Signal and Reference values.')
-       
-    # The temperature bins are imported as a 1D array
-    tbins = np.atleast_1d(tbins)
-    tValues = np.size(tbins)
+    # return the temperature and salinity corrected beam attenuation
+    # coefficient [m^-1]
+    return cpd_ts
+
+
+def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
+                       cpd_ts, cwl, T, PS):
+    """
+    Wrapper function to calculate the L2 optical absorption coefficient from
+    the WET Labs, Inc. ACS instrument.
+    """ 
+    # calculate the internal instrument temperature [deg_C]
+    tintrn = opt_internal_temp(traw)
     
-    # The temperature array, is a 2D array. The # of "columns" must equal the
-    # length of temperature bins. The number of "rows" must equal the number of
-    # wavelengths.
-    tarray = np.atleast_2d(tarray)
-    r, c = tarray.shape
+    # calculate the optical absorption coefficient [m^-1]   
+    apd = opt_pd_calc(aref, asig, aoff, tintrn, tbins, ta_arr)
     
-    if r != nValues:
-        raise ValueError('The number of rows in the temperature array must ',
-                         'match the number of Signal and Reference values.')
+    # correct the optical absorption coefficient for temperature and salinty.
+    apd_ts = opt_tempsal_corr('a', apd, awl, tcal, T, PS)
 
-    if c != tValues:
-        raise ValueError('The number of columns in the temperature array must ',
-                         'match the number of temperature bin values.')
-    pass
-
-
-def opt_optical_absorp():
-    # [TODO]
-    pass
+    # correct the optical absorption coefficient for scattering effects
+    apd_ts_s = opt_scatter_corr(apd_ts, awl, cpd_ts, cwl)
+    
+    # return the temperature, salinity and scattering corrected optical
+    # absorption coefficient [m^-1] 
+    return apd_ts_s
 
 
+# Functions used in calculating optical absorption and beam attenuation
+# coefficients from the OPTAA family of instruments.
 def opt_pressure(praw, offset, sfactor):
     """
     Description:
 
-        [TODO]
+        Calculates the pressure (depth) of the ACS, if the unit is equipped
+        with a pressure sensor.
         
     Implemented by:
 
@@ -75,7 +67,13 @@ def opt_pressure(praw, offset, sfactor):
         
     Usage:
 
-        [TODO]
+        depth = opt_pressure(praw, offset, sfactor)
+        
+            where
+            
+        depth = depth of the instrument [m]
+        offset = depth offest from instrument device file [m]
+        sfactor = scale factor from instrument device file [m counts-1]
     
     References:
     
@@ -99,7 +97,8 @@ def opt_internal_temp(traw):
     """
     Description:
 
-        [TODO]
+        Calculates the internal instrument temperature. Used in subsequent
+        OPTAA calculations.
         
     Implemented by:
 
@@ -107,7 +106,12 @@ def opt_internal_temp(traw):
         
     Usage:
 
-        [TODO]
+        tintrn = opt_internal_temp(traw)
+        
+            where
+        
+        tintrn = calculated internal instrument temperature [deg_C]
+        traw = raw internal instrument temperature [counts]
     
     References:
     
@@ -144,7 +148,7 @@ def opt_external_temp(traw):
     """
     Description:
 
-        [TODO]
+        Calculates the external environmental temperature.
         
     Implemented by:
 
@@ -152,7 +156,12 @@ def opt_external_temp(traw):
         
     Usage:
 
-        [TODO]
+        textrn = opt_external_temp(traw)
+        
+            where
+        
+        textrn = calculated external environment temperature [deg_C]
+        traw = raw external temperature [counts]
     
     References:
     
@@ -178,11 +187,11 @@ def opt_external_temp(traw):
     return degC
 
 
-def opt_pd_calc(ref, sig, offset, wlngth, tintrn, tbins, tarray):
+def opt_pd_calc(ref, sig, offset, tintrn, tbins, tarray):
     """
     Description:
 
-        [TODO]
+        Convert raw reference and signal measurements to scientific units.
         
     Implemented by:
 
@@ -190,7 +199,18 @@ def opt_pd_calc(ref, sig, offset, wlngth, tintrn, tbins, tarray):
         
     Usage:
 
-        [TODO]
+        pd, deltaT = opt_pd_calc(ref, sig, offset, tintrn, tbins, tarray)
+        
+            where
+        
+        pd = beam attenuation or optical absorption coefficients [m-1]
+        ref = raw reference light measurements [counts]
+        sig = raw signal light measurements [counts]
+        offset = clear water offsets [m-1]
+        tintrn = internal instrument temperature [deg_C]
+        tbins = instrument specific temperature calibration bins [deg_C]
+        tarray = instrument, wavelength and channel specific temperature
+            calibration correction coefficients [m-1] 
     
     References:
     
@@ -207,43 +227,70 @@ def opt_pd_calc(ref, sig, offset, wlngth, tintrn, tbins, tarray):
             1341-00700_Data_Product_SPEC_OPTABSN_OOI.pdf)
     """
     import numpy as np
-        
-    ###### Compute the beam attenuation or absorption coefficient (m^-1), minus
-    ###### clear water. Corresponds to the particulate and dissolved components
-    ###### in the water column. 
     
+    # Raw reference and signal values are imported as 1D arrays. They must be
+    # the same length.
+    ref = np.atleast_1d(ref)
+    sig = np.atleast_1d(sig)
+    lFlag = np.size(ref) == np.size(sig)
+    if ~lFlag:
+        raise ValueError('Reference and Signal arrays must be the same length')
+    
+    nValues = np.size(sig)
+    
+    # The offsets are imported as a 1D array. They must be the same length as
+    # ref and sig.
+    offset = np.atleast_1d(offset)
+    lFlag = np.size(offset) == nValues
+    if ~lFlag:
+        raise ValueError('The number of offsets must match the number of ',
+                         'Signal and Reference values.')
+          
+    # The temperature bins are imported as a 1D array
+    tbins = np.atleast_1d(tbins)
+    tValues = np.size(tbins)
+    
+    # The temperature array, is a 2D array. The # of "columns" must equal the
+    # length of temperature bins. The number of "rows" must equal the number of
+    # wavelengths.
+    tarray = np.atleast_2d(tarray)
+    r, c = tarray.shape
+    
+    if r != nValues:
+        raise ValueError('The number of rows in the temperature array must ',
+                         'match the number of Signal and Reference values.')
+
+    if c != tValues:
+        raise ValueError('The number of columns in the temperature array must ',
+                         'match the number of temperature bin values.')
+
     # find the indexes in the temperature bins corresponding to the values
     # bracketing the internal temperature.
     ind1 = np.nonzero(t-tint < 0)[0][-1]
     ind2 = np.nonzero(tint-t < 0)[0][0]
     T0 = tbins[ind1]    # set first bracketing temperature
     T1 = tbins[ind2]    # set second bracketing temperaure
+         
+    # Calculate the linear temperature correction.
+    dT0 = tarray[:,ind1]
+    dT1 = tarray[:,ind2]
+    deltaT = dT0 + ((tintrn - T0) / (T1 - T0)) * (dT1 - dT0)
+        
+    # Compute uncorrected egineering units (m^-1) from the Signal and Reference
+    # values.
+    eng = 1./0.25 * np.log(sig/ref)
     
-    # index through the wavelengths, applying the temperature correction and
-    # clear water offsets.
-    pd = np.zeros(nValues)
-    for i in range(nValues):
-        
-        # Calculate the linear temperature correction.
-        dT0 = tarray[i,ind1]
-        dT1 = tarray[i,ind2]
-        deltaT = dT0 + ((tintrn - T0) / (T1 - T0)) * (dT1 - dT0)
-        
-        # Compute uncorrected egineering units (m^-1) from the Signal and Reference
-        # values.
-        eng = 1./25. * np.log(sig[i]/ref[i])
-        
-        # Apply the clean water offsets
-        pd[i] = (off[i] - eng) - deltaT
-    
-    return pd
+    # Apply the clean water offsets
+    pd = off - eng - deltaT
+
+    return pd, deltaT
 
 
 def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
     """
     Description:
 
-        [TODO]
+        Apply the wavelength and channel temperature and salinity corrections.
         
     Implemented by:
 
@@ -251,7 +298,17 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
         
     Usage:
 
-        [TODO]
+        pd_ts = opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS)
+        
+            where
+        
+        pd_ts = temperature and salinity corrected data [m-1]
+        channel = which measurement channel is this? 'a' or 'c'
+        pd = uncorrected absoprtion/attenuation data [m-1]
+        wlngth = wavelengths at which measurements were made [nm]
+        tcal = factory calibration reference temperature [deg_C] 
+        T = In situ temperature from co-located CTD [deg_C]
+        PS = In situ practical salinity from co-located CTD [unitless]
     
     References:
     
@@ -272,11 +329,29 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
     # load the temperature and salinity correction coefficients table
     from ion_functions.data.opt_functions_tscor import tscor    
     
-    # [TODO] load and test inputs
+    # Absorption/attenuation and the wavelength values are imported as 1D
+    # arrays. They must be the same length.
+    pd = np.atleast_1d(pd)
+    wlngth = np.atleast_1d(wlngth)
+    lFlag = np.size(pd) == np.size(wlngth)
+    if ~lFlag:
+        raise ValueError('pd and wavelength arrays must be the same length')
+    
+    nValues = np.size(pd)
+       
+    # Temperature and practical salinity values must be 1D arrays and must be
+    # the same length as each other and pd.
+    T = np.atleast_1d(T)
+    PS = np.atleast_1d(PS)
+    lFlag = np.size(T) == np.size(PS) and np.size(T) == np.size(pd)
+    if ~lFlag:
+        raise ValueError('pd, T and PS arrays must be the same length')
 
     # apply the temperature and salinity corrections to each wavelength
-    pd_ts = np.zeros(len(wlngth))
-    for i in range(len(wlngth)):
+    pd_ts = np.zeros(nValues)
+    for i in range(nValues)):
+        
+        # find the temperature and salinity correction coefficients
         ind = np.nonzero(tscor[:,0]-wlngth[i] == 0)
         if np.atleast_1d(ind).size == 1:
             psi_t = tscor[ind[0][0],1]
@@ -306,11 +381,12 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
     return pd_ts
 
 
-def opt_scatter_corr(apd_ts, cpd_ts, awlngth, cwlngth, rwlngth=715.):
+def opt_scatter_corr(apd_ts, awlngth, cpd_ts, cwlngth, rwlngth=715.):
     """
     Description:
 
-        [TODO]
+        Apply the scattering correction to the temperature and salinity
+        corrected optical absorption coefficient. 
         
     Implemented by:
 
@@ -318,8 +394,20 @@ def opt_scatter_corr(apd_ts, cpd_ts, awlngth, cwlngth, rwlngth=715.):
         
     Usage:
 
-        [TODO]
-    
+        apd_ts_s = opt_scatter_corr(apd_ts, wlngth, cpd_ts, cwlngth, rwlngth)
+        
+            where
+            
+        apd_ts_s = optical absorption coefficient corrected for temperature,
+            salinity, and light scattering effects [m-1]
+        apd_ts = optical absorption coefficient corrected for temperature and
+            salinity effects [m-1]
+        awlngth = absorption channel wavelengths [nm]
+        cpd_ts = beam attenuation coefficient corrected for temperature and
+            salinity effects [m-1]
+        cwlngth = atteunation channel wavelengths [nm]
+        rwlngth = scattering reference wavelength (default is 715) [nm]
+        
     References:
     
         OOI (2013). Data Product Specification for Optical Beam Attenuation
@@ -336,7 +424,23 @@ def opt_scatter_corr(apd_ts, cpd_ts, awlngth, cwlngth, rwlngth=715.):
     """
     import numpy as np
 
-    # [TODO] load and test inputs
+    # Absorption and the absorption wavelength values are imported as 1D
+    # arrays. They must be the same length.
+    apd_ts = np.atleast_1d(apd_ts)
+    awlngth = np.atleast_1d(awlngth)
+    lFlag = np.size(apd_ts) == np.size(awlngth)
+    if ~lFlag:
+        raise ValueError('Absorption and absorption wavelength arrays must ',
+                         'be the same length')    
+
+    # Attenuation and the attenuation wavelength values are imported as 1D
+    # arrays. They must be the same length.
+    cpd_ts = np.atleast_1d(cpd_ts)
+    cwlngth = np.atleast_1d(cwlngth)
+    lFlag = np.size(cpd_ts) == np.size(cwlngth)
+    if ~lFlag:
+        raise ValueError('Attenuation and attenuation wavelength arrays must ',
+                         'be the same length')    
 
     # find the the 'a' channel wavelength closest to the reference wavelength
     # for scattering and set the 'a' scattering reference value.
