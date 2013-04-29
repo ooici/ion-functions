@@ -19,7 +19,7 @@ def opt_beam_attenuation(cref, csig, traw, cwl, coff, tcal, tbins, tc_arr,
     tintrn = opt_internal_temp(traw)
     
     # calculate the beam attenuation coefficient [m^-1]   
-    cpd = opt_pd_calc(cref, csig, coff, tintrn, tbins, tc_arr)
+    cpd, deltaT = opt_pd_calc(cref, csig, coff, tintrn, tbins, tc_arr)
     
     # correct the beam attenuation coefficient for temperature and salinity.
     cpd_ts = opt_tempsal_corr('c', cpd, cwl, tcal, T, PS)
@@ -39,7 +39,7 @@ def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
     tintrn = opt_internal_temp(traw)
     
     # calculate the optical absorption coefficient [m^-1]   
-    apd = opt_pd_calc(aref, asig, aoff, tintrn, tbins, ta_arr)
+    apd, deltaT = opt_pd_calc(aref, asig, aoff, tintrn, tbins, ta_arr)
     
     # correct the optical absorption coefficient for temperature and salinty.
     apd_ts = opt_tempsal_corr('a', apd, awl, tcal, T, PS)
@@ -230,19 +230,19 @@ def opt_pd_calc(ref, sig, offset, tintrn, tbins, tarray):
     
     # Raw reference and signal values are imported as 1D arrays. They must be
     # the same length.
-    ref = np.atleast_1d(ref)
-    sig = np.atleast_1d(sig)
-    lFlag = np.size(ref) == np.size(sig)
-    if ~lFlag:
+    ref = np.atleast_1d(ref).astype(np.float)
+    sig = np.atleast_1d(sig).astype(np.float)
+    lFlag = len(ref) != len(sig)
+    if lFlag:
         raise ValueError('Reference and Signal arrays must be the same length')
     
-    nValues = np.size(sig)
+    nValues = len(sig)
     
     # The offsets are imported as a 1D array. They must be the same length as
     # ref and sig.
     offset = np.atleast_1d(offset)
-    lFlag = np.size(offset) == nValues
-    if ~lFlag:
+    lFlag = len(offset) != nValues
+    if lFlag:
         raise ValueError('The number of offsets must match the number of ',
                          'Signal and Reference values.')
           
@@ -266,22 +266,22 @@ def opt_pd_calc(ref, sig, offset, tintrn, tbins, tarray):
 
     # find the indexes in the temperature bins corresponding to the values
     # bracketing the internal temperature.
-    ind1 = np.nonzero(t-tint < 0)[0][-1]
-    ind2 = np.nonzero(tint-t < 0)[0][0]
+    ind1 = np.nonzero(tbins-tintrn < 0)[0][-1]
+    ind2 = np.nonzero(tintrn-tbins < 0)[0][0]
     T0 = tbins[ind1]    # set first bracketing temperature
     T1 = tbins[ind2]    # set second bracketing temperaure
-         
+        
     # Calculate the linear temperature correction.
     dT0 = tarray[:,ind1]
     dT1 = tarray[:,ind2]
     deltaT = dT0 + ((tintrn - T0) / (T1 - T0)) * (dT1 - dT0)
-        
+    
     # Compute uncorrected egineering units (m^-1) from the Signal and Reference
     # values.
-    eng = 1./0.25 * np.log(sig/ref)
+    eng = 4. * np.log(sig/ref)
     
     # Apply the clean water offsets
-    pd = off - eng - deltaT
+    pd = (offset - (1./0.25) * np.log(sig/ref)) - deltaT 
 
     return pd, deltaT
 
@@ -333,8 +333,8 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
     # arrays. They must be the same length.
     pd = np.atleast_1d(pd)
     wlngth = np.atleast_1d(wlngth)
-    lFlag = np.size(pd) == np.size(wlngth)
-    if ~lFlag:
+    lFlag = len(pd) != len(wlngth)
+    if lFlag:
         raise ValueError('pd and wavelength arrays must be the same length')
     
     nValues = np.size(pd)
@@ -343,20 +343,20 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
     # the same length as each other and pd.
     T = np.atleast_1d(T)
     PS = np.atleast_1d(PS)
-    lFlag = np.size(T) == np.size(PS) and np.size(T) == np.size(pd)
-    if ~lFlag:
+    lFlag = len(T) != len(PS) and len(T) != len(pd)
+    if lFlag:
         raise ValueError('pd, T and PS arrays must be the same length')
 
     # apply the temperature and salinity corrections to each wavelength
     pd_ts = np.zeros(nValues)
-    for i in range(nValues)):
+    for i in range(nValues):
         
         # find the temperature and salinity correction coefficients
         ind = np.nonzero(tscor[:,0]-wlngth[i] == 0)
         if np.atleast_1d(ind).size == 1:
             psi_t = tscor[ind[0][0],1]
-            psi_sa = tscor[ind[0][0],2]
-            psi_sc = tscor[ind[0][0],3]
+            psi_sc = tscor[ind[0][0],2]
+            psi_sa = tscor[ind[0][0],3]
         else:
             ind1 = np.nonzero(tscor[:,0]-wlngth[i] < 0)[0][0]    
             ind2 = np.nonzero(wlngth[i]-tscor[:,0] < 0)[0][-1]
@@ -364,17 +364,17 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
             wv = wlngth[i]
             wv1 = tscor[ind1,0]; wv2 = tscor[ind2,0]
             pt1 = tscor[ind1,1]; pt2 = tscor[ind2,1]
-            psa1 = tscor[ind1,2]; psa2 = tscor[ind2,2]
-            psc1 = tscor[ind1,3]; psc2 = tscor[ind2,3]
+            psc1 = tscor[ind1,2]; psc2 = tscor[ind2,2]
+            psa1 = tscor[ind1,3]; psa2 = tscor[ind2,3]
             
             psi_t = pt1 + ((wv-wv1) / (wv2-wv1)) * (pt2 - pt1)
             psi_sa = psa1 + ((wv-wv1) / (wv2-wv1)) * (psa2 - psa1)
             psi_sc = psc1 + ((wv-wv1) / (wv2-wv1)) * (psc2 - psc1)
-    
+        
         if channel == 'a':
-            pd_ts[i] = pd[i] - psi_t * (T - tcal) + psi_sa * PS
+            pd_ts[i] = pd[i] - (psi_t * (T - tcal) + psi_sa * PS)
         elif channel == 'c':
-            pd_ts[i] = pd[i] - psi_t * (T - tcal) + psi_sc * PS
+            pd_ts[i] = pd[i] - (psi_t * (T - tcal) + psi_sc * PS)
         else:
             raise ValueError('Channel must be either "a" or "c"')
         
@@ -428,8 +428,8 @@ def opt_scatter_corr(apd_ts, awlngth, cpd_ts, cwlngth, rwlngth=715.):
     # arrays. They must be the same length.
     apd_ts = np.atleast_1d(apd_ts)
     awlngth = np.atleast_1d(awlngth)
-    lFlag = np.size(apd_ts) == np.size(awlngth)
-    if ~lFlag:
+    lFlag = len(apd_ts) != len(awlngth)
+    if lFlag:
         raise ValueError('Absorption and absorption wavelength arrays must ',
                          'be the same length')    
 
@@ -437,8 +437,8 @@ def opt_scatter_corr(apd_ts, awlngth, cpd_ts, cwlngth, rwlngth=715.):
     # arrays. They must be the same length.
     cpd_ts = np.atleast_1d(cpd_ts)
     cwlngth = np.atleast_1d(cwlngth)
-    lFlag = np.size(cpd_ts) == np.size(cwlngth)
-    if ~lFlag:
+    lFlag = len(cpd_ts) != len(cwlngth)
+    if lFlag:
         raise ValueError('Attenuation and attenuation wavelength arrays must ',
                          'be the same length')    
 
