@@ -347,30 +347,15 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
     if lFlag:
         raise ValueError('pd, T and PS arrays must be the same length')
 
-    # apply the temperature and salinity corrections to each wavelength
+    # apply the temperature and salinity corrections for each wavelength
     pd_ts = np.zeros(nValues)
-    for i in range(nValues):
-        
+    for i in range(nValues):        
         # find the temperature and salinity correction coefficients
-        ind = np.nonzero(tscor[:,0]-wlngth[i] == 0)
-        if np.atleast_1d(ind).size == 1:
-            psi_t = tscor[ind[0][0],1]
-            psi_sc = tscor[ind[0][0],2]
-            psi_sa = tscor[ind[0][0],3]
-        else:
-            ind1 = np.nonzero(tscor[:,0]-wlngth[i] < 0)[0][0]    
-            ind2 = np.nonzero(wlngth[i]-tscor[:,0] < 0)[0][-1]
-            
-            wv = wlngth[i]
-            wv1 = tscor[ind1,0]; wv2 = tscor[ind2,0]
-            pt1 = tscor[ind1,1]; pt2 = tscor[ind2,1]
-            psc1 = tscor[ind1,2]; psc2 = tscor[ind2,2]
-            psa1 = tscor[ind1,3]; psa2 = tscor[ind2,3]
-            
-            psi_t = pt1 + ((wv-wv1) / (wv2-wv1)) * (pt2 - pt1)
-            psi_sa = psa1 + ((wv-wv1) / (wv2-wv1)) * (psa2 - psa1)
-            psi_sc = psc1 + ((wv-wv1) / (wv2-wv1)) * (psc2 - psc1)
+        psi_t = tscor[wlngth[i]][0]
+        psi_sc = tscor[wlngth[i]][1]
+        psi_sa = tscor[wlngth[i]][2]
         
+        # apply based on channel
         if channel == 'a':
             pd_ts[i] = pd[i] - (psi_t * (T - tcal) + psi_sa * PS)
         elif channel == 'c':

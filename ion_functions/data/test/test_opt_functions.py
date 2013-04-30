@@ -38,49 +38,51 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         """
 
         # test inputs
-        tbins = np.array([14.490159, 15.493818, 16.489434, 17.510408, 18.507083, 19.499111, 20.49766])
+        tbins = np.array([14.5036, 15.5200, 16.4706, 17.4833, 18.4831, 19.5196, 20.5565])
         tarr = np.array([
-            [0.001607, 0.001476, 0.0, 0.0, 0.0, 0.0, 0.0],
-            [0.0, -0.000308, -0.000235, 0.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.000180, 0.000294, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, -0.000357, -0.000206, 0.0, 0.0],
-            [0.0, 0.0, 0.0, 0.0, -0.000630, -0.000514, 0.0],
-            [0.0, 0.0, 0.0, 0.0, 0.0, -0.000507, -0.000326]
+            [-0.004929, -0.004611, 0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004611, -0.004418, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, -0.004418, -0.004355, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, -0.004355, -0.004131, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, -0.004131, -0.003422, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, -0.003422, -0.002442]
         ])
         
-        sig = np.array([150, 200, 250, 300, 350, 325])
+        sig = np.array([50, 150, 250, 350, 450, 495])
         ref = np.array([500, 500, 500, 500, 500, 500])
+        traw = np.array([48750, 48355, 47950, 47535, 47115, 46684])
         wlngth = np.array([500., 550., 600., 650., 700., 715.])        
-        tint = np.array([15., 16., 17., 18., 19., 20.])
-        coff = np.array([0.8, 0.9, 0.8, 0.8, 0.6, 0.1])
-        aoff = np.array([0.7, 1.0, 1.0, 1.0, 1.0, 0.5])
         T = np.array([4., 8., 12., 16., 20., 24.])
         PS = np.array([10., 15., 20., 25., 30., 35])
         
         # expected outputs
-        deltaT = np.array([0.0015, -0.0003, 0.0002, -0.0003, -0.0006, -0.0004])
-        cpd = np.array([5.6144, 4.5654, 3.5724, 2.8436, 2.0273, 1.8235])
-        apd = np.array([5.5144, 4.6654, 3.7724, 3.0436, 2.4273, 2.2235])
-        cpd_ts = np.array([5.6153, 4.5663, 3.5809, 2.8439, 2.0327, 1.8150])
-        apd_ts = np.array([5.5148, 4.6656, 3.7802, 3.0430, 2.4318, 2.2141])
-        apd_ts_s = np.array([6.0724, 4.1146, 2.6745, 1.9382, 0.2176, 0.0000])
+        tint = np.array([15., 16., 17., 18., 19., 20.])
+        deltaT = np.array([-0.0048, -0.0045, -0.0044, -0.0042, -0.0038, -0.0030])
+        cpd = np.array([9.2251, 4.8304, 2.7870, 1.4409, 0.4352, 0.0532])
+        apd = np.array([9.3151, 4.9204, 2.8770, 1.5309, 0.5252, 0.1432])
+        cpd_ts = np.array([9.2260, 4.8312, 2.7955, 1.4412, 0.4406, 0.0447])
+        apd_ts = np.array([9.3155, 4.9206, 2.8848, 1.5303, 0.5297, 0.1338])
+        apd_ts_s = np.array([9.1811, 4.7864, 2.7507, 1.3965, 0.3959, 0.0000])
         
         # compute beam attenuation and optical absorption values
+        dgC = np.zeros(6)
         dT = np.zeros(6)
         c = np.zeros(6)
         c_ts = np.zeros(6)
         a = np.zeros(6)
         a_ts = np.zeros(6)
         a_ts_s = np.zeros(6)
-        for i in range(6):            
-            c[i], dT[i] = optfunc.opt_pd_calc(ref[i], sig[i], coff[i], tint[i], tbins, tarr[i])
+        for i in range(6):
+            dgC[i] = optfunc.opt_internal_temp(traw[i])
+            c[i], dT[i] = optfunc.opt_pd_calc(ref[i], sig[i], 0.01, dgC[i], tbins, tarr[i])
             c_ts[i] = optfunc.opt_tempsal_corr('c', c[i], wlngth[i], 20., T[i], PS[i])           
-            a[i], foo = optfunc.opt_pd_calc(ref[i], sig[i], aoff[i], tint[i], tbins, tarr[i])
+            a[i], foo = optfunc.opt_pd_calc(ref[i], sig[i], 0.10, dgC[i], tbins, tarr[i])
             a_ts[i] = optfunc.opt_tempsal_corr('a', a[i], wlngth[i], 20., T[i], PS[i])
             
         a_ts_s = optfunc.opt_scatter_corr(a_ts, wlngth, c_ts, wlngth)
         
         # compare calculated results to expected
+        np.testing.assert_allclose(dgC, tint, rtol=0.1, atol=0.1)
         np.testing.assert_allclose(dT, deltaT, rtol=1e-4, atol=1e-4)
         np.testing.assert_allclose(c, cpd, rtol=1e-4, atol=1e-4)
         np.testing.assert_allclose(a, apd, rtol=1e-4, atol=1e-4)
