@@ -238,7 +238,7 @@ def ctd_density(SP, t, p, lat, lon):
         SP = Practical Salinity (PSS-78) [unitless], (see
             1341-00040_Data_Product_Spec_PRACSAL)
         t = temperature (seawater temperature) [deg_C], (see
-            1341-00020_Data_Product_Spec_TEMPWAT)
+            1341-00010_Data_Product_Spec_TEMPWAT)
         p = pressure (sea pressure) [dbar], (see
             1341-00020_Data_Product_Spec_PRESWAT)
         lat = latitude where input data was collected [decimal degree]
