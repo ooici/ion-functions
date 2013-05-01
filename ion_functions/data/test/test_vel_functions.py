@@ -17,7 +17,7 @@ from ion_functions.data import vel_functions as velfunc
 class TestGenericFunctionsUnit(BaseUnitTestCase):
 
     ## No VELPTTU Nobska test data as of yet.
-    #def test_nobska_mag_correction(self):
+    def test_nobska_mag_correction(self):
     #    """
     #    Test the nobska_mag_correction function.
     #    
@@ -44,3 +44,4 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
     #    check_values = np.array([])
     #    self.assertTrue(np.allclose(output, check_values,
     #                                rtol=0, atol=1e-2))
+        pass
