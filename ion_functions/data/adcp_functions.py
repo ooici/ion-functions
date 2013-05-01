@@ -24,7 +24,8 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     
     # calculate the magnetic variation and correct the velocity profiles
     zflag = -1      # sets depth to negative for below sea surface
-    theta = magnetic_declination(lat, lon, z, dt, zflag)
+    zm = z / 10.    # scale decimeter depth input to meters
+    theta = magnetic_declination(lat, lon, zm, dt, zflag)
     uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
     
     # scale eastward velocity to m/s
@@ -47,7 +48,8 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     
     # calculate the magnetic variation and correct the velocity profiles
     zflag = -1      # sets depth to negative for below sea surface
-    theta = magnetic_declination(lat, lon, z, dt, zflag)
+    zm = z / 10.    # scale decimeter depth input to meters
+    theta = magnetic_declination(lat, lon, zm, dt, zflag)
     uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
     
     # scale northward velocity to m/s
@@ -90,6 +92,42 @@ def adcp_beam_error(b1, b2, b3, b4):
     return e
 
 
+def adcp_earth_eastward(u, v, z, lat, lon, dt):
+    """
+    Wrapper function to compute the Eastward Velocity Profile (VELPROF-VLE)
+    from the Earth coordinate transformed data.
+    """
+    # calculate the magnetic variation and correct the velocity profiles
+    zflag = -1      # sets depth to negative for below sea surface
+    zm = z / 10.    # scale decimeter depth input to meters
+    theta = magnetic_declination(lat, lon, zm, dt, zflag)
+    u_cor, v_cor = adcp_magvar(theta, u, v)
+    
+    # scale eastward velocity from [mm s-1] to [m s-1]
+    u_cor = u_cor / 1000.
+    
+    # return the Eastward Velocity Profile (VELPROF-VLE_L1)
+    return u_cor    
+
+
+def adcp_earth_northward(u,v,z,lat,lon,dt):
+    """
+    Wrapper function to compute the Northward Velocity Profile (VELPROF-VLN)
+    from the Earth coordinate transformed data.
+    """
+    # calculate the magnetic variation and correct the velocity profiles
+    zflag = -1      # sets depth to negative for below sea surface
+    zm = z / 10.    # scale decimeter depth input to meters
+    theta = magnetic_declination(lat, lon, zm, dt, zflag)
+    u_cor, v_cor = adcp_magvar(theta, u, v)
+    
+    # scale northward velocity from [mm s-1] to [m s-1]
+    v_cor = v_cor / 1000.
+    
+    # return the Northward Velocity Profile (VELPROF-VLN_L1)
+    return v_cor
+
+
 ##### ADCP Beam to Earth Transform and Magnetic Variation Correction Functions 
 def adcp_beam2ins(b1, b2, b3, b4):
     """
@@ -120,9 +158,6 @@ def adcp_beam2ins(b1, b2, b3, b4):
         b3 = "beam 3" velocity profiles in beam coordinates [mm s-1]
         b4 = "beam 4" velocity profiles in beam coordinates [mm s-1]
 
-    Example:
-
-
     References:
     
         OOI (2012). Data Product Specification for Velocity Profile and Echo
@@ -144,6 +179,7 @@ def adcp_beam2ins(b1, b2, b3, b4):
     e = d * (b1 + b2 - b3 - b4)
     
     return (u, v, w, e)
+
 
 def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
     """
@@ -177,9 +213,6 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
         vertical = instrument's vertical orientation (0 = downward looking and
             1 = upward looking)
         
-    Example:
-
-
     References:
     
         OOI (2012). Data Product Specification for Velocity Profile and Echo
@@ -265,9 +298,6 @@ def adcp_magvar(theta, uu, vv):
         vv = uncorrected northward velocity profiles in Earth coordinates
             [mm s-1]
     
-    Example:
-
-
     References:
     
         OOI (2012). Data Product Specification for Velocity Profile and Echo
@@ -282,8 +312,12 @@ def adcp_magvar(theta, uu, vv):
         [np.cos(theta_rad), np.sin(theta_rad)],
         [-np.sin(theta_rad), np.cos(theta_rad)]
     ])
-
-    nbins = len(uu)
+    
+    uu = np.atleast_1d([uu])
+    vv = np.atleast_1d([vv])
+    
+    #nbins = len(uu)
+    nbins = np.size(uu)
     uu_cor = np.zeros(nbins)
     vv_cor = np.zeros(nbins)
     for i in range(nbins):
