@@ -118,30 +118,32 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
     from sfl_functions_surface import tdat, sdat, cdat
     
     # select the optimal L0 Resistivity voltage
+    V_R = V_R1 * 5              # Option 1, default (V_R1 * 5)
     
-    if V_R2 < 0.75:
-        V_R = V_R3 / 5
-    elif V_R2 >= 0.75 and V_R2 < 3.90:
-        V_R = V_R2
-    else:
-        V_R = V_R1 * 5
+    vflag = V_R2 < 0.75         # Option 2 
+    V_R[vflag] = V_R3 / 5
+    
+    vflag = (V_R2 >= 0.75) & (V_R2 < 3.90)    # Option 3
+    V_R[vflag] = V_R2
     
     # convert resistivity to conductivity
     C = 1 / V_R
     
     # extract curves of constant temperature out of the data surfaces
+    Cl = np.zeros(len(C))
     Scurve = np.linspace(np.min(sdat), np.max(sdat), 100, endpoint='True')
-    Tcurve = np.zeros(len(Scurve)) + T
-    f = interpolate.interp2d(tdat, sdat, cdat, kind='linear',
-                             bounds_error='False', fill_value=np.nan)
-    Ccurve = f(Tcurve, Scurve)
-    
-    if np.all(np.isfinite(Ccurve)):
-        #now interpolate onto the Scurve/Ccurve
-        Cl = np.interp(C, Ccurve, Scurve, left=np.nan, right=np.nan) * 1000.
-    else:
-        Cl = np.nan
-    
+    f = interpolate.RectBivariateSpline(tdat, sdat, cdat)
+    for i in range(len(Cl)):
+        Tcurve = np.zeros(len(Scurve)) + T[i]
+        Ccurve = f(Tcurve, Scurve)
+
+        print Tcurve, Ccurve        
+        if np.all(np.isfinite(Ccurve)):
+            #now interpolate onto the Scurve/Ccurve
+            Cl[i] = np.interp(C[i], Ccurve, Scurve, left=np.nan, right=np.nan) * 1000.
+        else:
+            Cl[i] = np.nan
+        
     # reset NaN values generated in interpolation functions above to system
     # default of -99999999
     Cl[np.isnan(Cl)] = -99999999.

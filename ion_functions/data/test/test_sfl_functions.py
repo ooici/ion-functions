@@ -110,7 +110,7 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         Cl = test_array[:,7]
         
         # calculate the Vent Fluid Temperature
-        Clout = sflfunc.sfl_trhph_chlorconc(V_R1, V_R2, V_R3, T)
+        Clout = sflfunc.sfl_trhph_chloride(V_R1, V_R2, V_R3, T)
         
         # How'd we do?
         np.testing.assert_allclose(Clout, Cl, rtol=0.01, atol=0)
