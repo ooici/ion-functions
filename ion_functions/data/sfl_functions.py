@@ -110,37 +110,38 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
             1341-00150_Data_Product_SPEC_TRHPHTE_OOI.pdf)
     """
     import numpy as np
-    from scipy import interpolate
+    from scipy.interpolate import RectBivariateSpline
     
     # load sfl_functions_surface.py This loads the 3-dimensional calibration
     # surface of temperature, conductivity and chloride reproduced as numpy
     # arrays from Larson_2007surface.mat
-    from sfl_functions_surface import tdat, sdat, cdat
+    from ion_functions.data.sfl_functions_surface import tdat, sdat, cdat
     
     # select the optimal L0 Resistivity voltage
-    V_R = V_R1 * 5              # Option 1, default (V_R1 * 5)
+    V_R = V_R1 * 5.              # Option 1, default (V_R1 * 5)
     
     vflag = V_R2 < 0.75         # Option 2 
-    V_R[vflag] = V_R3 / 5
+    V_R[vflag] = V_R3[vflag] / 5.
     
     vflag = (V_R2 >= 0.75) & (V_R2 < 3.90)    # Option 3
-    V_R[vflag] = V_R2
+    V_R[vflag] = V_R2[vflag]
     
     # convert resistivity to conductivity
-    C = 1 / V_R
+    C = 1. / V_R
     
     # extract curves of constant temperature out of the data surfaces
     Cl = np.zeros(len(C))
-    Scurve = np.linspace(np.min(sdat), np.max(sdat), 100, endpoint='True')
-    f = interpolate.RectBivariateSpline(tdat, sdat, cdat)
+    Scurve = np.linspace(np.min(sdat), np.max(sdat), 100,
+                         endpoint='True')
+    f = RectBivariateSpline(tdat, sdat, cdat.T, kx=1, ky=1, s=0)
     for i in range(len(Cl)):
         Tcurve = np.zeros(len(Scurve)) + T[i]
         Ccurve = f(Tcurve, Scurve)
-
-        print Tcurve, Ccurve        
+        
         if np.all(np.isfinite(Ccurve)):
             #now interpolate onto the Scurve/Ccurve
-            Cl[i] = np.interp(C[i], Ccurve, Scurve, left=np.nan, right=np.nan) * 1000.
+            S = np.interp(C[i], Ccurve[0,:], Scurve, left=np.nan, right=np.nan)
+            Cl[i] = np.round(S * 1000.)
         else:
             Cl[i] = np.nan
         
