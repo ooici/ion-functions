@@ -111,7 +111,6 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
     """
     import numpy as np
     from scipy.interpolate import RectBivariateSpline
-    from scipy import ndimage
     
     # load sfl_functions_surface.py This loads the 3-dimensional calibration
     # surface of temperature, conductivity and chloride reproduced as numpy
