@@ -7,7 +7,7 @@
 @brief Module containing Dissolved Oxygen family functions
 """
 import numpy as np
-import pygsw as gsw
+import pygsw.vectors as gsw
 
 
 def do2_SVU(calphase, do_temp, csv):

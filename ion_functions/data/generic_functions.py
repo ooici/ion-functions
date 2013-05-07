@@ -12,6 +12,7 @@
 import datetime
 import time
 
+import numpy as np
 import geomag
 
 # Example function from ctd_functions.py
@@ -89,7 +90,8 @@ def magnetic_declination(lat, lon, z, ntp_timestamp, zflag=-1):
     # TODO: Handling depths; should I use Udunits? Zflag or other?
     
     # the magnetic declination at a given location & time
-    mag_dec = geomag.declination(lat, lon, z, datestamp)
+    declination = np.vectorize(geomag.declination)
+    mag_dec = declination(lat, lon, z, datestamp)
     return mag_dec
 
 
