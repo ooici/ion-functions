@@ -16,7 +16,7 @@ import numpy as np
 import geomag
 
 # Example function from ctd_functions.py
-def magnetic_declination(lat, lon, z, ntp_timestamp, zflag=-1):
+def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
     """
     Description:
 
@@ -41,10 +41,10 @@ def magnetic_declination(lat, lon, z, ntp_timestamp, zflag=-1):
             positive, West negative.
         lon = longitude of the instrument [decimal degrees]. North
             is positive, South negative.
-        z = depth or height of instrument relative to sealevel [meters].
-            Positive values only.
         ntp_timestamp = NTP time stamp from a data particle
             [secs since 1900-01-01].
+        z = depth or height of instrument relative to sealevel [meters].
+            Positive values only. Default value is 0.
         zflag = indicates whether to use z as a depth or height relative
             to sealevel. -1=depth (i.e. -z) and 1=height (i.e. +z). -1
             is the default

@@ -27,24 +27,11 @@ def ctd_sbe16plus_tempwat(t0, a0, a1, a2, a3):
 
             where
 
-        t0 = temp (temperature) [unitless] (see
-            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
-        
-        a0 = a0 (a0 calibration coefficient) [unitless] (see
-            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
-        
-        a1 = a1 (a1 calibration coefficient) [unitless] (see
-            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
-        
-        a2 = a2 (a2 calibration coefficient) [unitless] (see
-            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
-        
-        a3 = a3 (a3 calibration coefficient) [unitless] (see
-            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
-
-    Example:
-
-        [TODO]
+        t0 = raw temperature (TEMPWAT_L0) [counts]        
+        a0 = a0 calibration coefficient) [unitless]
+        a1 = a1 calibration coefficient) [unitless]
+        a2 = a2 calibration coefficient) [unitless]
+        a3 = a3 calibration coefficient) [unitless]
 
     References:
     
@@ -88,10 +75,6 @@ def ctd_sbe16plus_preswat(p0, therm0, ptempa0, ptempa1, ptempa2,
 
         [TODO]
         
-    Example:
-
-        [TODO]
-
     References:
     
         OOI (2012). Data Product Specification for Pressure (Depth). Document
@@ -129,22 +112,18 @@ def ctd_sbe16plus_condwat(c0, t1, p1, g, h, i, j, cpcor, ctcor):
 
     Usage:
 
-        t = ctd_sbe16plus_condwat(c0, t1, p1, g, h, i, j, cpcor, ctcor)
+        c = ctd_sbe16plus_condwat(c0, t1, p1, g, h, i, j, cpcor, ctcor)
 
             where
 
         [TODO]
         
-    Example:
-
-        [TODO]
-
     References:
     
-        OOI (2012). Data Product Specification for Water Temperature. Document
-            Control Number 1341-00010. https://alfresco.oceanobservatories.org/
+        OOI (2012). Data Product Specification for Conductivity. Document
+            Control Number 1341-00030. https://alfresco.oceanobservatories.org/
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
-            1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
+            1341-00030_Data_Product_SPEC_CONDWAT_OOI.pdf)
     """
     import numpy as np
 
@@ -183,16 +162,6 @@ def ctd_pracsal(c, t, p):
             1341-00030_Data_Product_Spec_TEMPWAT)
         p = pressure (sea pressure) [dbar], (see
             1341-00020_Data_Product_Spec_PRESWAT)
-
-    Example:
-
-        c = 5.407471
-        t = 28
-        p = 0
-
-        SP = ctd_pracsal(c, t, p)
-        print SP
-        33.4952
 
     References:
     
@@ -243,19 +212,7 @@ def ctd_density(SP, t, p, lat, lon):
             1341-00020_Data_Product_Spec_PRESWAT)
         lat = latitude where input data was collected [decimal degree]
         lon = longitude where input data was collected [decimal degree]
-    
-    Example:
-        
-        SP = 33.4952
-        t = 28
-        p = 0
-        lat = 15.00
-        lon = -55.00
-        
-        rho = ctd_density(SP, t, p, lat, lon)
-        print rho
-        1021.26508777
-        
+            
     References:
     
         OOI (2012). Data Product Specification for Density. Document Control
