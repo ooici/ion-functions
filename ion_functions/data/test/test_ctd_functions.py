@@ -16,6 +16,27 @@ from ion_functions.data import ctd_functions as ctdfunc
 @attr('UNIT', group='func')
 class TestCTDFunctionsUnit(BaseUnitTestCase):
 
+    def test_ctdfunc_isnan(self):
+        """
+        Test to ensure functions return a Nan, if inputs are NaN.
+        
+        Initial code by Luke Campbell, 2013-05-10
+        Implemented by Christopher Wingard, 2013-05-10
+        """
+        functions = [ctdfunc.ctd_sbe16plus_condwat,
+                     ctdfunc.ctd_sbe16plus_tempwat,
+                     ctdfunc.ctd_sbe16plus_preswat,
+                     ctdfunc.ctd_sbe16digi_preswat,
+                     ctdfunc.ctd_pracsal, ctdfunc.ctd_density]
+        for f in functions:
+            import inspect
+            argspec = inspect.getargspec(f)
+            
+            print f(*[np.nan for i in argspec.args])
+            retval = f(*[np.nan for i in argspec.args])
+            self.assertTrue(np.isnan(retval))
+
+
     def test_ctd_sbe16plus_tempwat(self):
         """
         Test ctd_sbe16plus_tempwat function.
@@ -29,14 +50,15 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
             
         Implemented by Christopher Wingard, April 2013
         """
+        # test inputs
         t0 = 248471
         a0 = 1.281651e-3
         a1 = 2.706002e-4
         a2 = -1.027561e-6
         a3 = 1.749446e-7
-        
-        t = ctdfunc.ctd_sbe16plus_tempwat(t0, a0, a1, a2, a3)
-        self.assertTrue(np.allclose(t, 22.544681, rtol=1e-6, atol=0))
+
+        tout = ctdfunc.ctd_sbe16plus_tempwat(t0, a0, a1, a2, a3)
+        self.assertTrue(np.allclose(tout, 22.544681, rtol=1e-6, atol=0))
     
 
     def test_ctd_sbe16plus_preswat(self):
@@ -115,8 +137,8 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         """
 
         c = np.array([5.407471, 5.407880, 5.041008, 3.463402, 3.272557, 3.273035])
-        t = np.array([28, 28, 20, 6, 3, 2])
-        p = np.array([0, 10, 150, 800, 2500, 5000])
+        t = np.array([28., 28., 20., 6., 3., 2.])
+        p = np.array([0., 10., 150., 800., 2500., 5000.])
 
         output = ctdfunc.ctd_pracsal(c,t,p)
         
@@ -154,8 +176,8 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         """
         
         SP = np.array([33.5, 33.5, 37, 34.9, 35, 35])
-        t = np.array([28, 28, 20, 6, 3, 2])
-        p = np.array([0, 10, 150, 800, 2500, 5000])
+        t = np.array([28., 28., 20., 6., 3., 2.])
+        p = np.array([0., 10., 150., 800., 2500., 5000.])
         lat = 15.00
         lon = -55.00
         

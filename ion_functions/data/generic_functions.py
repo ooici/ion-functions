@@ -66,7 +66,6 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
         World Magnetic Model (2010). http://www.ngdc.noaa.gov/geomag/WMM
         /DoDWMM.shtml
     """
-
     # convert ntp timestamp to unix timestamp and then a datetime object
     unix_timestamp = ntp_to_unix_time(ntp_timestamp)
     
@@ -135,6 +134,7 @@ def ntp_to_unix_time(ntp_timestamp):
     unix_timestamp = ntp_timestamp - NTP_DELTA
     return unix_timestamp
 
+
 def extract_parameter(in_array, index):
     """
     Description:
@@ -161,13 +161,13 @@ def extract_parameter(in_array, index):
     
         None.
     """
-
     out_value = in_array[index]
     return out_value
 
 
 def bilinear_interpolation(x, y, points):
-    '''Interpolate (x,y) from values associated with four points.
+    '''
+    Interpolate (x,y) from values associated with four points.
 
     The four points are a list of four triplets:  (x, y, value).
     The four points can be in any order.  They should form a rectangle.
@@ -178,7 +178,6 @@ def bilinear_interpolation(x, y, points):
         ...                         (10, 6, 150),
         ...                         (20, 6, 300)])
         165.0
-
     '''
     # See formula at:  http://en.wikipedia.org/wiki/Bilinear_interpolation
 
