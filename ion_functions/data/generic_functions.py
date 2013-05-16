@@ -16,7 +16,7 @@ import numpy as np
 import geomag
 
 # Example function from ctd_functions.py
-def magnetic_declination(lat, lon, z, ntp_timestamp, zflag=-1):
+def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
     """
     Description:
 
@@ -41,10 +41,10 @@ def magnetic_declination(lat, lon, z, ntp_timestamp, zflag=-1):
             positive, West negative.
         lon = longitude of the instrument [decimal degrees]. North
             is positive, South negative.
-        z = depth or height of instrument relative to sealevel [meters].
-            Positive values only.
         ntp_timestamp = NTP time stamp from a data particle
             [secs since 1900-01-01].
+        z = depth or height of instrument relative to sealevel [meters].
+            Positive values only. Default value is 0.
         zflag = indicates whether to use z as a depth or height relative
             to sealevel. -1=depth (i.e. -z) and 1=height (i.e. +z). -1
             is the default
@@ -66,7 +66,6 @@ def magnetic_declination(lat, lon, z, ntp_timestamp, zflag=-1):
         World Magnetic Model (2010). http://www.ngdc.noaa.gov/geomag/WMM
         /DoDWMM.shtml
     """
-
     # convert ntp timestamp to unix timestamp and then a datetime object
     unix_timestamp = ntp_to_unix_time(ntp_timestamp)
     
@@ -135,6 +134,7 @@ def ntp_to_unix_time(ntp_timestamp):
     unix_timestamp = ntp_timestamp - NTP_DELTA
     return unix_timestamp
 
+
 def extract_parameter(in_array, index):
     """
     Description:
@@ -161,13 +161,13 @@ def extract_parameter(in_array, index):
     
         None.
     """
-
     out_value = in_array[index]
     return out_value
 
 
 def bilinear_interpolation(x, y, points):
-    '''Interpolate (x,y) from values associated with four points.
+    '''
+    Interpolate (x,y) from values associated with four points.
 
     The four points are a list of four triplets:  (x, y, value).
     The four points can be in any order.  They should form a rectangle.
@@ -178,7 +178,6 @@ def bilinear_interpolation(x, y, points):
         ...                         (10, 6, 150),
         ...                         (20, 6, 300)])
         165.0
-
     '''
     # See formula at:  http://en.wikipedia.org/wiki/Bilinear_interpolation
 
