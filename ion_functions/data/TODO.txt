@@ -1,0 +1,29 @@
+This is a list of tasks that need action here in ion_functions, but are
+waiting for resolution of paired tasks elsewhere in ION.
+
+
+1. Change the wrapper functions in vel_functions to use actual depth of
+    instrument and not z=0 (sea level)
+    * waiting on the ability for the depth of an instrument to get put
+        into a coverage, probably by lookup value (for instruments that
+        do not report it).
+    2013-05-09 Stuart Pearce
+    
+2. Add unit tests for vel_functions.
+    * waiting on project scientists to create test values.  The DPS had
+        no test values listed.
+    2013-05-09 Stuart Pearce
+
+3. Add unit tests for do2_functions.
+    * waiting on project scientists to create test values that work.
+        The DPS had values that were off, even when using the provided
+        Matlab code.
+    2013-05-09 Stuart Pearce
+    
+4. Need to add an interpolation function (maybe) to do2_functions to be
+    be able to interpolate CTD records to DOSTA time stamp.
+    * waiting on the ability to grab collocated CTD values from a
+        complex coverage (multiple for interpolation).  This is more
+        relevant to the parameter functions in preload though.
+    2013-05-09 Stuart Pearce
+
