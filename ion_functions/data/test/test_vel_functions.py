@@ -15,6 +15,7 @@ from ion_functions.data import vel_functions as velfunc
 
 @attr('UNIT', group='func')
 class TestGenericFunctionsUnit(BaseUnitTestCase):
+    pass
 
     ## No VELPTTU Nobska test data as of yet.
     def test_nobska_mag_correction(self):
