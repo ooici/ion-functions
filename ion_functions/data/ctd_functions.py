@@ -267,11 +267,6 @@ def ctd_density(SP, t, p, lat, lon):
 
     # Calculate the Absolute Salinity (SA) from the Practical Salinity (SP)
     # [g kg^-1]
-    SA = gsw.sa_from_sp(SP, p, lon, lat)
-    
+    rho = gsw.ctd_density(SP,t,p,lat,lon)
     # Calculate the Conservative Temperature (CT) [deg_C]
-    CT = gsw.ct_from_t(SA, t, p)
-
-    # Calculate the Density (rho) [kg m^-3]
-    rho = gsw.rho(SA, CT, p)
     return rho
