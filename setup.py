@@ -27,12 +27,9 @@ setup(name = 'ion-functions',
             'ipython==0.13.0',
             'numexpr==2.1',
             'nose==1.1.2',
-            'pygsw==0.0.6',
+            'pygsw==0.0.9',
             'geomag==0.9',
             'scipy==0.11.0'
         ]
 )
-
-
-
 
