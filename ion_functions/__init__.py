@@ -8,6 +8,6 @@ from data.ctd_functions import ctd_sbe16plus_condwat, ctd_sbe16plus_preswat, ctd
 from data.opt_functions import opt_beam_attenuation, opt_optical_absorption
 from data.ph_functions import ph_434_intensity, ph_578_intensity, ph_thermistor, ph_phwater
 from data.sfl_functions import sfl_trhph_chlorconc, sfl_trhph_vfltemp
-from data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north, nobska_mag_corr_up, vel_mag_correction
+#from data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north, nobska_mag_corr_up, vel_mag_correction
 
 from data.generic_functions import extract_parameter, magnetic_declination, ntp_to_unix_time

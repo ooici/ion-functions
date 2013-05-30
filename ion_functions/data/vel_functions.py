@@ -61,7 +61,7 @@ def nortek_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
 
 
 # proper functions
-def vel_mag_correction(uu, vv, lat, lon, timestamp, z
+def vel_mag_correction(uu, vv, lat, lon, timestamp, z,
                            zflag=-1, dirstr='all'):
     """
     Description:
