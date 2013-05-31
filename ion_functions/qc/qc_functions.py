@@ -7,17 +7,29 @@
 @brief Module containing QC functions ported from matlab samples in DPS documents
 """
 
-## DO NOT IMPORT AT THIS LEVEL - Perform imports within each function
+import time
+import numpy as np
+from ion_functions import utils
+from scipy.interpolate import LinearNDInterpolator
+# import OOI logging utility
+try:
+    from ooi.logging import log
+except ImportError:
+    from logging import log
+
+
 def dataqc_globalrangetest_minmax(dat, dat_min, dat_max):
     '''
     Python wrapper for dataqc_globalrangetest
     Combines the min/max arguments into list for dataqc_globalrangetest
     '''
-    return dataqc_globalrangetest(dat, [dat_min,dat_max])
+    return dataqc_globalrangetest(dat, [dat_min, dat_max])
+
 
 def dataqc_globalrangetest(dat, datlim):
     """
-    Global Range Quality Control Algorithm as defined in the DPS for SPEC_GLBLRNG - DCN 1341-10004
+    Global Range Quality Control Algorithm as defined in the DPS for
+    SPEC_GLBLRNG - DCN 1341-10004
     https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/466c4915-c777-429a-8946-c90a8f0945b0/1341-10004_Data_Product_SPEC_GLBLRNG_OOI.pdf
 
     DATAQC_GLOBALRANGETEST   Data quality control algorithm testing
@@ -65,9 +77,6 @@ def dataqc_globalrangetest(dat, datlim):
         out=(dat>=datlim(1))&(dat<=datlim(2))
 
     """
-    import numpy as np
-    from ion_functions import utils
-
     dat = np.atleast_1d(dat)
     datlim = np.atleast_1d(datlim)
 
@@ -102,7 +111,7 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
 
         2012-07-17: DPS authored by Mathias Lankhorst. Example code provided
         for Matlab.
-        
+
         2013-04-06: Christopher Wingard. Initial python implementation.
 
     Usage:
@@ -112,8 +121,8 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
             where
 
         qcflag = Boolean, 0 if value is outside range, else = 1.
-        
-        dat = input data set, a numeric real scalar or column vector. 
+
+        dat = input data set, a numeric real scalar or column vector.
         z = location of measurement dat. must have same # of rows as dat and
             same # of columns as datlimz
         datlim = two column array with the minimum (column 1) and maximum
@@ -125,10 +134,10 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
 
         dat = np.array([3.5166, 8.3083, 5.8526, 5.4972, 9.1719,
                         2.8584, 7.5720, 7.5373, 3.8045, 5.6782])
-    
+
         z = np.array([0.1517, 0.1079, 1.0616, 1.5583, 1.8680,
                       0.2598, 1.1376, 0.9388, 0.0238, 0.6742])
-    
+
         datlim = np.array([[0, 2], [0, 2], [1, 8], [1, 9], [1, 10]]);
         datlimz = np.array([0, 0.5, 1, 1.5, 2]);
 
@@ -136,17 +145,12 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
         qcflag = [0, 0, 1, 1, 1, 0, 1, 0, 0, 0]
 
     References:
-    
+
         OOI (2012). Data Product Specification for Local Range Test. Document
             Control Number 1341-10005. https://alfresco.oceanobservatories.org/
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-10005_Data_Product_SPEC_LOCLRNG_OOI.pdf)
     """
-    import numpy as np
-    import warnings
-    from ion_functions import utils
-    from scipy.interpolate import LinearNDInterpolator
-
     # check inputs: dat
     if not utils.isnumeric(dat).all():
         raise ValueError('\'dat\' must be numeric')
@@ -156,14 +160,14 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
 
     if not utils.isreal(dat).all():
         raise ValueError('\'dat\' must be real')
-    
+
     # check inputs: z
     if not utils.isnumeric(z).all():
         raise ValueError('\'z\' must be numeric')
 
     if not utils.isreal(z).all():
         raise ValueError('\'z\' must be real')
-    
+
     # check inputs: datlim
     if not utils.isnumeric(datlim).all():
         raise ValueError('\'datlim\' must be numeric')
@@ -173,14 +177,14 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
 
     if not utils.isreal(datlim).all():
         raise ValueError('\'datlim\' must be real')
-    
+
     # check inputs: datlimz
     if not utils.isnumeric(datlimz).all():
         raise ValueError('\'datlimz\' must be numeric')
-   
+
     if not utils.isreal(datlimz).all():
         raise ValueError('\'datlimz\' must be real')
-        
+
     # test size and shape of the input arrays datlimz and datlim, setting test
     # variables.
     array_size = datlimz.shape
@@ -190,18 +194,18 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
     else:
         numlim = array_size[0]
         ndim = array_size[1]
-       
+
     array_size = datlim.shape
     tmp1 = array_size[0]
     tmp2 = array_size[1]
     if tmp1 != numlim:
-        raise ValueError('\'datlim\' and \'datlimz\' must ' \
+        raise ValueError('\'datlim\' and \'datlimz\' must '
                          'have the same number of rows.')
-        
+
     if tmp2 != 2:
-        raise ValueError('\'datlim\' must be structured as 2-D array ' \
+        raise ValueError('\'datlim\' must be structured as 2-D array '
                          'with exactly 2 columns and 1 through N rows.')
-        
+
     # test the size and shape of the z input array
     array_size = z.shape
     if len(array_size) == 1:
@@ -212,43 +216,43 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
         tmp2 = array_size[1]
 
     if tmp2 != ndim:
-        raise ValueError('\'z\' must have the same number of columns ' \
+        raise ValueError('\'z\' must have the same number of columns '
                          'as \'datlimz\'.')
-             
+
     if num != dat.size:
-        raise ValueError('Len of \'dat\' must match number of ' \
+        raise ValueError('Len of \'dat\' must match number of '
                          'rows in \'z\'')
-    
+
     # test datlim, values in column 2 must be greater than those in column 1
-    if not all(datlim[:,1] > datlim[:,0]):
-        warnings.warn('Second column values of \'datlim\' should be ' \
-                      'greater than first column values.')
-    
+    if not all(datlim[:, 1] > datlim[:, 0]):
+        log.warn('Second column values of \'datlim\' should be '
+                 'greater than first column values.')
+
     # calculate the upper and lower limits for the data set
     if ndim == 1:
         # determine the lower limits using linear interpolation
-        lim1 = np.interp(z, datlimz, datlim[:,0], left=np.nan, right=np.nan)
+        lim1 = np.interp(z, datlimz, datlim[:, 0], left=np.nan, right=np.nan)
         # determine the upper limits using linear interpolation
-        lim2 = np.interp(z, datlimz, datlim[:,1], left=np.nan, right=np.nan)
+        lim2 = np.interp(z, datlimz, datlim[:, 1], left=np.nan, right=np.nan)
     else:
         # Compute Delaunay Triangulation and use linear interpolation to
         # determine the N-dimensional lower limits
         F = LinearNDInterpolator(z, dat)
-        points = np.reshape(np.array([datlimz, datlim[:,0]]),
+        points = np.reshape(np.array([datlimz, datlim[:, 0]]),
                             [numlim, ndim+1])
         lim1 = F(points)
         # Compute Delaunay Triangulation and use linear interpolation to
         # determine the N-dimensional upper limits
         F = LinearNDInterpolator(z, dat)
-        points = np.reshape(np.array([datlimz, datlim[:,1]]),
+        points = np.reshape(np.array([datlimz, datlim[:, 1]]),
                             [numlim, ndim+1])
         lim2 = F(points)
-    
+
     # replace NaNs from above interpolations
     ff = (np.isnan(lim1)) | (np.isnan(lim2))
-    lim1[ff] = np.max(datlim[:,1])
-    lim2[ff] = np.min(datlim[:,0])
-    
+    lim1[ff] = np.max(datlim[:, 1])
+    lim2[ff] = np.min(datlim[:, 0])
+
     # compute the qcflags
     qcflag = (dat >= lim1) & (dat <= lim2)
     return qcflag.astype('int8')
@@ -256,7 +260,8 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
 
 def dataqc_spiketest(dat, acc, N=5, L=5):
     """
-    Spike Test Quality Control Algorithm as defined in the DPS for SPEC_SPKETST - DCN 1341-10006
+    Spike Test Quality Control Algorithm as defined in the DPS for SPEC_SPKETST
+    - DCN 1341-10006
     https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/eadad62c-ec80-403d-b3d3-c32c79f9e9e4/1341-10006_Data_Product_SPEC_SPKETST_OOI.pdf
 
     DATAQC_SPIKETEST   Data quality control algorithm testing a time
@@ -404,10 +409,6 @@ def dataqc_spiketest(dat, acc, N=5, L=5):
     end
 
     """
-
-    import numpy as np
-    from ion_functions import utils
-
     dat = np.atleast_1d(dat)
 
     if not utils.isnumeric(dat).all():
@@ -419,11 +420,11 @@ def dataqc_spiketest(dat, acc, N=5, L=5):
     if not utils.isreal(dat).all():
         raise ValueError('\'dat\' must be real')
 
-    if isinstance(acc,np.ndarray):
+    if isinstance(acc, np.ndarray):
         acc = acc[0]
-    if isinstance(N,np.ndarray):
+    if isinstance(N, np.ndarray):
         N = N[0]
-    if isinstance(L,np.ndarray):
+    if isinstance(L, np.ndarray):
         L = L[0]
 
     for k, arg in {'acc': acc, 'N': N, 'L': L}.iteritems():
@@ -453,7 +454,7 @@ def dataqc_spiketest(dat, acc, N=5, L=5):
 
     if ll >= L:
 
-        for ii in xrange(i1 - 1,i2):  # for ii=i1:i2
+        for ii in xrange(i1 - 1, i2):  # for ii=i1:i2
             tmpdat = np.hstack((dat[ii - L2:ii], dat[ii + 1:ii + 1 + L2]))  # tmpdat=dat(ii+[-L2:-1 1:L2]);
             R = tmpdat.max() - tmpdat.min()  # R=max(tmpdat)-min(tmpdat);
             R = np.max([R, acc])  # R=max([R acc]);
@@ -483,7 +484,8 @@ def dataqc_spiketest(dat, acc, N=5, L=5):
 
 def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3):
     """
-    Stuck Value Test Quality Control Algorithm as defined in the DPS for SPEC_TRNDTST - DCN 1341-10007
+    Stuck Value Test Quality Control Algorithm as defined in the DPS for
+    SPEC_TRNDTST - DCN 1341-10007
     https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/c33037ab-9dd5-4615-8218-0957f60a47f3/1341-10007_Data_Product_SPEC_TRNDTST_OOI.pdf
 
     DATAQC_POLYTRENDTEST Data quality control algorithm testing
@@ -573,10 +575,6 @@ def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3):
         out=1;
     end
     """
-
-    import numpy as np
-    from ion_functions import utils
-
     dat = np.atleast_1d(dat)
 
     if not utils.isnumeric(dat).all():
@@ -614,7 +612,8 @@ def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3):
 
 def dataqc_stuckvaluetest(x, reso, num=10):
     """
-    Stuck Value Test Quality Control Algorithm as defined in the DPS for SPEC_STUCKVL - DCN 1341-10008
+    Stuck Value Test Quality Control Algorithm as defined in the DPS for
+    SPEC_STUCKVL - DCN 1341-10008
     https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/a04acb56-7e27-48c6-a40b-9bb9374ee35c/1341-10008_Data_Product_SPEC_STUCKVL_OOI.pdf
 
     DATAQC_STUCKVALUETEST   Data quality control algorithm testing a
@@ -701,10 +700,6 @@ def dataqc_stuckvaluetest(x, reso, num=10):
     end
     out=logical(out);
     """
-
-    import numpy as np
-    from ion_functions import utils
-
     dat = np.atleast_1d(x)
 
     if not utils.isnumeric(dat).all():
@@ -716,9 +711,9 @@ def dataqc_stuckvaluetest(x, reso, num=10):
     if not utils.isreal(dat).all():
         raise ValueError('\'x\' must be real')
 
-    if isinstance(reso,np.ndarray):
+    if isinstance(reso, np.ndarray):
         reso = reso[0]
-    
+
     if isinstance(num, np.ndarray):
         num = num[0]
 
@@ -754,44 +749,44 @@ def dataqc_stuckvaluetest(x, reso, num=10):
 def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
     """
     Description
-    
+
         Data quality control algorithm testing if changes between successive
         data points fall within a certain range.
-        
+
         Input data dat are given as a function of coordinate x. The algorithm
         will flag dat values as bad if the change deltaDAT/deltaX between
         successive dat values exceeds thresholds given in ddatdx. Once the
         threshold is exceeded, following dat are considered bad until a dat
         value returns to within toldat of the last known good value.
-        
+
         It is possible to remove data points that are too close together in x
         coordinates (use mindx).
-        
+
         By default, the first value of dat is considered good. To change this,
         use startdat and toldat to set as the first good data point the first
         one that comes within toldat of startdat.
-        
+
     Implemented by:
 
         2012-07-17: DPS authored by Mathias Lankhorst. Example code provided
         for Matlab.
-        
+
         2013-04-06: Christopher Wingard. Initial python implementation.
 
     Usage:
 
         outdat, outx, outqc = dataqc_gradienttest(dat, x, ddatdx, mindx,
                                                   startdat, toldat);
-    
+
             where
-            
+
         outdat = same as dat except that NaNs and values not meeting mindx are
             removed.
         outx = same as x except that NaNs and values not meeting mindx are
             removed.
         outqc = output quality control flags for outdat. 0 means bad data, 1
             means good data.
-        
+
         dat = input dataset, a numeric real vector.
         x = coordinate (e.g. time, distance) along which dat is given. Must be
             of the same size as dat and strictly increasing.
@@ -805,100 +800,96 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
         toldat = tolerance value (scalar) for dat; threshold to within which 
             dat must return to be counted as good, after exceeding a ddatdx
             threshold detected bad data.
-    
+
     Examples:
-    
+
         Ordinary use, default mindx and startdat:
-    
+
             outdat, outx, outqc = dataqc_gradienttest([3, 5, 98, 99, 4], 
                                                       np.arange(5)+1,
                                                       [-50, 50], [], [], 5)
             outdat = [3, 5, 98, 99, 4]
             outx = [1, 2, 3, 4, 5]
             outqc = [1, 1, 0, 0, 1]
-        
+
         Alternate startdat to swap good/bad segments:
-    
+
             outdat, outx, outqc = dataqc_gradienttest([3, 5, 98, 99, 4], 
                                                       np.arange(5)+1,
                                                       [-50, 50], [], 100, 5)
             outdat = [3, 5, 98, 99, 4]
             outx = [1, 2, 3, 4, 5]
             outqc = [0, 0, 1, 1, 0]
-        
+
         Alternate mindx to remove certain x and dat:
-        
+
             outdat, outx, outqc = dataqc_gradienttest([3, 5, 98, 99, 4], 
                                                       [1, 2, 3, 3.1, 4],
                                                       [-50, 50], 0.2, [], 5)
             outdat = [3, 5, 98, 4]
             outx = [1, 2, 3, 4]
             outqc = [1, 1, 0, 1]
-    
+
     References:
-    
+
         OOI (2012). Data Product Specification for Gradient Test. Document
             Control Number 1341-100010.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
             1341-10010_Data_Product_SPEC_GRDTEST_OOI.pdf)
     """
-    import numpy as np
-    import warnings
-    from ion_functions import utils
-    
     # Sanity checks on dat and x
     dat = np.atleast_1d(dat)
     x = np.atleast_1d(x)
     if not utils.isvector(dat) or not utils.isvector(x):
         raise ValueError('\'dat\' and \'x\' must be vectors')
-    
+
     if len(dat) != len(x):
         raise ValueError('\'dat\' and \'x\' must be of equal len')
-    
+
     if not all(np.diff(x) > 0):
         raise ValueError('\'x\' must be montonically increasing')
-    
+
     # remove any NaNs from input vectors
     dat = dat[~np.isnan(dat)]
     x = x[~np.isnan(x)]
-    
+
     # flatten input vectors
     dat = dat.flatten()
     x = x.flatten()
-    
+
     # Check & set mindx
     if utils.isempty(mindx):
         mindx = np.nan
-    
+
     if np.isnan(mindx):
         mindx = 0
-    
+
     if not utils.isscalar(mindx):
         raise ValueError('\'mindx\' must be scalar, NaN, or empty.')
-    
+
     # Apply mindx
     dx = np.diff(x) > mindx
     ff = dx.nonzero()[0]
-    gg = np.hstack((np.zeros(1),ff+1)).astype('int8')
+    gg = np.hstack((np.zeros(1), ff+1)).astype('int8')
     dat = dat[gg]
     x = x[gg]
-    
+
     # Confirm that there are still data points left, else abort:
     outqc = np.zeros(len(dat), dtype='int8')
     ll = len(dat)
     if ll <= 1:
-        warning.warn('\'dat\' and \'x\' contain too few points for ' \
-                     'meaningful analysis.')
+        log.warn('\'dat\' and \'x\' contain too few points for '
+                 'meaningful analysis.')
         outqc = outqc.astype('int8')
         outdat = dat;
         outx = x
         return outdat, outx, outqc
-    
+
     # Check & set startdat, including output for data point 1
     if utils.isempty(startdat):
         startdat = np.nan
-    
+
     if np.isnan(startdat):
         startdat = dat[0]
         outqc[0] = 1
@@ -908,10 +899,10 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
             outqc[0] = 1
         else:
             outqc[0] = 0
-    
+
     if not utils.isscalar(startdat):
         raise ValueError('\'startdat\' must be scalar, NaN, or empty.')
-    
+
     # Main loop, checking for data points 2 through ll
     ii = 1
     while ii < ll:
@@ -929,18 +920,18 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
                 outqc[ii] = 1
                 startdat = dat[ii]
         ii = ii+1
-    
+
     outqc = outqc.astype('int8')
     outdat = dat
     outx = x
-    
+
     return outdat, outx, outqc
 
 
 def dataqc_solarelevation(lon, lat, dt):
     """
     Description
-    
+
         Computes instantaneous no-sky solar radiation and altitude from date
         and time stamp and position data. It is put together from expressions
         taken from Appendix E in the 1978 edition of Almanac for Computers,
@@ -950,27 +941,27 @@ def dataqc_solarelevation(lon, lat, dt):
         constant (1368.0 W/m^2) represents a mean of satellite measurements
         made over the last sunspot cycle (1979-1995) taken from Coffey et al
         (1995), Earth System Monitor, 6, 6-10. 
-        
+
         This code is a python implementation of soradna1.m available in Air-Sea
         Toolbox.
-        
+
     Implemented by:
-    
+
         1997-03-08: Version 1.0 (author unknown) of soradna1.m.
         1998-08-28: Version 1.1 (author unknown) of soradna1.m.
         1999-08-05: Version 2.0 (author unknown) of soradna1.m.
-        
+
         2013-04-07: Christopher Wingard. Initial python implementation. Note,
         this function is derived from old, unmaintained code. More robust
         implementations exist (e.g. PyEphem and PySolar) that will probably
         calculate these values more accurately. 
-        
+
     Usage:
-    
+
         z, sorad = dataqc_solarelevation(lon, lat, dt)
 
             where
-            
+
         z = solar altitude [degrees]
         sorad = no atmosphere solar radiation [W m^-2]
 
@@ -979,91 +970,95 @@ def dataqc_solarelevation(lon, lat, dt):
         dt = date and time stamp in UTC [seconds since 1970-01-01]
 
     Examples
-    
+
         dt = 1329177600     # 2012-02-14 00:00:00
         z, sorad = dataqc_solarelevation(120, 30, dt)
         z = 15.1566, sorad = 366.8129
-        
+
         OOI (2012). Data Product Specification for Solar Elevation. Document
             Control Number 1341-100011.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
-            1341-10011_Data_Product_SPEC_SOLRELV_OOI.pdf)        
+            1341-10011_Data_Product_SPEC_SOLRELV_OOI.pdf)
     """
-    import time
-    import numpy as np
-    from ion_functions import utils
-        
+
     # Test lengths and types of inputs. Latitude and longitude must be the same
     # size and can either be a scalar or a vecotr. The date and time stamp
     # can also be either a scalar or a vector. If all three inputs are vectors,
     # they must be of the same length.
     if len(lon) != len(lat):
         raise ValueError('\'lon\' and \'lat\' must be the same size')
-    
+
     if utils.isvector(lon) and utils.isvector(lat) and utils.isvector(dt):
         # test their lengths
-        if not len(lon) ==  len(lat) == len(dt):
-            raise ValueError ('If all inputs are vectors, these must all ' \
-                          'be of the same length')
-        
+        if not len(lon) == len(lat) == len(dt):
+            raise ValueError('If all inputs are vectors, these must all '
+                             'be of the same length')
+
     # set constants (using values from as_consts.m)
     # ------ short-wave flux calculations
     #   the solar constant [W m^-2] represents a mean of satellite measurements
     #   made over the last sunspot cycle (1979-1995), taken from Coffey et al.
     #   (1995), Earth System Monitor, 6, 6-10.
     solar_const = 1368.0
-        
+
     # Create a time tuple in UTC from the Epoch time input, and then create
     # scalars or numpy arrays of time elements for subsequent calculations.
     ldt = len(dt)
-    yy = np.zeros(ldt, dtype=np.int); mn = np.zeros(ldt, dtype=np.int)
-    dd = np.zeros(ldt, dtype=np.int); hh = np.zeros(ldt, dtype=np.int)
-    mm = np.zeros(ldt, dtype=np.int); ss = np.zeros(ldt, dtype=np.int)
+    yy = np.zeros(ldt, dtype=np.int)
+    mn = np.zeros(ldt, dtype=np.int)
+    dd = np.zeros(ldt, dtype=np.int)
+    hh = np.zeros(ldt, dtype=np.int)
+    mm = np.zeros(ldt, dtype=np.int)
+    ss = np.zeros(ldt, dtype=np.int)
     for i in range(ldt):
         # create time tuple in UTC
         gtime = time.gmtime(dt[i])
         # create scalar elements
-        yy[i] = gtime[0]; mn[i] = gtime[1]; dd[i] = gtime[2]
-        hh[i] = gtime[3]; mm[i] = gtime[4]; ss[i] = gtime[5]
-    
+        yy[i] = gtime[0]
+        mn[i] = gtime[1]
+        dd[i] = gtime[2]
+        hh[i] = gtime[3]
+        mm[i] = gtime[4]
+        ss[i] = gtime[5]
+
     #constants used in function
     deg2rad = np.pi / 180.0
     rad2deg = 1 / deg2rad
-    
+
     # compute Universal Time in hours
     utime = hh + (mm + ss / 60.0) / 60.0
-    
+
     # compute Julian ephemeris date in days (Day 1 is 1 Jan 4713 B.C. which
     # equals -4712 Jan 1)
     jed = (367.0 * yy - np.fix(7.0*(yy+np.fix((mn+9)/12.0))/4.0)
            + np.fix(275.0*mn/9.0) + dd + 1721013 + utime / 24.0)
-    
+
     # compute interval in Julian centuries since 1900
     jc_int = (jed - 2415020.0) / 36525.0
-    
+
     # compute mean anomaly of the sun
     ma_sun = 358.475833 + 35999.049750 * jc_int - 0.000150 * jc_int**2
     ma_sun = (ma_sun - np.fix(ma_sun/360.0) * 360.0) * deg2rad
-        
+
     # compute mean longitude of sun
     ml_sun = 279.696678 + 36000.768920 * jc_int + 0.000303 * jc_int**2
     ml_sun = (ml_sun - np.fix(ml_sun/360.0) * 360.0) * deg2rad
-    
+
     # compute mean anomaly of Jupiter
     ma_jup = 225.444651 + 2880.0 * jc_int + 154.906654 * jc_int
     ma_jup = (ma_jup - np.fix(ma_jup/360.0) * 360.0) * deg2rad
-    
+
     # compute longitude of the ascending node of the moon's orbit
     an_moon = (259.183275 - 1800 * jc_int - 134.142008 * jc_int
                + 0.002078 * jc_int**2)
     an_moon = (an_moon - np.fix(an_moon/360.0) * 360.0 + 360.0) * deg2rad
-    
+
     # compute mean anomaly of Venus
     ma_ven = (212.603219 + 58320 * jc_int + 197.803875 * jc_int
               + 0.001286 * jc_int**2)
     ma_ven = (ma_ven - np.fix(ma_ven/360.0) * 360.0) * deg2rad
-    
+
     # compute sun theta
     theta = (0.397930 * np.sin(ml_sun) + 0.009999 * np.sin(ma_sun-ml_sun)
              + 0.003334 * np.sin(ma_sun+ml_sun) - 0.000208 * jc_int
@@ -1073,12 +1068,12 @@ def dataqc_solarelevation(lon, lat, dt):
              * np.sin(2*ma_sun-ml_sun) - 0.000010
              * np.cos(ma_sun-ml_sun-ma_jup) - 0.000010 * jc_int
              * np.sin(ma_sun+ml_sun))
-    
+
     # compute sun rho
     rho = (1.000421 - 0.033503 * np.cos(ma_sun) - 0.000140 * np.cos(2*ma_sun)
            + 0.000084 * jc_int * np.cos(ma_sun) - 0.000033
            * np.sin(ma_sun-ma_jup) + 0.000027 * np.sin(2.*ma_sun-2.*ma_ven))
-    
+
     # compute declination
     decln = np.arcsin(theta/np.sqrt(rho))
 
@@ -1093,30 +1088,30 @@ def dataqc_solarelevation(lon, lat, dt):
     # compute local hour angle from global hour angle
     gha = 15.0 * (utime-12) + 15.0 * eqt / 60.0
     lha = gha - lon
-    
+
     # compute radius vector
     rv = np.sqrt(rho)
-    
+
     # compute solar altitude
     sz = (np.sin(deg2rad*lat) * np.sin(decln) + np.cos(deg2rad*lat)
           * np.cos(decln) * np.cos(deg2rad*lha))
     z = rad2deg * np.arcsin(sz)
-    
+
     # compute solar radiation outside atmosphere (defaults to 0 when solar
     # altitude is below the horizon)
-    sorad = (solar_const / rv**2)  * np.sin(deg2rad * z)
-    sorad[z<0] = 0
-        
+    sorad = (solar_const / rv**2) * np.sin(deg2rad * z)
+    sorad[z < 0] = 0
+
     return (z, sorad)
 
 
 def dataqc_propogateflags(inflags):
     """
     Description:
-    
+
         Propagate "bad" qc flags (from an arbitrary number of source datasets)
         to another (derived) dataset.
-    
+
         Consider data from an oceanographic CTD (conductivity, temperature, and
         pressure) instrument. From these three time series, you want to compute
         salinity. If any of the three source data (conductivity, temperature,
@@ -1124,48 +1119,45 @@ def dataqc_propogateflags(inflags):
         feed your QC assessment of the former three into this routine, which
         will then give you the combined assessment for the derived (here:
         salinity) property.
-    
+
     Implemented by:
-    
+
         2012-07-17: DPS authored by Mathias Lankhorst. Example code provided
         for Matlab.
-        
+
         2013-04-06: Christopher Wingard. Initial python implementation.
-    
+
     Usage:
-    
+
         outflag = dataqc_propogateflags(inflags)
-    
+
             where
-            
+
         outflag = a 1-by-N boolean vector that contains 1 where all of the
             inflags are 1, and 0 otherwise.
-    
+
         inflags = an M-by-N boolean matrix, where each of the M rows contains
             flags of an independent data set such that "0" means bad data and
             "1" means good data.
-    
+
     Examples:
-    
+
         inflags = np.array([[0, 0, 1, 1],
                             [1, 0, 1, 0]]).astype('int8')
-                            
+
         outflag = dataqc_propagateflags(inflags)
         outflag = [0, 0, 1, 0]
-    
+
     References:
-    
+
         OOI (2012). Data Product Specification for Combined QC Flags. Document
             Control Number 1341-100012.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
             1341-10012_Data_Product_SPEC_CMBNFLG_OOI.pdf)
     """
-    import numpy as np
-    from ion_functions import utils
-
     if not utils.islogical(inflags):
-        raise ValueError('\'inflags\' must be \'0\' or \'1\' ' \
+        raise ValueError('\'inflags\' must be \'0\' or \'1\' '
                          'integer flag array')
 
     array_size = inflags.shape
@@ -1186,17 +1178,17 @@ def dataqc_condcompress(p_orig, p_new, c_orig, cpcor=-9.57e-8):
         and the updated pressure. 
 
     Implemented by:
-      
+
         2013-04-07: Christopher Wingard. Initial python implementation.
 
     Usage:
 
         c_new = dataqc_condcompress(p_orig, p_new, c_orig, cpcor)
-        
+
             where
-        
+
         c_new = updated conductivity record [S/m]
-        
+
         p_orig = original pressure used to calculate original conductivity,
             this typically the L1a PRESWAT [dbar]
         p_new = updated pressure, typically L1b PRESWAT [dbar]
@@ -1210,23 +1202,20 @@ def dataqc_condcompress(p_orig, p_new, c_orig, cpcor=-9.57e-8):
         p_new = 900
         c_orig = 55
         cpcor = -9.57e-8
-        
+
         c_new = dataqc_condcompress(p_orig, p_new, c_orig, cpcor)
         c_new = 54.9995
-        
+
     References:
-    
+
         OOI (2012). Data Product Specification for Conductivity Compressibility
             Correction. Document Control Number 1341-10030.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
             1341-10030_Data_Product_SPEC_CNDCMPR_OOI.pdf)
     """
-    import numpy as np
-    from ion_functions import utils
-
     # need to add test cases to ensure inputs (p_orig, p_new and c_orig) are
     # the same size. cpcor is a scalar
-    
+
     c_new = c_orig * (1 + cpcor * p_orig) / (1 + cpcor * p_new)
     return c_new
