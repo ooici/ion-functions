@@ -453,6 +453,10 @@ def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
     i1 = 1 + L2
     i2 = ll - L2
 
+    from ion_functions.data.perf.test_performance import TimeIt
+    stats = []
+
+
     if ll >= L:
 
         # Do the "inner" section
@@ -460,16 +464,9 @@ def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
         b = a[:, L2]
         a = np.delete(a, L2, 1)
 
-        it = np.nditer([a, b, None],
-                       flags=['reduce_ok', 'external_loop', 'buffered', 'delay_bufalloc'],
-                       op_flags=[['readonly'],['readonly'],['readwrite','allocate']],
-                       op_dtypes=['float64','float64','int8'],
-                       op_axes=[None, [0, -1], [0, -1]])
-        it.operands[-1][...] = 0
-        it.reset()
-        for ai, bi, oi in it:
-            oi[...] = (N * np.max([ai.max() - ai.min(), acc])) > np.abs(bi[0] - ai.mean())
-        out = it.operands[-1].squeeze()
+        from ion_functions.qc.qc_extensions import inner_spike
+
+        out = inner_spike(a,b,acc,N,L).squeeze()
 
         # Add on the start...
         sout = np.zeros(L2, dtype='int8')
