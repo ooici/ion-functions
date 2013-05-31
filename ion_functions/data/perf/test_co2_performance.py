@@ -1,5 +1,5 @@
 
-from ion_functions.data.test.test_performance import PerformanceTestCase
+from ion_functions.data.perf.test_performance import PerformanceTestCase
 from ion_functions.data.co2_functions import pco2_thermistor, pco2_abs434_blank, pco2_abs620_blank, pco2_pco2wat
 import numpy as np
 
