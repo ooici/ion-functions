@@ -25,6 +25,7 @@ setup(name = 'ion-functions',
         setup_requires=[],
         install_requires=[
             'ipython==0.13.0',
+            'readline',
             'numexpr==2.1',
             'nose==1.1.2',
             'pygsw==0.0.9',
