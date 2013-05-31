@@ -12,6 +12,10 @@ from unittest import TestCase
 import time
 import numpy as np
 
+a_year = 24 * 3600 * 365
+a_week = 24 * 3600 * 7
+a_month = 24 * 3600 * 30
+
 class TimeIt(object):
     def __init__(self, results=[]):
         self.results = results
@@ -28,6 +32,8 @@ class PerformanceTestCase(TestCase):
             with TimeIt(stats):
                 func(*args, **kwargs)
             print 'Run %i: %s' %(i,stats[i])
+            if stats[i] > 10:
+                raise AssertionError('Performance standard failed. Method exceeded 20 seconds')
 
         print 'Mean: ', np.average(np.array(stats))
 
