@@ -1,4 +1,4 @@
-from ion_functions.data.test.test_performance import PerformanceTestCase, a_year
+from ion_functions.data.perf.test_performance import PerformanceTestCase, a_year
 from ion_functions.qc.qc_functions import dataqc_globalrangetest as grt
 from ion_functions.qc.qc_functions import dataqc_spiketest as spiketest
 
