@@ -338,7 +338,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
 
         got = qcfunc.dataqc_stuckvaluetest(x, reso, num)
 
-        self.assertTrue(np.array_equal(got, out))
+        np.testing.assert_array_equal(got,out)
 
     def test_dataqc_gradienttest(self):
         """

@@ -6,6 +6,7 @@
 @author Christopher Mueller
 @brief Module containing QC functions ported from matlab samples in DPS documents
 """
+from ion_functions.qc.qc_extensions import stuckvalues
 
 ## DO NOT IMPORT AT THIS LEVEL - Perform imports within each function
 def dataqc_globalrangetest_minmax(dat, dat_min, dat_max, strict_validation=False):
@@ -453,10 +454,6 @@ def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
     i1 = 1 + L2
     i2 = ll - L2
 
-    from ion_functions.data.perf.test_performance import TimeIt
-    stats = []
-
-
     if ll >= L:
 
         # Do the "inner" section
@@ -464,9 +461,16 @@ def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
         b = a[:, L2]
         a = np.delete(a, L2, 1)
 
-        from ion_functions.qc.qc_extensions import inner_spike
-
-        out = inner_spike(a,b,acc,N,L).squeeze()
+        it = np.nditer([a, b, None],
+                       flags=['reduce_ok', 'external_loop', 'buffered', 'delay_bufalloc'],
+                       op_flags=[['readonly'],['readonly'],['readwrite','allocate']],
+                       op_dtypes=['float64','float64','int8'],
+                       op_axes=[None, [0, -1], [0, -1]])
+        it.operands[-1][...] = 0
+        it.reset()
+        for ai, bi, oi in it:
+            oi[...] = (N * np.max([ai.max() - ai.min(), acc])) > np.abs(bi[0] - ai.mean())
+        out = it.operands[-1].squeeze()
 
         # Add on the start...
         sout = np.zeros(L2, dtype='int8')
@@ -755,13 +759,7 @@ def dataqc_stuckvaluetest(x, reso, num=10, strict_validation=False):
         # Warn - 'num' is greater than len(x), returning zeros
         pass
     else:
-        out.fill(1)
-        iimax = int(ll - num+1)
-        for ii in xrange(iimax):
-            slice_ = slice(ii, ii + num)
-            tmp = np.abs(dat[ii] - dat[slice_])
-            if (tmp < reso).all():
-                out[slice_] = 0
+        out = stuckvalues(dat, reso, num)
 
     return out
 

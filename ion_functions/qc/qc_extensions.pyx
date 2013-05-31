@@ -5,30 +5,25 @@ cimport cython
 
 np.import_array()
 
-ctypedef np.uint8_t uint8_t
-
-def cython_confirm():
-    print "Confirmed"
 
 
-def inner_spike(a,b,acc, N, L):
-    cdef np.ndarray[double] x
-    cdef np.ndarray[double] y
-    cdef np.ndarray[signed char] f
-    it = np.nditer([a, b, None],
-                   flags=['reduce_ok', 'external_loop', 'buffered', 'delay_bufalloc'],
-                   op_flags=[['readonly'],['readonly'],['readwrite','allocate']],
-                   op_dtypes=['float64','float64','int8'],
-                   op_axes=[None, [0, -1], [0, -1]])
-    it.operands[-1][...] = 0
-    it.reset()
-    for ai, bi, oi in it:
-        x = ai
-        y = bi
-        f = oi
-        size = x.shape[0]
-        for i in range(size):
-            value = (N * np.max([x.max() - x.min(), acc])) > np.abs(y[0] - x.mean())
-            f[i] = value
+cdef inline double d_abs(double a) : return a if a > 0 else -a
+cdef inline int int_min(int a, int b) : return a if a <= b else b
 
-    return it.operands[-1]
+cdef inline int cmp_res(double x, double y, double reso):
+    return (d_abs(x-y) < reso)
+
+cdef extern from "stuck.h":
+    int stuck(signed char *out, int out_len, double *dat, int dat_len, double reso, int num)
+
+
+def stuckvalues(dat, reso, num):
+    cdef int dat_shape = dat.shape[0]
+    cdef np.ndarray[double] x = dat
+    cdef np.ndarray[signed char] out = np.zeros([dat_shape], dtype=np.int8)
+    out.fill(1)
+    stuck(&out[0], dat_shape, &x[0], dat_shape, reso, num)
+
+
+    return out
+            
