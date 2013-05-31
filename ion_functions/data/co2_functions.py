@@ -10,7 +10,7 @@
 # wrapper functions to extract parameters from SAMI-II CO2 instruments (PCO2W)
 def pco2_abs434_ratio(light):
      """
-     Wrapper function to extract the absorbance ratio at 434 nm from the pCO2
+     Function to extract the absorbance ratio at 434 nm from the pCO2
      instrument light measurements.
      """
      a434ratio = light[6]
@@ -21,7 +21,7 @@ def pco2_abs434_ratio(light):
 
 def pco2_abs620_ratio(light):
      """
-     Wrapper function to extract the absorbance ratio at 620 nm from the pCO2
+     Function to extract the absorbance ratio at 620 nm from the pCO2
      instrument light measurements.
      """
      a620ratio = light[7]
@@ -32,7 +32,7 @@ def pco2_abs620_ratio(light):
 
 def pco2_abs434_blank(mtype, light, a434blnk):
      """
-     Wrapper function to extract the blank absorbance at 434 nm from the pCO2
+     Function to extract the blank absorbance at 434 nm from the pCO2
      instrument light measurements.
      """
      import numpy as np
@@ -48,7 +48,7 @@ def pco2_abs434_blank(mtype, light, a434blnk):
 
 def pco2_abs620_blank(mtype, light, a620blnk):
      """
-     Wrapper function to extract the blank absorbance at 620 nm from the pCO2
+     Function to extract the blank absorbance at 620 nm from the pCO2
      instrument light measurements.
      """
      import numpy as np
@@ -64,16 +64,17 @@ def pco2_abs620_blank(mtype, light, a620blnk):
 
 def pco2_thermistor(traw):
      """
-     Wrapper function to convert the thermistor data from counts to degrees
+     Function to convert the thermistor data from counts to degrees
      Centigrade from the pCO2 instrument.
      """
      import numpy as np
+     import numexpr as ne
      
      # convert raw thermistor readings from counts to degrees Centigrade
-     Rt = (traw / (4096. - traw)) * 17400.
-     InvT = 0.0010183 + 0.000241 * np.log(Rt) + 0.00000015 * np.log(Rt)**3
-     TempK = 1 / InvT
-     therm = TempK - 273.15
+     Rt = ne.evaluate('(traw / (4096. - traw)) * 17400.')
+     InvT = ne.evaluate('0.0010183 + 0.000241 * log(Rt) + 0.00000015 * log(Rt)**3')
+     TempK = ne.evaluate('1 / InvT')
+     therm = ne.evaluate('TempK - 273.15')
      
      return therm
 
@@ -81,7 +82,7 @@ def pco2_thermistor(traw):
 def pco2_pco2wat(mtype, light, therm, ea434, eb434, ea620, eb620, 
                     calt, cala, calb, calc, a434blnk, a620blnk):
      """
-     Wrapper function to calculate the L1 PCO2WAT core data from the pCO2
+     Function to calculate the L1 PCO2WAT core data from the pCO2
      instrument.
      """
      if mtype == 4:
