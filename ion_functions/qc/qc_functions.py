@@ -8,14 +8,14 @@
 """
 
 ## DO NOT IMPORT AT THIS LEVEL - Perform imports within each function
-def dataqc_globalrangetest_minmax(dat, dat_min, dat_max):
+def dataqc_globalrangetest_minmax(dat, dat_min, dat_max, strict_validation=False):
     '''
     Python wrapper for dataqc_globalrangetest
     Combines the min/max arguments into list for dataqc_globalrangetest
     '''
-    return dataqc_globalrangetest(dat, [dat_min,dat_max])
+    return dataqc_globalrangetest(dat, [dat_min,dat_max], strict_validation=strict_validation)
 
-def dataqc_globalrangetest(dat, datlim):
+def dataqc_globalrangetest(dat, datlim, strict_validation=False):
     """
     Global Range Quality Control Algorithm as defined in the DPS for SPEC_GLBLRNG - DCN 1341-10004
     https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/466c4915-c777-429a-8946-c90a8f0945b0/1341-10004_Data_Product_SPEC_GLBLRNG_OOI.pdf
@@ -71,25 +71,26 @@ def dataqc_globalrangetest(dat, datlim):
     dat = np.atleast_1d(dat)
     datlim = np.atleast_1d(datlim)
 
-    if not utils.isnumeric(dat).all():
-        raise ValueError('\'dat\' must be numeric')
+    if strict_validation:
+        if not utils.isnumeric(dat).all():
+            raise ValueError('\'dat\' must be numeric')
 
-    if not utils.isreal(dat).all():
-        raise ValueError('\'dat\' must be real')
+        if not utils.isreal(dat).all():
+            raise ValueError('\'dat\' must be real')
 
-    if not utils.isnumeric(datlim).all():
-        raise ValueError('\'datlim\' must be numeric')
+        if not utils.isnumeric(datlim).all():
+            raise ValueError('\'datlim\' must be numeric')
 
-    if not utils.isreal(datlim).all():
-        raise ValueError('\'datlim\' must be real')
+        if not utils.isreal(datlim).all():
+            raise ValueError('\'datlim\' must be real')
 
-    if len(datlim) < 2:  # Must have at least 2 elements
-        raise ValueError('\'datlim\' must have at least 2 elements')
+        if len(datlim) < 2:  # Must have at least 2 elements
+            raise ValueError('\'datlim\' must have at least 2 elements')
 
     return (datlim.min() <= dat) & (dat <= datlim.max()).astype('int8')
 
 
-def dataqc_localrangetest(dat, z, datlim, datlimz):
+def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
     """
     Description:
 
@@ -147,39 +148,40 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
     from ion_functions import utils
     from scipy.interpolate import LinearNDInterpolator
 
-    # check inputs: dat
-    if not utils.isnumeric(dat).all():
-        raise ValueError('\'dat\' must be numeric')
+    if strict_validation:
+        # check inputs: dat
+        if not utils.isnumeric(dat).all():
+            raise ValueError('\'dat\' must be numeric')
 
-    if not utils.isvector(dat):
-        raise ValueError('\'dat\' must be a matrix')
+        if not utils.isvector(dat):
+            raise ValueError('\'dat\' must be a matrix')
 
-    if not utils.isreal(dat).all():
-        raise ValueError('\'dat\' must be real')
-    
-    # check inputs: z
-    if not utils.isnumeric(z).all():
-        raise ValueError('\'z\' must be numeric')
+        if not utils.isreal(dat).all():
+            raise ValueError('\'dat\' must be real')
 
-    if not utils.isreal(z).all():
-        raise ValueError('\'z\' must be real')
-    
-    # check inputs: datlim
-    if not utils.isnumeric(datlim).all():
-        raise ValueError('\'datlim\' must be numeric')
+        # check inputs: z
+        if not utils.isnumeric(z).all():
+            raise ValueError('\'z\' must be numeric')
 
-    if not utils.ismatrix(datlim):
-        raise ValueError('\'datlim\' must be a matrix')
+        if not utils.isreal(z).all():
+            raise ValueError('\'z\' must be real')
 
-    if not utils.isreal(datlim).all():
-        raise ValueError('\'datlim\' must be real')
-    
-    # check inputs: datlimz
-    if not utils.isnumeric(datlimz).all():
-        raise ValueError('\'datlimz\' must be numeric')
-   
-    if not utils.isreal(datlimz).all():
-        raise ValueError('\'datlimz\' must be real')
+        # check inputs: datlim
+        if not utils.isnumeric(datlim).all():
+            raise ValueError('\'datlim\' must be numeric')
+
+        if not utils.ismatrix(datlim):
+            raise ValueError('\'datlim\' must be a matrix')
+
+        if not utils.isreal(datlim).all():
+            raise ValueError('\'datlim\' must be real')
+
+        # check inputs: datlimz
+        if not utils.isnumeric(datlimz).all():
+            raise ValueError('\'datlimz\' must be numeric')
+
+        if not utils.isreal(datlimz).all():
+            raise ValueError('\'datlimz\' must be real')
         
     # test size and shape of the input arrays datlimz and datlim, setting test
     # variables.
@@ -254,7 +256,7 @@ def dataqc_localrangetest(dat, z, datlim, datlimz):
     return qcflag.astype('int8')
 
 
-def dataqc_spiketest(dat, acc, N=5, L=5):
+def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
     """
     Spike Test Quality Control Algorithm as defined in the DPS for SPEC_SPKETST - DCN 1341-10006
     https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/eadad62c-ec80-403d-b3d3-c32c79f9e9e4/1341-10006_Data_Product_SPEC_SPKETST_OOI.pdf
@@ -410,15 +412,6 @@ def dataqc_spiketest(dat, acc, N=5, L=5):
 
     dat = np.atleast_1d(dat)
 
-    if not utils.isnumeric(dat).all():
-        raise ValueError('\'dat\' must be numeric')
-
-    if not utils.isvector(dat):
-        raise ValueError('\'dat\' must be a vector')
-
-    if not utils.isreal(dat).all():
-        raise ValueError('\'dat\' must be real')
-
     if isinstance(acc,np.ndarray):
         acc = acc[0]
     if isinstance(N,np.ndarray):
@@ -426,15 +419,25 @@ def dataqc_spiketest(dat, acc, N=5, L=5):
     if isinstance(L,np.ndarray):
         L = L[0]
 
-    for k, arg in {'acc': acc, 'N': N, 'L': L}.iteritems():
-        if not utils.isnumeric(arg).all():
-            raise ValueError('\'{0}\' must be numeric'.format(k))
+    if strict_validation:
+        if not utils.isnumeric(dat).all():
+            raise ValueError('\'dat\' must be numeric')
 
-        if not utils.isscalar(arg):
-            raise ValueError('\'{0}\' must be a scalar'.format(k))
+        if not utils.isvector(dat):
+            raise ValueError('\'dat\' must be a vector')
 
-        if not utils.isreal(arg).all():
-            raise ValueError('\'{0}\' must be real'.format(k))
+        if not utils.isreal(dat).all():
+            raise ValueError('\'dat\' must be real')
+
+        for k, arg in {'acc': acc, 'N': N, 'L': L}.iteritems():
+            if not utils.isnumeric(arg).all():
+                raise ValueError('\'{0}\' must be numeric'.format(k))
+
+            if not utils.isscalar(arg):
+                raise ValueError('\'{0}\' must be a scalar'.format(k))
+
+            if not utils.isreal(arg).all():
+                raise ValueError('\'{0}\' must be real'.format(k))
 
     L = np.ceil(np.abs(L))
     if L / 2 == np.round(L / 2):
@@ -445,7 +448,6 @@ def dataqc_spiketest(dat, acc, N=5, L=5):
         # Warn - L was too small; setting L = 5
 
     ll = len(dat)
-    out = np.zeros(dat.size, dtype='int8')
 
     L2 = int((L - 1) / 2)
     i1 = 1 + L2
@@ -453,20 +455,35 @@ def dataqc_spiketest(dat, acc, N=5, L=5):
 
     if ll >= L:
 
-        for ii in xrange(i1 - 1,i2):  # for ii=i1:i2
-            tmpdat = np.hstack((dat[ii - L2:ii], dat[ii + 1:ii + 1 + L2]))  # tmpdat=dat(ii+[-L2:-1 1:L2]);
-            R = tmpdat.max() - tmpdat.min()  # R=max(tmpdat)-min(tmpdat);
-            R = np.max([R, acc])  # R=max([R acc]);
-            if (N * R) > np.abs(dat[ii] - tmpdat.mean()):  # if (N*R)>abs(dat(ii)-mean(tmpdat))
-                out[ii] = 1  # out(ii)=1;
+        # Do the "inner" section
+        a = utils.rolling_window(dat, L)
+        b = a[:, L2]
+        a = np.delete(a, L2, 1)
 
+        it = np.nditer([a, b, None],
+                       flags=['reduce_ok', 'external_loop', 'buffered', 'delay_bufalloc'],
+                       op_flags=[['readonly'],['readonly'],['readwrite','allocate']],
+                       op_dtypes=['float64','float64','int8'],
+                       op_axes=[None, [0, -1], [0, -1]])
+        it.operands[-1][...] = 0
+        it.reset()
+        for ai, bi, oi in it:
+            oi[...] = (N * np.max([ai.max() - ai.min(), acc])) > np.abs(bi[0] - ai.mean())
+        out = it.operands[-1].squeeze()
+
+        # Add on the start...
+        sout = np.zeros(L2, dtype='int8')
         for ii in xrange(L2):  # for ii=1:L2
             tmpdat = np.hstack((dat[:ii], dat[ii+1:L]))  # tmpdat=dat([1:ii-1 ii+1:L]);
             R = tmpdat.max() - tmpdat.min()  # R=max(tmpdat)-min(tmpdat);
             R = np.max([R, acc])  # R=max([R acc]);
             if (N * R) > np.abs(dat[ii] - tmpdat.mean()):  # if (N*R)>abs(dat(ii)-mean(tmpdat))
-                out[ii] = 1  # out(ii)=1;
+                sout[ii] = 1 # out(ii)=1;
+        out = np.append(sout, out)
 
+        # Add on the end...
+        lout = np.zeros(L2, dtype='int8')
+        out = np.append(out, lout)
         for ii in xrange(ll - L2, ll):  # for ii=ll-L2+1:ll
             tmpdat = np.hstack((dat[:ii], dat[ii:L]))  # tmpdat=dat([ll-L+1:ii-1 ii+1:ll]);
             R = tmpdat.max() - tmpdat.min()  # R=max(tmpdat)-min(tmpdat);
@@ -475,13 +492,12 @@ def dataqc_spiketest(dat, acc, N=5, L=5):
                 out[ii] = 1  # out(ii)=1;
 
     else:
-        pass
+        out = np.zeros(dat.size, dtype='int8')
         # Warn - 'L was greater than len of dat, returning zeros.'
-
     return out
 
 
-def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3):
+def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3, strict_validation=False):
     """
     Stuck Value Test Quality Control Algorithm as defined in the DPS for SPEC_TRNDTST - DCN 1341-10007
     https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/c33037ab-9dd5-4615-8218-0957f60a47f3/1341-10007_Data_Product_SPEC_TRNDTST_OOI.pdf
@@ -579,24 +595,25 @@ def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3):
 
     dat = np.atleast_1d(dat)
 
-    if not utils.isnumeric(dat).all():
-        raise ValueError('\'dat\' must be numeric')
+    if strict_validation:
+        if not utils.isnumeric(dat).all():
+            raise ValueError('\'dat\' must be numeric')
 
-    if not utils.isvector(dat):
-        raise ValueError('\'dat\' must be a vector')
+        if not utils.isvector(dat):
+            raise ValueError('\'dat\' must be a vector')
 
-    if not utils.isreal(dat).all():
-        raise ValueError('\'dat\' must be real')
+        if not utils.isreal(dat).all():
+            raise ValueError('\'dat\' must be real')
 
-    for k, arg in {'ord_n': ord_n, 'nstd': nstd}.iteritems():
-        if not utils.isnumeric(arg).all():
-            raise ValueError('\'{0}\' must be numeric'.format(k))
+        for k, arg in {'ord_n': ord_n, 'nstd': nstd}.iteritems():
+            if not utils.isnumeric(arg).all():
+                raise ValueError('\'{0}\' must be numeric'.format(k))
 
-        if not utils.isscalar(arg):
-            raise ValueError('\'{0}\' must be a scalar'.format(k))
+            if not utils.isscalar(arg):
+                raise ValueError('\'{0}\' must be a scalar'.format(k))
 
-        if not utils.isreal(arg).all():
-            raise ValueError('\'{0}\' must be real'.format(k))
+            if not utils.isreal(arg).all():
+                raise ValueError('\'{0}\' must be real'.format(k))
 
     ord_n = int(round(abs(ord_n)))
     nstd = int(abs(nstd))
@@ -612,7 +629,7 @@ def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3):
     return 1
 
 
-def dataqc_stuckvaluetest(x, reso, num=10):
+def dataqc_stuckvaluetest(x, reso, num=10, strict_validation=False):
     """
     Stuck Value Test Quality Control Algorithm as defined in the DPS for SPEC_STUCKVL - DCN 1341-10008
     https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/a04acb56-7e27-48c6-a40b-9bb9374ee35c/1341-10008_Data_Product_SPEC_STUCKVL_OOI.pdf
@@ -707,30 +724,31 @@ def dataqc_stuckvaluetest(x, reso, num=10):
 
     dat = np.atleast_1d(x)
 
-    if not utils.isnumeric(dat).all():
-        raise ValueError('\'x\' must be numeric')
-
-    if not utils.isvector(dat):
-        raise ValueError('\'x\' must be a vector')
-
-    if not utils.isreal(dat).all():
-        raise ValueError('\'x\' must be real')
-
     if isinstance(reso,np.ndarray):
         reso = reso[0]
-    
+
     if isinstance(num, np.ndarray):
         num = num[0]
 
-    for k, arg in {'reso': reso, 'num': num}.iteritems():
-        if not utils.isnumeric(arg).all():
-            raise ValueError('\'{0}\' must be numeric'.format(k))
+    if strict_validation:
+        if not utils.isnumeric(dat).all():
+            raise ValueError('\'x\' must be numeric')
 
-        if not utils.isscalar(arg):
-            raise ValueError('\'{0}\' must be a scalar'.format(k))
+        if not utils.isvector(dat):
+            raise ValueError('\'x\' must be a vector')
 
-        if not utils.isreal(arg).all():
-            raise ValueError('\'{0}\' must be real'.format(k))
+        if not utils.isreal(dat).all():
+            raise ValueError('\'x\' must be real')
+
+        for k, arg in {'reso': reso, 'num': num}.iteritems():
+            if not utils.isnumeric(arg).all():
+                raise ValueError('\'{0}\' must be numeric'.format(k))
+
+            if not utils.isscalar(arg):
+                raise ValueError('\'{0}\' must be a scalar'.format(k))
+
+            if not utils.isreal(arg).all():
+                raise ValueError('\'{0}\' must be real'.format(k))
 
     num = np.abs(num)
     ll = len(x)
@@ -751,7 +769,7 @@ def dataqc_stuckvaluetest(x, reso, num=10):
     return out
 
 
-def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
+def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat, strict_validation=False):
     """
     Description
     
@@ -850,14 +868,16 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
     # Sanity checks on dat and x
     dat = np.atleast_1d(dat)
     x = np.atleast_1d(x)
-    if not utils.isvector(dat) or not utils.isvector(x):
-        raise ValueError('\'dat\' and \'x\' must be vectors')
-    
-    if len(dat) != len(x):
-        raise ValueError('\'dat\' and \'x\' must be of equal len')
-    
-    if not all(np.diff(x) > 0):
-        raise ValueError('\'x\' must be montonically increasing')
+
+    if strict_validation:
+        if not utils.isvector(dat) or not utils.isvector(x):
+            raise ValueError('\'dat\' and \'x\' must be vectors')
+
+        if len(dat) != len(x):
+            raise ValueError('\'dat\' and \'x\' must be of equal len')
+
+        if not all(np.diff(x) > 0):
+            raise ValueError('\'x\' must be montonically increasing')
     
     # remove any NaNs from input vectors
     dat = dat[~np.isnan(dat)]
@@ -873,9 +893,10 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
     
     if np.isnan(mindx):
         mindx = 0
-    
-    if not utils.isscalar(mindx):
-        raise ValueError('\'mindx\' must be scalar, NaN, or empty.')
+
+    if strict_validation:
+        if not utils.isscalar(mindx):
+            raise ValueError('\'mindx\' must be scalar, NaN, or empty.')
     
     # Apply mindx
     dx = np.diff(x) > mindx
@@ -908,9 +929,10 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat):
             outqc[0] = 1
         else:
             outqc[0] = 0
-    
-    if not utils.isscalar(startdat):
-        raise ValueError('\'startdat\' must be scalar, NaN, or empty.')
+
+    if strict_validation:
+        if not utils.isscalar(startdat):
+            raise ValueError('\'startdat\' must be scalar, NaN, or empty.')
     
     # Main loop, checking for data points 2 through ll
     ii = 1
@@ -1110,7 +1132,7 @@ def dataqc_solarelevation(lon, lat, dt):
     return (z, sorad)
 
 
-def dataqc_propogateflags(inflags):
+def dataqc_propogateflags(inflags, strict_validation=False):
     """
     Description:
     
@@ -1164,9 +1186,10 @@ def dataqc_propogateflags(inflags):
     import numpy as np
     from ion_functions import utils
 
-    if not utils.islogical(inflags):
-        raise ValueError('\'inflags\' must be \'0\' or \'1\' ' \
-                         'integer flag array')
+    if strict_validation:
+        if not utils.islogical(inflags):
+            raise ValueError('\'inflags\' must be \'0\' or \'1\' ' \
+                             'integer flag array')
 
     array_size = inflags.shape
     nrows = array_size[0]
