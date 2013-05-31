@@ -15,6 +15,7 @@ import numpy as np
 a_year = 24 * 3600 * 365
 a_week = 24 * 3600 * 7
 a_month = 24 * 3600 * 30
+a_day = 24 * 3600
 
 class TimeIt(object):
     def __init__(self, results=[]):
