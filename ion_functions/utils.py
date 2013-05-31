@@ -242,3 +242,9 @@ def islogical(inflags):
     flag = (all(np.in1d(inflags.flatten(), [0,1])) and
             all(isinstance(n, np.int8) for n in inflags.flatten()))
     return flag
+
+
+def rolling_window(a, window):
+    shape = a.shape[:-1] + (a.shape[-1] - window + 1, window)
+    strides = a.strides + (a.strides[-1],)
+    return np.lib.stride_tricks.as_strided(a, shape=shape, strides=strides)
