@@ -7,6 +7,9 @@
 @brief Module containing CO2 instrument family related functions
 """
 
+import numpy as np
+import numexpr as ne
+
 # wrapper functions to extract parameters from SAMI-II CO2 instruments (PCO2W)
 def pco2_abs434_ratio(light):
      """
@@ -35,7 +38,6 @@ def pco2_abs434_blank(mtype, light, a434blnk):
      Function to extract the blank absorbance at 434 nm from the pCO2
      instrument light measurements.
      """
-     import numpy as np
      
      # if the measurement type is 5 = blank, then return the new blank
      if mtype == 5:
@@ -51,7 +53,6 @@ def pco2_abs620_blank(mtype, light, a620blnk):
      Function to extract the blank absorbance at 620 nm from the pCO2
      instrument light measurements.
      """
-     import numpy as np
      
      # if the measurement type is 5 = blank, then return the new blank
      if mtype == 5:
@@ -67,8 +68,6 @@ def pco2_thermistor(traw):
      Function to convert the thermistor data from counts to degrees
      Centigrade from the pCO2 instrument.
      """
-     import numpy as np
-     import numexpr as ne
      
      # convert raw thermistor readings from counts to degrees Centigrade
      Rt = ne.evaluate('(traw / (4096. - traw)) * 17400.')
@@ -125,7 +124,6 @@ def pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
                OOI >> Controlled >> 1000 System Level >>
                1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
      """
-     import numpy as np
     
      # set constants
      ea434 = ea434 - 29.3 * calt
@@ -154,9 +152,9 @@ def pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
      V1 = Ratio - e1
      V2 = e2 - e3 * Ratio
      RCO21 = -1. * np.lib.scimath.log10(V1 / V2)
-     RCO22 = (therm - calt) * 0.007 + RCO21
-     Tcoeff = 0.0075778 - 0.0012389 * RCO22 - 0.00048757 * RCO22**2
-     Tcor_RCO2 =  RCO21 + Tcoeff * (therm - calt)
-     pco2 = 10.**((-1. * calb + (calb**2 - (4. * cala * (calc - Tcor_RCO2)))**0.5) / (2. * cala))
+     RCO22 = ne.evaluate('(therm - calt) * 0.007 + RCO21')
+     Tcoeff = ne.evaluate('0.0075778 - 0.0012389 * RCO22 - 0.00048757 * RCO22**2')
+     Tcor_RCO2 =  ne.evaluate('RCO21 + Tcoeff * (therm - calt)')
+     pco2 = ne.evaluate('10.**((-1. * calb + (calb**2 - (4. * cala * (calc - Tcor_RCO2)))**0.5) / (2. * cala))')
      
      return np.real(pco2)
