@@ -7,7 +7,7 @@
 """
 
 # Import Numpy and the TEOS-10 GSW libraries
-import numpy as np
+
 from pygsw import vectors as gsw
     
 def ctd_sbe16plus_tempwat(t0, a0, a1, a2, a3):
@@ -46,10 +46,11 @@ def ctd_sbe16plus_tempwat(t0, a0, a1, a2, a3):
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00010_Data_Product_SPEC_TEMPWAT_OOI.pdf)
     """
-    mv = (t0 - 524288) / 1.6e7
-    r = (mv * 2.9e9 + 1.024e8)/(2.048e4 - mv * 2.0e5)
-    t = 1 / (a0 + a1 * np.log(r) + a2 * np.power(np.log(r),2)
-           + a3 * np.power(np.log(r),3)) - 273.15
+    import numexpr
+
+    mv = numexpr.evaluate('(t0 - 524288) / 1.6e7')
+    r = numexpr.evaluate('(mv * 2.9e9 + 1.024e8)/(2.048e4 - mv * 2.0e5)')
+    t = numexpr.evaluate('1 / (a0 + a1 * log(r) + a2 * log(r)**2 + a3 * log(r)**3) - 273.15')
     return t
 
 
