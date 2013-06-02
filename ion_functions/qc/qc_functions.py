@@ -7,8 +7,20 @@
 @brief Module containing QC functions ported from matlab samples in DPS documents
 """
 
+import time
+import numpy as np
+import numexpr as ne
+from scipy.interpolate import LinearNDInterpolator
+from ion_functions import utils
 
-## DO NOT IMPORT AT THIS LEVEL - Perform imports within each function
+# try to load the OOI logging module, using default Python logging module if
+# unavailable
+try:
+    from ooi.logging import log
+except ImportError:
+    from logging import log
+
+
 def dataqc_globalrangetest_minmax(dat, dat_min, dat_max, strict_validation=False):
     '''
     Python wrapper for dataqc_globalrangetest
@@ -19,54 +31,40 @@ def dataqc_globalrangetest_minmax(dat, dat_min, dat_max, strict_validation=False
 
 def dataqc_globalrangetest(dat, datlim, strict_validation=False):
     """
-    Global Range Quality Control Algorithm as defined in the DPS for
-    SPEC_GLBLRNG - DCN 1341-10004
-    https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/466c4915-c777-429a-8946-c90a8f0945b0/1341-10004_Data_Product_SPEC_GLBLRNG_OOI.pdf
+    Description:
 
-    DATAQC_GLOBALRANGETEST   Data quality control algorithm testing
-         if measurements fall into a user-defined valid range.
-         Returns 1 for presumably good data and 0 for data presumed bad.
-    %
-    Time-stamp: <2010-07-28 15:16:00 mlankhorst>
-    %
-    USAGE:   out = dataqc_globalrangetest(dat, validrange);
-    %
-             out: Boolean, 0 if value is outside range, else 1.
-             dat: Input dataset, any scalar, vector, or matrix.
-                  Must be numeric and real.
-             validrange: Two-element vector with the minimum and
-                  maximum values considered to be valid
-    %
-    EXAMPLE:
-    %
-        >> x=[17 16 17 18 25 19];
-        >> qc=dataqc_globalrangetest(x,[10 20])
-    %
-        qc =
-    %
-             1     1     1     1     0     1
-    %
-    %
-    function out=dataqc_globalrangetest(dat,datlim);
+        Data quality control algorithm testing if measurements fall into a
+        user-defined valid range. Returns 1 for presumably good data and 0 for
+        data presumed bad.
 
-        if ~isnumeric(dat)
-            error('dat must be numeric.')
-          end
-        if ~all(isreal(dat(:)))
-            error('dat must be real.')
-          end
-        if ~isnumeric(datlim)
-            error('VALIDRANGE must be numeric.')
-          end
-        if ~all(isreal(datlim(:)))
-            error('VALIDRANGE must be real.')
-          end
-        if len(datlim)~=2
-            error('VALIDRANGE must be two-element vector.')
-          end
-        datlim=[min(datlim(:)) max(datlim(:))];
-        out=(dat>=datlim(1))&(dat<=datlim(2))
+    Implemented by:
 
+        2010-07-28: DPS authored by Mathias Lankhorst. Example code provided
+        for Matlab.
+        2013-04-06: Christopher Wingard. Initial python implementation.
+        2013-05-30: Christopher Mueller. Performance improvements by adding
+            strict_validation flag.
+
+    Usage:
+
+        qcflag = dataqc_globalrangetest(dat, datlim, strict_validation)
+
+            where
+
+        qcflag = Boolean, 0 if value is outside range, else = 1.
+
+        dat = Input dataset, any scalar or vector. Must be numeric and real.
+        datlim = Two-element vector with the minimum and maximum values
+            considered to be valid.
+        strict_validation = Flag (default is False) to assert testing of input
+            types (e.g. isreal, isnumeric)
+
+    References:
+
+        OOI (2012). Data Product Specification for Global Range Test. Document
+            Control Number 1341-10004. https://alfresco.oceanobservatories.org
+            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-10004_Data_Product_SPEC_GLBLRNG_OOI.pdf)
     """
     dat = np.atleast_1d(dat)
     datlim = np.atleast_1d(datlim)
@@ -103,7 +101,6 @@ def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
 
         2012-07-17: DPS authored by Mathias Lankhorst. Example code provided
         for Matlab.
-
         2013-04-06: Christopher Wingard. Initial python implementation.
 
     Usage:
@@ -122,20 +119,6 @@ def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
         datlimz = array with the locations where datlim is given. must have
             same # of rows as datlim and same # of columns as z.
 
-    Example:
-
-        dat = np.array([3.5166, 8.3083, 5.8526, 5.4972, 9.1719,
-                        2.8584, 7.5720, 7.5373, 3.8045, 5.6782])
-
-        z = np.array([0.1517, 0.1079, 1.0616, 1.5583, 1.8680,
-                      0.2598, 1.1376, 0.9388, 0.0238, 0.6742])
-
-        datlim = np.array([[0, 2], [0, 2], [1, 8], [1, 9], [1, 10]]);
-        datlimz = np.array([0, 0.5, 1, 1.5, 2]);
-
-        qcflag = dataqc_localrangetest(dat, z, datlim, datlimz)
-        qcflag = [0, 0, 1, 1, 1, 0, 1, 0, 0, 0]
-
     References:
 
         OOI (2012). Data Product Specification for Local Range Test. Document
@@ -143,45 +126,22 @@ def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-10005_Data_Product_SPEC_LOCLRNG_OOI.pdf)
     """
-    import numpy as np
-    import warnings
-    from ion_functions import utils
-    from scipy.interpolate import LinearNDInterpolator
-
     if strict_validation:
-        # check inputs: dat
-        if not utils.isnumeric(dat).all():
-            raise ValueError('\'dat\' must be numeric')
-
+        # check if dat and datlim are matrices
         if not utils.isvector(dat):
             raise ValueError('\'dat\' must be a matrix')
-
-        if not utils.isreal(dat).all():
-            raise ValueError('\'dat\' must be real')
-
-        # check inputs: z
-        if not utils.isnumeric(z).all():
-            raise ValueError('\'z\' must be numeric')
-
-        if not utils.isreal(z).all():
-            raise ValueError('\'z\' must be real')
-
-        # check inputs: datlim
-        if not utils.isnumeric(datlim).all():
-            raise ValueError('\'datlim\' must be numeric')
 
         if not utils.ismatrix(datlim):
             raise ValueError('\'datlim\' must be a matrix')
 
-        if not utils.isreal(datlim).all():
-            raise ValueError('\'datlim\' must be real')
+        # check if all inputs are numeric and real
+        for k, arg in {'dat': dat, 'z': z, 'datlim': datlim,
+                       'datlimz': datlimz}.iteritems():
+            if not utils.isnumeric(arg).all():
+                raise ValueError('\'{0}\' must be numeric'.format(k))
 
-        # check inputs: datlimz
-        if not utils.isnumeric(datlimz).all():
-            raise ValueError('\'datlimz\' must be numeric')
-
-        if not utils.isreal(datlimz).all():
-            raise ValueError('\'datlimz\' must be real')
+            if not utils.isreal(arg).all():
+                raise ValueError('\'{0}\' must be real'.format(k))
 
     # test size and shape of the input arrays datlimz and datlim, setting test
     # variables.
@@ -223,8 +183,8 @@ def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
 
     # test datlim, values in column 2 must be greater than those in column 1
     if not all(datlim[:, 1] > datlim[:, 0]):
-        log.warn('Second column values of \'datlim\' should be '
-                 'greater than first column values.')
+        raise ValueError('Second column values of \'datlim\' should be '
+                         'greater than first column values.')
 
     # calculate the upper and lower limits for the data set
     if ndim == 1:
@@ -258,183 +218,76 @@ def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
 
 def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
     """
-    Spike Test Quality Control Algorithm as defined in the DPS for SPEC_SPKETST
-    - DCN 1341-10006
-    https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/eadad62c-ec80-403d-b3d3-c32c79f9e9e4/1341-10006_Data_Product_SPEC_SPKETST_OOI.pdf
+    Description:
 
-    DATAQC_SPIKETEST   Data quality control algorithm testing a time
-                       series for spikes. Returns 1 for presumably
-                       good data and 0 for data presumed bad.
-    %
-    Time-stamp: <2010-07-28 14:25:42 mlankhorst>
-    %
-    METHODOLOGY: The time series is divided into windows of len L
-      (an odd integer number). Then, window by window, each value is
-      compared to its (L-1) neighboring values: a range R of these
-      (L-1) values is computed (max. minus min.), and replaced with
-      the measurement accuracy ACC if ACC>R. A value is presumed to
-      be good, i.e. no spike, if it deviates from the mean of the
-      (L-1) peers by less than a multiple of the range, N*max(R,ACC).
-    %
-      Further than (L-1)/2 values from the start or end points, the
-      peer values are symmetrically before and after the test
-      value. Within that range of the start and end, the peers are
-      the first/last L values (without the test value itself).
-    %
-      The purpose of ACC is to restrict spike detection to deviations
-      exceeding a minimum threshold value (N*ACC) even if the data
-      have little variability. Use ACC=0 to disable this behavior.
-    %
-    %
-    USAGE:   out=dataqc_spiketest(dat,acc,N,L);
-       OR:   out=dataqc_spiketest(dat,acc);
-    %
-             out: Boolean. 0 for detected spike, else 1.
-             dat: Input dataset, a real numeric vector.
-             acc: Accuracy of any input measurement.
-             N (optional, defaults to 5): Range multiplier, cf. above
-             L (optional, defaults to 5): Window len, cf. above
-    %
-    EXAMPLE:
-    %
-       >> x=[-4     3    40    -1     1    -6    -6     1];
-       >> dataqc_spiketest(x,.1)
-    %
-       ans =
-    %
-            1     1     0     1     1     1     1     1
-    %
-    function out=dataqc_spiketest(varargin);
+        Data quality control algorithm testing a time series for spikes.
+        Returns 1 for presumably good data and 0 for data presumed bad.
 
-    error(nargchk(2,4,nargin,'struct'))
-    dat=varargin{1};
-    acc=varargin{2};
-    N=5;
-    L=5;
-    switch nargin
-        case 3,
-            if ~isempty(varargin{3})Data Product Specification for Spike Test
-                Ver 1-01 1341-10006 Appendix Page A-2
-                N=varargin{3};
-            end
-        case 4,
-            if ~isempty(varargin{3})
-                N=varargin{3};
-            end
-            if ~isempty(varargin{4})
-                L=varargin{4};
-            end
-    end
-    if ~isnumeric(dat)
-        error('dat must be numeric.')
-    end
-    if ~isvector(dat)
-        error('dat must be a vector.')
-    end
-    if ~isreal(dat)
-        error('dat must be real.')
-    end
-    if ~isnumeric(acc)
-        error('ACC must be numeric.')
-    end
-    if ~isscalar(acc)
-        error('ACC must be scalar.')
-    end
-    if ~isreal(acc)
-        error('ACC must be real.')
-    end
-    if ~isnumeric(N)
-        error('N must be numeric.')
-    end
-    if ~isscalar(N)
-        error('N must be scalar.')
-    end
-    if ~isreal(N)
-        error('N must be real.')
-    end
-    if ~isnumeric(L)
-        error('L must be numeric.')
-    end
-    if ~isscalar(L)
-        error('L must be scalar.')
-    end
-    if ~isreal(L)
-        error('L must be real.')
-    end
-    L=ceil(abs(L));
-    if (L/2)==round(L/2)
-        L=L+1;
-        warning('L was even; setting L:=L+1')
-    end
-    if L<3
-        L=5;
-        warning('L was too small; setting L:=5')
-    end
-    ll=len(dat);
+        The time series is divided into windows of len L (an odd integer
+        number). Then, window by window, each value is compared to its (L-1)
+        neighboring values: a range R of these (L-1) values is computed (max.
+        minus min.), and replaced with the measurement accuracy ACC if ACC>R. A
+        value is presumed to be good, i.e. no spike, if it deviates from the
+        mean of the (L-1) peers by less than a multiple of the range,
+        N*max(R,ACC).
 
-    L2=(L-1)/2;
-    i1=1+L2;
-    i2=ll-L2;
+        Further than (L-1)/2 values from the start or end points, the peer
+        values are symmetrically before and after the test value. Within that
+        range of the start and end, the peers are the first/last L values
+        (without the test value itself).
 
-    if ll>=L
+        The purpose of ACC is to restrict spike detection to deviations
+        exceeding a minimum threshold value (N*ACC) even if the data have
+        little variability. Use ACC=0 to disable this behavior.
 
-        for ii=i1:i2
-            tmpdat=dat(ii+[-L2:-1 1:L2]);
-            R=max(tmpdat)-min(tmpdat);
-            R=max([R acc]);
-            if (N*R)>abs(dat(ii)-mean(tmpdat))
-                out(ii)=1;
-            end
-        end
-        for ii=1:L2
-            tmpdat=dat([1:ii-1 ii+1:L]);
-            R=max(tmpdat)-min(tmpdat);
-            R=max([R acc]);
-            if (N*R)>abs(dat(ii)-mean(tmpdat))
-                out(ii)=1;
-            end
-        end
-        for ii=ll-L2+1:ll
-            tmpdat=dat([ll-L+1:ii-1 ii+1:ll]);
-            R=max(tmpdat)-min(tmpdat);
-            R=max([R acc]);
-            if (N*R)>abs(dat(ii)-mean(tmpdat))
-                out(ii)=1;
-            end
-        end
-    else
-        warning('L was greater than len of dat, returning zeros.')
-    end
+    Implemented by:
 
+        2012-07-28: DPS authored by Mathias Lankhorst. Example code provided
+        for Matlab.
+        2013-04-06: Christopher Wingard. Initial python implementation.
+        2013-05-30: Christopher Mueller. Performance optimizations.
+
+    Usage:
+
+        qcflag = dataqc_spiketest(dat, acc, N, L)
+
+            where
+
+        qcflag = Boolean, 0 if value is outside range, else = 1.
+
+        dat = input data set, a numeric, real vector.
+        acc = Accuracy of any input measurement.
+        N = (optional, defaults to 5) Range multiplier, cf. above
+        L = (optional, defaults to 5) Window len, cf. above
+
+    References:
+
+        OOI (2012). Data Product Specification for Spike Test. Document
+            Control Number 1341-10006. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-10006_Data_Product_SPEC_SPKETST_OOI.pdf)
     """
     dat = np.atleast_1d(dat)
-
-    if isinstance(acc, np.ndarray):
-        acc = acc[0]
-    if isinstance(N, np.ndarray):
-        N = N[0]
-    if isinstance(L, np.ndarray):
-        L = L[0]
 
     if strict_validation:
         if not utils.isnumeric(dat).all():
             raise ValueError('\'dat\' must be numeric')
 
-        if not utils.isvector(dat):
-            raise ValueError('\'dat\' must be a vector')
-
         if not utils.isreal(dat).all():
             raise ValueError('\'dat\' must be real')
+
+        if not utils.isvector(dat):
+            raise ValueError('\'dat\' must be a vector')
 
         for k, arg in {'acc': acc, 'N': N, 'L': L}.iteritems():
             if not utils.isnumeric(arg).all():
                 raise ValueError('\'{0}\' must be numeric'.format(k))
 
-            if not utils.isscalar(arg):
-                raise ValueError('\'{0}\' must be a scalar'.format(k))
-
             if not utils.isreal(arg).all():
                 raise ValueError('\'{0}\' must be real'.format(k))
+
+            if not utils.isscalar(arg):
+                raise ValueError('\'{0}\' must be a scalar'.format(k))
 
     L = np.ceil(np.abs(L))
     if L / 2 == np.round(L / 2):
@@ -458,8 +311,8 @@ def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
 
         it = np.nditer([a, b, None],
                        flags=['reduce_ok', 'external_loop', 'buffered', 'delay_bufalloc'],
-                       op_flags=[['readonly'],['readonly'],['readwrite','allocate']],
-                       op_dtypes=['float64','float64','int8'],
+                       op_flags=[['readonly'], ['readonly'], ['readwrite', 'allocate']],
+                       op_dtypes=['float64', 'float64', 'int8'],
                        op_axes=[None, [0, -1], [0, -1]])
         it.operands[-1][...] = 0
         it.reset()
@@ -475,7 +328,7 @@ def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
             R = tmpdat.max() - tmpdat.min()  # R=max(tmpdat)-min(tmpdat);
             R = np.max([R, acc])  # R=max([R acc]);
             if (N * R) > np.abs(dat[ii] - tmpdat.mean()):  # if (N*R)>abs(dat(ii)-mean(tmpdat))
-                sout[ii] = 1 # out(ii)=1;
+                sout[ii] = 1  # out(ii)=1;
         out = np.append(sout, out)
 
         # Add on the end...
@@ -490,236 +343,134 @@ def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
 
     else:
         out = np.zeros(dat.size, dtype='int8')
-        # Warn - 'L was greater than len of dat, returning zeros.'
+        log.warn('L was greater than len of dat, returning zeros.')
     return out
 
 
 def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3, strict_validation=False):
     """
-    Stuck Value Test Quality Control Algorithm as defined in the DPS for
-    SPEC_TRNDTST - DCN 1341-10007
-    https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/c33037ab-9dd5-4615-8218-0957f60a47f3/1341-10007_Data_Product_SPEC_TRNDTST_OOI.pdf
+    Description:
 
-    DATAQC_POLYTRENDTEST Data quality control algorithm testing
-    if measurements contain a significant portion of a polynomial.
-    Returns 1 if this is not the case, else 0.
-    %
-    Time-stamp: <2010-10-29 13:56:46 mlankhorst>
-    %
-    RATIONALE: The purpose of this test is to check if a significant
-    fraction of the variability in a time series can be explained
-    by a drift, possibly interpreted as a sensor drift. This drift
-    is assumed to be a polynomial of order ORD. Use ORD=1 to
-    consider a linear drift
-    %
-    METHODOLOGY: The time series dat is passed to MatLab's POLYFIT
-    routine to obtain a polynomial fit PP to dat, and the
-    difference dat-PP is compared to the original dat. If the
-    standard deviation of (dat-PP) is less than that of dat by a
-    factor of NSTD, the time series is assumed to contain a
-    significant trend (output will be 0), else not (output will be
-    1).
-    %
-    USAGE: OUT=dataqc_polytrendtest(dat,ORD,NSTD);
-    %
-    OUT: Boolean scalar, 0 if trend is detected, 1 if not.
-    %
-    dat: Input dataset, a numeric real vector.
-    ORD (optional, defaults to 1): Polynomial order.
-    NSTD (optional, defaults to 3): Factor by how much the
-    standard deviation must be reduced before OUT
-    switches from 1 to 0
-    %
-    function out=dataqc_polytrendtest(varargin);
-    error(nargchk(1,3,nargin,'struct'))
-    dat=varargin{1};
-    if ~isnumeric(dat)
-        error('dat must be numeric.')
-    end
-    if ~isvector(dat)
-        error('dat must be vector.')
-    end
-    if ~isreal(dat)
-        error('dat must be real.')
-    end
-    ord=1;
-    nstd=3;
-    if nargin==2
-        if ~isempty(varargin{2})
-            ord=varargin{2};
-        end
-    end
-    if nargin==3
-        if ~isempty(varargin{2})
-            ord=varargin{2};
-        end
-        if ~isempty(varargin{3})
-            nstd=varargin{3};
-        end
-    end
-    if ~isnumeric(ord)
-        error('ORD must be numeric.')
-    end
-    if ~isscalar(ord)
-        error('ORD must be scalar.')
-    end
-    if ~isreal(ord)
-        error('ORD must be real.')
-    end
-    if ~isnumeric(nstd)
-        error('NSTD must be numeric.')
-    end
-    if ~isscalar(nstd)
-        error('NSTD must be scalar.')
-    end
-    if ~isreal(nstd)
-        error('NSTD must be real.')
-    end
-    ord=round(abs(ord));
-    nstd=abs(nstd);
-    ll=len(dat);
-    x=[1:ll];
-    pp=polyfit(x,dat,ord);
-    datpp=polyval(pp,x);
-    if (nstd*std(dat-datpp))<std(dat)
-        out=0;
-    else
-        out=1;
-    end
+        Data quality control algorithm testing if measurements contain a
+        significant portion of a polynomial. Returns 1 if this is not the case,
+        else 0.
+
+        The purpose of this test is to check if a significant fraction of the
+        variability in a time series can be explained by a drift, possibly
+        interpreted as a sensor drift. This drift is assumed to be a polynomial
+        of order ORD. Use ORD=1 to consider a linear drift
+
+        The time series dat is passed to MatLab's POLYFIT routine to obtain a
+        polynomial fit PP to dat, and the difference dat-PP is compared to the
+        original dat. If the standard deviation of (dat-PP) is less than that
+        of dat by a factor of NSTD, the time series is assumed to contain a
+        significant trend (output will be 0), else not (output will be 1).
+
+    Implemented by:
+
+        2012-10-29: DPS authored by Mathias Lankhorst. Example code provided
+        for Matlab.
+        2013-04-06: Christopher Wingard. Initial python implementation.
+        2013-05-30: Christopher Mueller. Performance optimizations.
+
+    Usage:
+
+        qcflag = dataqc_polytrendtest(dat, t, ord_n, nstd, strict_validation)
+
+            where
+
+        qcflag = Boolean, 0 a trend is detected, 1 elsewhere.
+        dat = Input dataset, a numeric real vector.
+        t = time record associated with dat
+        ord_n (optional, defaults to 1) = Polynomial order.
+        nstd (optional, defaults to 3) = Factor by how much the standard
+            deviation must be reduced before qcflag switches from 1 to 0
+        strict_validation (optional, defaults to False) = Flag asserting
+            testing of inputs.
+
+    References:
+
+        OOI (2012). Data Product Specification for Trend Test. Document
+            Control Number 1341-10007. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-10007_Data_Product_SPEC_TRNDTST_OOI.pdf)
     """
     dat = np.atleast_1d(dat)
+    t = np.atleast_1d(t)
 
     if strict_validation:
-        if not utils.isnumeric(dat).all():
-            raise ValueError('\'dat\' must be numeric')
-
-        if not utils.isvector(dat):
-            raise ValueError('\'dat\' must be a vector')
-
-        if not utils.isreal(dat).all():
-            raise ValueError('\'dat\' must be real')
-
-        for k, arg in {'ord_n': ord_n, 'nstd': nstd}.iteritems():
+        for k, arg in {'dat': dat, 't': t, 'ord_n': ord_n, 'nstd': nstd}.iteritems():
             if not utils.isnumeric(arg).all():
                 raise ValueError('\'{0}\' must be numeric'.format(k))
-
-            if not utils.isscalar(arg):
-                raise ValueError('\'{0}\' must be a scalar'.format(k))
 
             if not utils.isreal(arg).all():
                 raise ValueError('\'{0}\' must be real'.format(k))
 
+        for k, arg in {'dat': dat, 't': t}.iteritems():
+            if not utils.isvector(arg):
+                raise ValueError('\'{0}\' must be a vector'.format(k))
+
+        for k, arg in {'ord_n': ord_n, 'nstd': nstd}.iteritems():
+            if not utils.isscalar(arg):
+                raise ValueError('\'{0}\' must be a scalar'.format(k))
+
     ord_n = int(round(abs(ord_n)))
     nstd = int(abs(nstd))
+
+    ll = len(dat)
     # Not needed because time is incorporated as 't'
-    # ll = len(dat)
     # t = range(ll)
+
     pp = np.polyfit(t, dat, ord_n)
     datpp = np.polyval(pp, t)
 
+    # test for a trend
     if np.atleast_1d((np.std(dat - datpp) * nstd) < np.std(dat)).all():
-        return 0
+        trndtst = 0
+    else:
+        trndtst = 1
 
-    return 1
+    # insure output size equals input, even though test yields a single value.
+    qcflag = np.ones(ll).astype('int8') * trndtst
+    return qcflag
 
 
 def dataqc_stuckvaluetest(x, reso, num=10, strict_validation=False):
     """
-    Stuck Value Test Quality Control Algorithm as defined in the DPS for
-    SPEC_STUCKVL - DCN 1341-10008
-    https://alfresco.oceanobservatories.org/alfresco/d/d/workspace/SpacesStore/a04acb56-7e27-48c6-a40b-9bb9374ee35c/1341-10008_Data_Product_SPEC_STUCKVL_OOI.pdf
+    Description:
 
-    DATAQC_STUCKVALUETEST   Data quality control algorithm testing a
-        time series for "stuck values", i.e. repeated occurences of
-        one value. Returns 1 for presumably good data and 0 for data
-        presumed bad.
-    %
-    Time-stamp: <2011-10-31 11:20:23 mlankhorst>
-    %
-    USAGE:   OUT=dataqc_stuckvaluetest(x,RESO,NUM);
-    %
-          OUT:  Boolean output: 0 where stuck values are found,
-                1 elsewhere.
-          x:    Input time series (vector, numeric).
-          RESO: Resolution; repeat values less than RESO apart will
-                be considered "stuck values".
-          NUM:  Minimum number of successive values within RESO of
-                each other that will trigger the "stuck value". NUM
-                is optional and defaults to 10 if omitted or empty.
-    %
-    EXAMPLE:
-    %
-    >> x=[4.83  1.40  3.33  3.33  3.33  3.33  4.09  2.97  2.85  3.67];
-    %
-    >> dataqc_stuckvaluetest(x,.001,4)
-    %
-    ans =
-    %
-          1     1     0     0     0     0     1     1     1     1
-    %
-    function out=dataqc_stuckvaluetest(varargin);
+        Data quality control algorithm testing a time series for "stuck
+        values", i.e. repeated occurences of one value. Returns 1 for
+        presumably good data and 0 for data presumed bad.
 
-    error(nargchk(2,3,nargin,'struct'))
-    x=varargin{1};
-    reso=varargin{2};
-    num=10;
-    switch nargin
-        case 3,
-            if ~isempty(varargin{3})
-                num=varargin{3};
-            end
-    end
-    if ~isnumeric(x)
-        error('x must be numeric.')
-    end
-    if ~isvector(x)
-        error('x must be a vector.')
-    end
-    if ~isnumeric(reso)
-        error('RESO must be numeric.')
-    end
-    if ~isscalar(reso)
-        error('RESO must be a scalar.')
-    end
-    if ~isreal(reso)
-        error('RESO must be real.')
-    end
-    reso=abs(reso);
-    if ~isnumeric(num)
-        error('NUM must be numeric.')
-    end
-    if ~isscalar(num)
-        error('NUM must be a scalar.')
-    end
-    if ~isreal(num)
-        error('NUM must be real.')
-    end
-    num=abs(num);
-    ll=len(x);
-    out=zeros(size(x));
-    out=logical(out);
-    if ll<num
-        warning('NUM is greater than len(x). Returning zeros.')
-    else
-        out=ones(size(x));
-        iimax=ll-num+1;
-        for ii=1:iimax
-            ind=[ii:ii+num-1];
-            tmp=abs(x(ii)-x(ind));
-            if all(tmp<reso)
-                out(ind)=0;
-            end
-        end
-    end
-    out=logical(out);
+    Implemented by:
+
+        2012-10-29: DPS authored by Mathias Lankhorst. Example code provided
+        for Matlab.
+        2013-04-06: Christopher Wingard. Initial python implementation.
+
+    Usage:
+
+        qcflag = =dataqc_stuckvaluetest(x, RESO, NUM);
+
+            where
+
+        qcflag = Boolean output: 0 where stuck values are found, 1 elsewhere.
+        x = Input time series (vector, numeric).
+        reso = Resolution; repeat values less than reso apart will be
+            considered "stuck values".
+        num = Minimum number of successive values within reso of each other
+            that will trigger the "stuck value". num is optional and defaults
+            to 10 if omitted or empty.
+
+    References:
+
+        OOI (2012). Data Product Specification for Stuck Value Test. Document
+            Control Number 1341-10008. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-10008_Data_Product_SPEC_STUCKVL_OOI.pdf)
     """
     dat = np.atleast_1d(x)
-
-    if isinstance(reso, np.ndarray):
-        reso = reso[0]
-
-    if isinstance(num, np.ndarray):
-        num = num[0]
 
     if strict_validation:
         if not utils.isnumeric(dat).all():
@@ -746,7 +497,7 @@ def dataqc_stuckvaluetest(x, reso, num=10, strict_validation=False):
     out = np.zeros(dat.size, dtype='int8')
 
     if ll < num:
-        # Warn - 'num' is greater than len(x), returning zeros
+        log.warn('\'num\' is greater than len(\'x\'), returning zeros')
         pass
     else:
         out.fill(1)
@@ -784,7 +535,6 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat, strict_validati
 
         2012-07-17: DPS authored by Mathias Lankhorst. Example code provided
         for Matlab.
-
         2013-04-06: Christopher Wingard. Initial python implementation.
 
     Usage:
@@ -811,38 +561,9 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat, strict_validati
             if NaN/empty.
         startdat = start value (scalar) of dat that is presumed good. defaults
             to first non-NaN value of dat if NaN/empty.
-        toldat = tolerance value (scalar) for dat; threshold to within which 
+        toldat = tolerance value (scalar) for dat; threshold to within which
             dat must return to be counted as good, after exceeding a ddatdx
             threshold detected bad data.
-
-    Examples:
-
-        Ordinary use, default mindx and startdat:
-
-            outdat, outx, outqc = dataqc_gradienttest([3, 5, 98, 99, 4], 
-                                                      np.arange(5)+1,
-                                                      [-50, 50], [], [], 5)
-            outdat = [3, 5, 98, 99, 4]
-            outx = [1, 2, 3, 4, 5]
-            outqc = [1, 1, 0, 0, 1]
-
-        Alternate startdat to swap good/bad segments:
-
-            outdat, outx, outqc = dataqc_gradienttest([3, 5, 98, 99, 4], 
-                                                      np.arange(5)+1,
-                                                      [-50, 50], [], 100, 5)
-            outdat = [3, 5, 98, 99, 4]
-            outx = [1, 2, 3, 4, 5]
-            outqc = [0, 0, 1, 1, 0]
-
-        Alternate mindx to remove certain x and dat:
-
-            outdat, outx, outqc = dataqc_gradienttest([3, 5, 98, 99, 4], 
-                                                      [1, 2, 3, 3.1, 4],
-                                                      [-50, 50], 0.2, [], 5)
-            outdat = [3, 5, 98, 4]
-            outx = [1, 2, 3, 4]
-            outqc = [1, 1, 0, 1]
 
     References:
 
@@ -899,7 +620,7 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat, strict_validati
         log.warn('\'dat\' and \'x\' contain too few points for '
                  'meaningful analysis.')
         outqc = outqc.astype('int8')
-        outdat = dat;
+        outdat = dat
         outx = x
         return outdat, outx, outqc
 
@@ -931,7 +652,7 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat, strict_validati
             else:
                 outqc[ii] = 0
         else:
-            tmp = (dat[ii] - dat[ii-1]) / (x[ii] - x[ii-1]);
+            tmp = (dat[ii] - dat[ii-1]) / (x[ii] - x[ii-1])
             if (tmp < ddatdx[0]) or (tmp > ddatdx[1]):
                 outqc[ii] = 0
             else:
@@ -958,7 +679,7 @@ def dataqc_solarelevation(lon, lat, dt):
         computed from these expressions is accurate to at least 1'. The solar
         constant (1368.0 W/m^2) represents a mean of satellite measurements
         made over the last sunspot cycle (1979-1995) taken from Coffey et al
-        (1995), Earth System Monitor, 6, 6-10. 
+        (1995), Earth System Monitor, 6, 6-10.
 
         This code is a python implementation of soradna1.m available in Air-Sea
         Toolbox.
@@ -983,7 +704,7 @@ def dataqc_solarelevation(lon, lat, dt):
         z = solar altitude [degrees]
         sorad = no atmosphere solar radiation [W m^-2]
 
-        lon = longitude (east is positive) [decimal degress] 
+        lon = longitude (east is positive) [decimal degress]
         lat = latitude [decimal degrees]
         dt = date and time stamp in UTC [seconds since 1970-01-01]
 
@@ -999,7 +720,6 @@ def dataqc_solarelevation(lon, lat, dt):
             >> Controlled >> 1000 System Level >>
             1341-10011_Data_Product_SPEC_SOLRELV_OOI.pdf)
     """
-
     # Test lengths and types of inputs. Latitude and longitude must be the same
     # size and can either be a scalar or a vecotr. The date and time stamp
     # can also be either a scalar or a vector. If all three inputs are vectors,
@@ -1158,14 +878,6 @@ def dataqc_propogateflags(inflags, strict_validation=False):
             flags of an independent data set such that "0" means bad data and
             "1" means good data.
 
-    Examples:
-
-        inflags = np.array([[0, 0, 1, 1],
-                            [1, 0, 1, 0]]).astype('int8')
-
-        outflag = dataqc_propagateflags(inflags)
-        outflag = [0, 0, 1, 0]
-
     References:
 
         OOI (2012). Data Product Specification for Combined QC Flags. Document
@@ -1179,7 +891,7 @@ def dataqc_propogateflags(inflags, strict_validation=False):
 
     if strict_validation:
         if not utils.islogical(inflags):
-            raise ValueError('\'inflags\' must be \'0\' or \'1\' ' \
+            raise ValueError('\'inflags\' must be \'0\' or \'1\' '
                              'integer flag array')
 
     array_size = inflags.shape
@@ -1187,7 +899,7 @@ def dataqc_propogateflags(inflags, strict_validation=False):
     if nrows < 2:
         error('\'inflags\' must be at least a two-dimensional array')
 
-    outflag = np.all(inflags,0);
+    outflag = np.all(inflags, 0)
     return outflag.astype('int8')
 
 
@@ -1197,7 +909,7 @@ def dataqc_condcompress(p_orig, p_new, c_orig, cpcor=-9.57e-8):
 
         Implementation of the Sea-Bird conductivity compressibility correction,
         scaling the input conductivity based on ratio of the original pressure
-        and the updated pressure. 
+        and the updated pressure.
 
     Implemented by:
 
@@ -1218,16 +930,6 @@ def dataqc_condcompress(p_orig, p_new, c_orig, cpcor=-9.57e-8):
         cpcor = pressure correction coefficient used to calculate original
             conductivity, default is -9.57e-8
 
-    Example:
-
-        p_orig = 1000
-        p_new = 900
-        c_orig = 55
-        cpcor = -9.57e-8
-
-        c_new = dataqc_condcompress(p_orig, p_new, c_orig, cpcor)
-        c_new = 54.9995
-
     References:
 
         OOI (2012). Data Product Specification for Conductivity Compressibility
@@ -1236,8 +938,5 @@ def dataqc_condcompress(p_orig, p_new, c_orig, cpcor=-9.57e-8):
             >> Controlled >> 1000 System Level >>
             1341-10030_Data_Product_SPEC_CNDCMPR_OOI.pdf)
     """
-    # need to add test cases to ensure inputs (p_orig, p_new and c_orig) are
-    # the same size. cpcor is a scalar
-
     c_new = c_orig * (1 + cpcor * p_orig) / (1 + cpcor * p_new)
     return c_new
