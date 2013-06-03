@@ -700,10 +700,10 @@ def dataqc_stuckvaluetest(x, reso, num=10, strict_validation=False):
 
     num = np.abs(num)
     dat = np.asanyarray(dat, dtype=np.float)
-
+    ll = len(x)
     if ll < num:
         # Warn - 'num' is greater than len(x), returning zeros
-        pass
+        out = np.zeros(dat.size, dtype='int8')
     else:
         out = stuckvalues(dat, reso, num)
 
