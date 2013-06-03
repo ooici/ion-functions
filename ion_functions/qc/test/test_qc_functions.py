@@ -216,15 +216,15 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         1                1
 
         """
-        dat = [-1, 3, 40, -1, 1, -6, -6, 1]
+        dat = [-1 , 3 , 40 , -1 , 1 , -6 , -6 , 1 , 2 , 4 , 3 , 1 , -1 , 40 , 1 , 1 , 4 , 2 , 2 , 2 , 1 , 2 , 3]
+        out = [ 1 , 1 , 0  , 1  , 1 , 1  , 1  , 1 , 1 , 1 , 1 , 1 , 1  , 0  , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1]
         acc = 0.1
         N = 5
         L = 5
-        out = [1, 1, 0, 1, 1, 1, 1, 1]
 
         got = qcfunc.dataqc_spiketest(dat, acc, N, L)
 
-        self.assertTrue(np.array_equal(got, out))
+        np.testing.assert_array_equal(got,out)
 
 
     def test_dataqc_polytrendtest(self):
