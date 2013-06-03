@@ -6,7 +6,7 @@
 @author Christopher Mueller
 @brief Module containing QC functions ported from matlab samples in DPS documents
 """
-from ion_functions.qc.qc_extensions import stuckvalues
+from ion_functions.qc.qc_extensions import stuckvalues, spikevalues
 
 ## DO NOT IMPORT AT THIS LEVEL - Perform imports within each function
 def dataqc_globalrangetest_minmax(dat, dat_min, dat_max, strict_validation=False):
@@ -439,62 +439,9 @@ def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
 
             if not utils.isreal(arg).all():
                 raise ValueError('\'{0}\' must be real'.format(k))
-
-    L = np.ceil(np.abs(L))
-    if L / 2 == np.round(L / 2):
-        L += 1
-        # Warn - L was even; setting L = L + 1
-    if L < 3:
-        L = 5
-        # Warn - L was too small; setting L = 5
-
-    ll = len(dat)
-
-    L2 = int((L - 1) / 2)
-    i1 = 1 + L2
-    i2 = ll - L2
-
-    if ll >= L:
-
-        # Do the "inner" section
-        a = utils.rolling_window(dat, L)
-        b = a[:, L2]
-        a = np.delete(a, L2, 1)
-
-        it = np.nditer([a, b, None],
-                       flags=['reduce_ok', 'external_loop', 'buffered', 'delay_bufalloc'],
-                       op_flags=[['readonly'],['readonly'],['readwrite','allocate']],
-                       op_dtypes=['float64','float64','int8'],
-                       op_axes=[None, [0, -1], [0, -1]])
-        it.operands[-1][...] = 0
-        it.reset()
-        for ai, bi, oi in it:
-            oi[...] = (N * np.max([ai.max() - ai.min(), acc])) > np.abs(bi[0] - ai.mean())
-        out = it.operands[-1].squeeze()
-
-        # Add on the start...
-        sout = np.zeros(L2, dtype='int8')
-        for ii in xrange(L2):  # for ii=1:L2
-            tmpdat = np.hstack((dat[:ii], dat[ii+1:L]))  # tmpdat=dat([1:ii-1 ii+1:L]);
-            R = tmpdat.max() - tmpdat.min()  # R=max(tmpdat)-min(tmpdat);
-            R = np.max([R, acc])  # R=max([R acc]);
-            if (N * R) > np.abs(dat[ii] - tmpdat.mean()):  # if (N*R)>abs(dat(ii)-mean(tmpdat))
-                sout[ii] = 1 # out(ii)=1;
-        out = np.append(sout, out)
-
-        # Add on the end...
-        lout = np.zeros(L2, dtype='int8')
-        out = np.append(out, lout)
-        for ii in xrange(ll - L2, ll):  # for ii=ll-L2+1:ll
-            tmpdat = np.hstack((dat[:ii], dat[ii:L]))  # tmpdat=dat([ll-L+1:ii-1 ii+1:ll]);
-            R = tmpdat.max() - tmpdat.min()  # R=max(tmpdat)-min(tmpdat);
-            R = np.max([R, acc])  # R=max([R acc]);
-            if (N * R) > np.abs(dat[ii] - tmpdat.mean()):  # if (N*R)>abs(dat(ii)-mean(tmpdat))
-                out[ii] = 1  # out(ii)=1;
-
-    else:
-        out = np.zeros(dat.size, dtype='int8')
-        # Warn - 'L was greater than len of dat, returning zeros.'
+    dat = np.asanyarray(dat, dtype=np.float)
+    
+    out = spikevalues(dat, L, N, acc)
     return out
 
 
@@ -752,8 +699,7 @@ def dataqc_stuckvaluetest(x, reso, num=10, strict_validation=False):
                 raise ValueError('\'{0}\' must be real'.format(k))
 
     num = np.abs(num)
-    ll = len(x)
-    out = np.zeros(dat.size, dtype='int8')
+    dat = np.asanyarray(dat, dtype=np.float)
 
     if ll < num:
         # Warn - 'num' is greater than len(x), returning zeros

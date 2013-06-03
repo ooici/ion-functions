@@ -1,27 +1,14 @@
 #include <stdio.h>
 
 
-size_t idx_min(size_t a, size_t b)
-{
-    if(a<=b) 
-        return a;
-    return b;
-}
-double double_max(double a, double b)
+static double double_max(double a, double b)
 {
     if(a >= b)
         return a;
     return b;
 }
 
-double double_min(double a, double b)
-{
-    if(a <= b)
-        return a;
-    return b;
-}
-
-double double_abs(double a)
+static double double_abs(double a)
 {
     if(a < 0)
         return -a;
@@ -29,7 +16,7 @@ double double_abs(double a)
 }
 
 
-signed char window_spike(const double *sub_array, size_t window_len, size_t window_index, double N, double ACC) 
+static signed char window_spike(const double *sub_array, size_t window_len, size_t window_index, double N, double ACC) 
 {
     size_t j=0;
     double focus;

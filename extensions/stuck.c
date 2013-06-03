@@ -2,35 +2,9 @@
 #include <stdlib.h>
 
 static int all(const int *arr, size_t len);
-
-/* double_abs
- * Returns the absolute value of a
- */
-double double_abs(double a) 
-{
-    if(a>0)
-        return a;
-    return -a;
-}
-/*
- * int_min
- * Returns the minimum value between a and b
- */
-int int_min(int a, int b) 
-{
-    if(a<=b) 
-        return a;
-    return b;
-}
-
-/*
- * comp_res
- * Returns true if the difference between a and b is less than res
- */
-int comp_res(double a, double b, double res) 
-{
-    return (double_abs(b-a) < res);
-}
+static double double_abs(double a);
+static int int_min(int a, int b);
+static int comp_res(double a, double b, double res);
 
 /*
  * stuck
@@ -70,5 +44,34 @@ static int all(const int *arr, size_t len)
             return 0;
     }
     return 1;
+}
+
+/* double_abs
+ * Returns the absolute value of a
+ */
+static double double_abs(double a) 
+{
+    if(a>0)
+        return a;
+    return -a;
+}
+/*
+ * int_min
+ * Returns the minimum value between a and b
+ */
+static int int_min(int a, int b) 
+{
+    if(a<=b) 
+        return a;
+    return b;
+}
+
+/*
+ * comp_res
+ * Returns true if the difference between a and b is less than res
+ */
+static int comp_res(double a, double b, double res) 
+{
+    return (double_abs(b-a) < res);
 }
 

@@ -20,7 +20,7 @@ class TestQCPerformance(PerformanceTestCase):
     def test_spiketest(self):
         stats = []
 
-        sample_set = np.empty(a_day * 2, dtype=np.float)
+        sample_set = np.empty(a_year, dtype=np.float)
         sample_set.fill(3)
         indexes = [i for i in xrange(a_day * 2) if not i%20]
         sample_set[indexes] = 40
