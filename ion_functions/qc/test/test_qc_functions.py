@@ -216,8 +216,8 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         1                1
 
         """
-        dat = [-1 , 3 , 40 , -1 , 1 , -6 , -6 , 1 , 2 , 4 , 3 , 1 , -1 , 40 , 1 , 1 , 4 , 2 , 2 , 2 , 1 , 2 , 3]
-        out = [ 1 , 1 , 0  , 1  , 1 , 1  , 1  , 1 , 1 , 1 , 1 , 1 , 1  , 0  , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1]
+        dat = [-1, 3, 40, -1, 1, -6, -6, 1]
+        out = [1, 1, 0, 1, 1, 1, 1, 1]
         acc = 0.1
         N = 5
         L = 5
@@ -225,6 +225,27 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         got = qcfunc.dataqc_spiketest(dat, acc, N, L)
 
         np.testing.assert_array_equal(got,out)
+
+
+    def test_dataqc_spiketest_random(self):
+        max = int(1e6)
+        a = np.array([10] * max)
+
+        # Set some indices to values that are within the tolerance
+        in_inds = np.random.randint(0,max,10)
+        a[in_inds] = 13
+
+        # Set some indices to values that are outside the tolerance
+        out_inds = np.random.randint(0,max,10)
+        a[out_inds] = 20
+
+        out = qcfunc.dataqc_spiketest(a, 1, N=5, L=5)
+
+        # Make sure the expected failures are 0
+        self.assertTrue((out[out_inds] == 0).all())
+
+        # Delete the indices and make sure everything that's left is 1
+        self.assertTrue((np.delete(out, out_inds) == 1).all())
 
 
     def test_dataqc_polytrendtest(self):
@@ -339,6 +360,25 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         got = qcfunc.dataqc_stuckvaluetest(x, reso, num)
 
         np.testing.assert_array_equal(got,out)
+
+    def test_dataqc_stuckvaluetest_random(self):
+        max = int(1e6)
+        a = np.random.random_sample(max)*(20-10)+10 # Random values between 10 & 20
+
+        # Get a random range, set them to the same value
+        si = np.random.randint(0,max-20,1)
+        sl = slice(si, si+20)
+        a[sl] = a[si]
+
+        out = qcfunc.dataqc_stuckvaluetest(a, 0.1, num=10)
+
+        # Make sure the expected failures are 0
+        self.assertTrue((out[sl] == 0).all())
+
+        # Delete the indices and make sure everything that's left is 1
+        self.assertTrue((np.delete(out, sl) == 1).all())
+
+
 
     def test_dataqc_gradienttest(self):
         """
