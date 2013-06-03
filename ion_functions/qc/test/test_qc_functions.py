@@ -216,11 +216,40 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         1                1
 
         """
-        dat = [-1 , 3 , 40 , -1 , 1 , -6 , -6 , 1 , 2 , 4 , 3 , 1 , -1 , 40 , 1 , 1 , 4 , 2 , 2 , 2 , 1 , 2 , 3]
-        out = [ 1 , 1 , 0  , 1  , 1 , 1  , 1  , 1 , 1 , 1 , 1 , 1 , 1  , 0  , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1]
+        dat = [-1, 3, 40, -1, 1, -6, -6, 1]
         acc = 0.1
         N = 5
         L = 5
+        out = [1, 1, 0, 1, 1, 1, 1, 1]
+
+        got = qcfunc.dataqc_spiketest(dat, acc, N, L)
+
+        np.testing.assert_array_equal(got,out)
+    
+    def test_dataqc_spiketest_extended(self):
+        dat = [-1 , 3 , 40 , -1 , 1 , -6 , -6 , 1 , 2 , 4 , 3 , 1 , -1 , 40 , 1 , 1 , 4 , 2 , 2 , 2 , 1 , 2 , 100]
+        out = [ 1 , 1 , 1  , 1  , 1 , 1  , 1  , 1 , 1 , 1 , 1 , 1 , 1  , 0  , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 0]
+        acc = 0.1
+        N = 5
+        L = 7
+
+        got = qcfunc.dataqc_spiketest(dat, acc, N, L)
+
+        np.testing.assert_array_equal(got,out)
+
+        dat = np.arange(20)
+        dat[0] = 100 # spike at the beginning
+        dat[10] = 100 # spike in the middle
+        dat[19] = 100 # spike at the end
+        out = np.empty(20, dtype=np.int8)
+        out.fill(1)
+        out[0] = 0
+        out[10] = 0
+        out[19] = 0
+
+        acc = 0.1
+        N = 5
+        L = 7 # longer smooothing
 
         got = qcfunc.dataqc_spiketest(dat, acc, N, L)
 

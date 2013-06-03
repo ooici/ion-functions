@@ -115,6 +115,22 @@ From the *coverage-model* directory, run the following command:
 
 This will run all tests in the ion-functions repository.  The **-v** flag denotes verbose output (the name of each test prints as it runs).  For more *nose* options, refer to the [nose documentation](https://nose.readthedocs.org/en/latest/man.html)
 
+# Running C-Extension Unit Tests
+
+From the *ion-functions* directory, run the following command:
+
+    make
+
+This will compile the C-extension unit tests. To run the tests:
+
+    extensions/test
+
+You should see something of the like:
+
+    test_spike_simple... ok
+    test_spike_l simple... ok
+    test_spike_long... ok
+
 #Libraries Currently Included
 * [Numpy](http://www.scipy.org/Tentative_NumPy_Tutorial) – array manipulation
     * import numpy as np
