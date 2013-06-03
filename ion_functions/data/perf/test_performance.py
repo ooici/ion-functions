@@ -34,7 +34,7 @@ class PerformanceTestCase(TestCase):
                 func(*args, **kwargs)
             print 'Run %i: %s' %(i,stats[i])
             if stats[i] > 10:
-                raise AssertionError('Performance standard failed. Method exceeded 20 seconds')
+                raise AssertionError('Performance standard failed. Method exceeded 10 seconds')
 
         print 'Mean: ', np.average(np.array(stats))
 
