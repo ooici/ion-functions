@@ -45,7 +45,7 @@ setup(name = 'ion-functions',
             'readline',
             'numexpr==2.1',
             'nose==1.1.2',
-            'pygsw==0.0.9',
+            'pygsw==0.0.10',
             'geomag==0.9',
             'scipy==0.11.0',
             'cython'
