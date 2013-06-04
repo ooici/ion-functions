@@ -780,8 +780,23 @@ def dataqc_solarelevation(lon, lat, dt):
 
     return (z, sorad)
 
+def dataqc_propagateflags_wrapper(strict_validation=False, *args):
+    '''
+    This is a function that wraps dataqc_propagateflags for use in ION
+    It accepts a variable number of vector arguments (of the same shape) and calls dataqc_propagateflags
+    '''
 
-def dataqc_propogateflags(inflags, strict_validation=False):
+    if not strict_validation:
+
+        shapes = np.array([i.shape[0] for i in args])
+        if not (shapes == shapes[0]).all():
+            raise ValueError('Input vectors are not the same shape')
+
+    return dataqc_propagateflags(np.array(args), strict_validation=strict_validation)
+
+
+
+def dataqc_propagateflags(inflags, strict_validation=False):
     """
     Description:
 
@@ -805,7 +820,7 @@ def dataqc_propogateflags(inflags, strict_validation=False):
 
     Usage:
 
-        outflag = dataqc_propogateflags(inflags)
+        outflag = dataqc_propagateflags(inflags)
 
             where
 
@@ -824,8 +839,6 @@ def dataqc_propogateflags(inflags, strict_validation=False):
             >> Controlled >> 1000 System Level >>
             1341-10012_Data_Product_SPEC_CMBNFLG_OOI.pdf)
     """
-    import numpy as np
-    from ion_functions import utils
 
     if strict_validation:
         if not utils.islogical(inflags):
