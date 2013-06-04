@@ -2,6 +2,7 @@ from ion_functions.data.perf.test_performance import PerformanceTestCase, a_year
 from ion_functions.qc.qc_functions import dataqc_globalrangetest as grt
 from ion_functions.qc.qc_functions import dataqc_spiketest as spiketest
 from ion_functions.qc.qc_functions import dataqc_stuckvaluetest as stuckvalue
+from ion_functions.qc.qc_functions import dataqc_polytrendtest as trend
 
 import numpy as np
 import unittest
@@ -36,4 +37,9 @@ class TestQCPerformance(PerformanceTestCase):
         sample_set[0:len(v)] = v
         self.profile(stats, stuckvalue, sample_set, 0.001, 4)
 
+    def test_trend(self):
+        stats = []
+        x = np.arange(a_year, dtype=np.float)
+        sample_set = np.sin(np.pi * 2 * x/60.) * 6 + 3.
+        self.profile(stats, trend, sample_set, np.arange(a_year, dtype=np.float))
 

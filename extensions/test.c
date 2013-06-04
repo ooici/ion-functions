@@ -2,7 +2,9 @@
 #include <strings.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "spike.h"
+#include "utils.h"
 
 void arange(double *arr, size_t len);
 signed char all(signed char *, size_t);
@@ -11,7 +13,10 @@ void print_double_array(double *, size_t);
 char test_spike_simple(void);
 char test_spike_l(void);
 char test_spike_long(void);
+char test_polyval(void);
 void test(char (*func)(void));
+
+extern bool nearly_equal(double, double, double);
 
 static const char *message=NULL;
 
@@ -20,6 +25,7 @@ int main(int argc, char *argv[])
     test(&test_spike_simple);
     test(&test_spike_l);
     test(&test_spike_long);
+    test(&test_polyval);
     return 0;
 }
 
@@ -33,6 +39,21 @@ void test(char (*func)(void))
         if(message)
             printf("%s\n", message);
     }
+}
+
+char test_polyval()
+{
+    double p[] = {1., 2., -3.};
+    double inputs[] = {0., 1., 2., 3.};
+    double expected[] = {-3., 0., 5., 12.};
+    double e = 0.00001;
+    int i=0;
+    printf("test_polyval... ");
+
+    for(i=0;i<4;i++)
+        if(!nearly_equal(expected[i], polyval(p,3,inputs[i]), e)) 
+            return false;
+    return true;
 }
 
 char test_spike_simple()

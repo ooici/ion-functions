@@ -2,7 +2,7 @@ CC=gcc
 SRCDIR=extensions
 CFLAGS=-std=c99 -g -ggdb -Wall -I$(SRCDIR)
 
-test_objects=$(SRCDIR)/test.o $(SRCDIR)/spike.o
+test_objects=$(SRCDIR)/test.o $(SRCDIR)/spike.o $(SRCDIR)/utils.o
 
 all: $(SRCDIR)/test
 
