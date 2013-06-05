@@ -392,16 +392,12 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         startdat = np.array([])
         toldat = 5.0
 
-        outdat = np.array([3, 5, 98, 99, 4])
-        outx = np.array([1, 2, 3, 4, 5])
         outqc = np.array([1, 1, 0, 0, 1], dtype='int8')
 
-        gotdat, gotx, gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx,
+        gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx,
                                                          mindx, startdat,
                                                          toldat)
 
-        self.assertTrue(np.array_equal(gotdat, outdat))
-        self.assertTrue(np.array_equal(gotx, outx))
         self.assertTrue(np.array_equal(gotqc, outqc))
 
         # test case 2
@@ -412,16 +408,12 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         startdat = 100.0
         toldat = 5.0
 
-        outdat = np.array([3, 5, 98, 99, 4])
-        outx = np.array([1, 2, 3, 4, 5])
         outqc = np.array([0, 0, 1, 1, 0], dtype='int8')
 
-        gotdat, gotx, gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx,
+        gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx,
                                                          mindx, startdat,
                                                          toldat)
 
-        self.assertTrue(np.array_equal(gotdat, outdat))
-        self.assertTrue(np.array_equal(gotx, outx))
         self.assertTrue(np.array_equal(gotqc, outqc))
 
         # test case 3
@@ -432,21 +424,17 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         startdat = np.array([])
         toldat = 5.0
 
-        outdat = np.array([3, 5, 98, 4])
-        outx = np.array([1, 2, 3, 5])
-        outqc = np.array([1, 1, 0, 1], dtype='int8')
+        outqc = np.array([1, 1, 0, 0, 1], dtype='int8')
 
-        gotdat, gotx, gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx,
+        gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx,
                                                          mindx, startdat,
                                                          toldat)
 
-        self.assertTrue(np.array_equal(gotdat, outdat))
-        self.assertTrue(np.array_equal(gotx, outx))
         self.assertTrue(np.array_equal(gotqc, outqc))
 
-    def test_dataqc_propogateflags(self):
+    def test_dataqc_propagateflags(self):
         """
-        Test of the dataqc_propogateflags function.
+        Test of the dataqc_propagateflags function.
 
         Test values based on those defined in DPS:
 
@@ -462,28 +450,28 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         inflags = np.array([[0], [0]], dtype='int8')
         outflags = np.array([0])
 
-        got = qcfunc.dataqc_propogateflags(inflags)
+        got = qcfunc.dataqc_propagateflags(inflags)
         self.assertTrue(np.array_equal(got, outflags))
 
         # test 2
         inflags = np.array([[1], [0]], dtype='int8')
         outflags = np.array([0])
 
-        got = qcfunc.dataqc_propogateflags(inflags)
+        got = qcfunc.dataqc_propagateflags(inflags)
         self.assertTrue(np.array_equal(got, outflags))
 
         # test 3
         inflags = np.array([[0], [1]], dtype='int8')
         outflags = np.array([0])
 
-        got = qcfunc.dataqc_propogateflags(inflags)
+        got = qcfunc.dataqc_propagateflags(inflags)
         self.assertTrue(np.array_equal(got, outflags))
 
         # test 4
         inflags = np.array([[1], [1]], dtype='int8')
         outflags = np.array([1])
 
-        got = qcfunc.dataqc_propogateflags(inflags)
+        got = qcfunc.dataqc_propagateflags(inflags)
         self.assertTrue(np.array_equal(got, outflags))
 
         # test 5
@@ -491,7 +479,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
                             [0, 1, 0, 1]], dtype='int8')
         outflags = np.array([0, 0, 0, 1], dtype='int8')
 
-        got = qcfunc.dataqc_propogateflags(inflags)
+        got = qcfunc.dataqc_propagateflags(inflags)
         self.assertTrue(np.array_equal(got, outflags))
 
         # test 6
@@ -500,7 +488,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
                             [1, 0, 0, 1, 0, 1, 1]], dtype='int8')
         outflags = np.array([0, 0, 0, 0, 0, 0, 1], dtype='int8')
 
-        got = qcfunc.dataqc_propogateflags(inflags)
+        got = qcfunc.dataqc_propagateflags(inflags)
         self.assertTrue(np.array_equal(got, outflags))
 
     def test_dataqc_solarelevation(self):

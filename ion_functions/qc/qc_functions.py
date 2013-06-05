@@ -6,7 +6,7 @@
 @author Christopher Mueller
 @brief Module containing QC functions ported from matlab samples in DPS documents
 """
-from ion_functions.qc.qc_extensions import stuckvalues, spikevalues
+from ion_functions.qc.qc_extensions import stuckvalues, spikevalues, gradientvalues
 
 import time
 import numpy as np
@@ -19,7 +19,8 @@ from ion_functions import utils
 try:
     from ooi.logging import log
 except ImportError:
-    from logging import log
+    import logging
+    log = logging.getLogger('ion-functions')
 
 
 def dataqc_globalrangetest_minmax(dat, dat_min, dat_max, strict_validation=False):
@@ -448,6 +449,10 @@ def dataqc_stuckvaluetest(x, reso, num=10, strict_validation=False):
 
     return out
 
+def dataqc_gradienttest_wrapper(dat, x, tmin, tmax, mindx, startdat, toldat, strict_validation=False):
+    outdat, outx, outqc = dataqc_gradienttest(dat, x, [tmin,tmax], mindx, startdat, toldat, strict_validation=strict_validation)
+    return outqc
+
 
 def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat, strict_validation=False):
     """
@@ -511,9 +516,6 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat, strict_validati
             >> Controlled >> 1000 System Level >>
             1341-10010_Data_Product_SPEC_GRDTEST_OOI.pdf)
     """
-    # Sanity checks on dat and x
-    dat = np.atleast_1d(dat)
-    x = np.atleast_1d(x)
 
     if strict_validation:
         if not utils.isvector(dat) or not utils.isvector(x):
@@ -525,84 +527,37 @@ def dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat, strict_validati
         if not all(np.diff(x) > 0):
             raise ValueError('\'x\' must be montonically increasing')
 
-    # remove any NaNs from input vectors
-    dat = dat[~np.isnan(dat)]
-    x = x[~np.isnan(x)]
-
-    # flatten input vectors
-    dat = dat.flatten()
-    x = x.flatten()
-
-    # Check & set mindx
-    if utils.isempty(mindx):
-        mindx = np.nan
+    dat = np.asanyarray(dat, dtype=np.float).flatten()
+    x = np.asanyarray(x, dtype=np.float).flatten()
 
     if np.isnan(mindx):
         mindx = 0
+    mindx = mindx or 0
+    if np.isnan(startdat):
+        startdat = 0
+    startdat = startdat or 0
+    
+    # No strict validation here, they are scalards and they must be validated
+    # before going into the C-layer
+    if not utils.isscalar(mindx):
+        raise ValueError("'mindx' must be scalar, NaN, or empty.")
+    if not utils.isscalar(startdat):
+        raise ValueError("'startdat' must be scalar, NaN, or empty.")
 
-    if strict_validation:
-        if not utils.isscalar(mindx):
-            raise ValueError('\'mindx\' must be scalar, NaN, or empty.')
-
-    # Apply mindx
-    dx = np.diff(x) > mindx
-    ff = dx.nonzero()[0]
-    gg = np.hstack((np.zeros(1), ff+1)).astype('int8')
-    dat = dat[gg]
-    x = x[gg]
 
     # Confirm that there are still data points left, else abort:
-    outqc = np.zeros(len(dat), dtype='int8')
-    ll = len(dat)
-    if ll <= 1:
-        log.warn('\'dat\' and \'x\' contain too few points for '
-                 'meaningful analysis.')
-        outqc = outqc.astype('int8')
-        outdat = dat
-        outx = x
-        return outdat, outx, outqc
+    if np.abs(x[0] - x[-1]) < mindx:
+        out = np.zeros(x.shape)
+        out.fill(1)
+        log.warn('Too few values to inspect')
+        return out
 
-    # Check & set startdat, including output for data point 1
-    if utils.isempty(startdat):
-        startdat = np.nan
 
-    if np.isnan(startdat):
-        startdat = dat[0]
-        outqc[0] = 1
-    else:
-        if np.abs(startdat - dat[0]) <= toldat:
-            startdat = dat[0]
-            outqc[0] = 1
-        else:
-            outqc[0] = 0
+    grad_min = ddatdx[0]
+    grad_max = ddatdx[1]
+    out = gradientvalues(dat, x, grad_min, grad_max, mindx, startdat, toldat)
 
-    if strict_validation:
-        if not utils.isscalar(startdat):
-            raise ValueError('\'startdat\' must be scalar, NaN, or empty.')
-
-    # Main loop, checking for data points 2 through ll
-    ii = 1
-    while ii < ll:
-        if outqc[ii-1] == 0:
-            if np.abs(dat[ii] - startdat) <= toldat:
-                outqc[ii] = 1
-                startdat = dat[ii]
-            else:
-                outqc[ii] = 0
-        else:
-            tmp = (dat[ii] - dat[ii-1]) / (x[ii] - x[ii-1])
-            if (tmp < ddatdx[0]) or (tmp > ddatdx[1]):
-                outqc[ii] = 0
-            else:
-                outqc[ii] = 1
-                startdat = dat[ii]
-        ii = ii+1
-
-    outqc = outqc.astype('int8')
-    outdat = dat
-    outx = x
-
-    return outdat, outx, outqc
+    return out
 
 
 def dataqc_solarelevation(lon, lat, dt):

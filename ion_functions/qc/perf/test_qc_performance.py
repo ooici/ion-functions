@@ -46,7 +46,7 @@ class TestQCPerformance(PerformanceTestCase):
 
     def test_gradient(self):
         stats = []
-        sample_set = np.arange(a_day * 2, dtype=np.float)
+        sample_set = np.arange(a_year, dtype=np.float)
 
         self.profile(stats, grad, sample_set, sample_set, [-50,50], .1, [], 5)
 
