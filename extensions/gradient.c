@@ -36,7 +36,7 @@ int gradient(signed char *out, const double *dat, const double *x, size_t len, d
             continue; 
         }
 
-        if (fabs((x[i]-x[i-1])) > mindx) {
+        if (fabs((x[i]-x[i-(1+skipped)])) > mindx) {
             /* If the change in x is greater than mindx */
             ddatdx = (dat[i] - dat[i-(1+skipped)])/(x[i] - x[i-(1+skipped)]);
             /* Calculate the rate of change */
