@@ -449,8 +449,8 @@ def dataqc_stuckvaluetest(x, reso, num=10, strict_validation=False):
 
     return out
 
-def dataqc_gradienttest_wrapper(dat, x, tmin, tmax, mindx, startdat, toldat, strict_validation=False):
-    outdat, outx, outqc = dataqc_gradienttest(dat, x, [tmin,tmax], mindx, startdat, toldat, strict_validation=strict_validation)
+def dataqc_gradienttest_wrapper(dat, x, ddatdx, mindx, startdat, toldat, strict_validation=False):
+    outdat, outx, outqc = dataqc_gradienttest(dat, x, -ddatdx, ddatdx, mindx, startdat, toldat, strict_validation=strict_validation)
     return outqc
 
 
