@@ -3,6 +3,7 @@ from ion_functions.qc.qc_functions import dataqc_globalrangetest as grt
 from ion_functions.qc.qc_functions import dataqc_spiketest as spiketest
 from ion_functions.qc.qc_functions import dataqc_stuckvaluetest as stuckvalue
 from ion_functions.qc.qc_functions import dataqc_polytrendtest as trend
+from ion_functions.qc.qc_functions import dataqc_gradienttest as grad
 
 import numpy as np
 import unittest
@@ -43,3 +44,12 @@ class TestQCPerformance(PerformanceTestCase):
         sample_set = np.sin(np.pi * 2 * x/60.) * 6 + 3.
         self.profile(stats, trend, sample_set, np.arange(a_year, dtype=np.float))
 
+    def test_gradient(self):
+        stats = []
+        sample_set = np.arange(a_day * 2, dtype=np.float)
+
+        self.profile(stats, grad, sample_set, sample_set, [-50,50], .1, [], 5)
+
+
+
+        
