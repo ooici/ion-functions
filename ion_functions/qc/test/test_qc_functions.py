@@ -424,13 +424,27 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         startdat = np.array([])
         toldat = 5.0
 
-        outqc = np.array([1, 1, 0, 0, 1], dtype='int8')
+        outqc = np.array([1, 1, 0, -99, 1], dtype='int8')
 
         gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx,
                                                          mindx, startdat,
                                                          toldat)
 
         self.assertTrue(np.array_equal(gotqc, outqc))
+
+
+        # test case 4 (not part of DPS)
+
+        dat = np.array([3, 5, 98, 99, 4])
+        x = np.array([1,2,2.1,2.2, 5])
+        ddatdx = [-50, 50]
+        mindx = 0.9
+        startdat = np.array([])
+        toldat = 5.0
+        outqc = np.array([1, 1, -99, -99, 1], dtype=np.int8)
+        gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat)
+
+        np.testing.assert_array_equal(gotqc, outqc)
 
     def test_dataqc_propagateflags(self):
         """

@@ -22,13 +22,22 @@ except ImportError:
     import logging
     log = logging.getLogger('ion-functions')
 
+def is_fill(arr):
+    return (arr == -9999).all()
+
+def is_none(val):
+    return val is None or (len(val) and (np.asanyarray(val) == np.array(None)).all())
 
 def dataqc_globalrangetest_minmax(dat, dat_min, dat_max, strict_validation=False):
     '''
     Python wrapper for dataqc_globalrangetest
     Combines the min/max arguments into list for dataqc_globalrangetest
     '''
-    return dataqc_globalrangetest(dat, [dat_min, dat_max], strict_validation=strict_validation)
+    if is_none(dat_min) or is_none(dat_max) or is_fill(dat_min) or is_fill(dat_max):
+        out = np.empty(dat.shape, dtype=np.int8)
+        out.fill(-99)
+        return out
+    return dataqc_globalrangetest(dat, [dat_min[-1], dat_max[-1]], strict_validation=strict_validation)
 
 
 def dataqc_globalrangetest(dat, datlim, strict_validation=False):
@@ -218,6 +227,13 @@ def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
     return qcflag.astype('int8')
 
 
+def dataqc_spiketest_wrapper(dat, acc, N, L, strict_validation=False):
+    if is_none(acc) or is_fill(acc) or is_none(N) or is_fill(N) or is_none(L) or is_fill(L):
+        out = np.empty(dat.shape, dtype=np.int8)
+        out.fill(-99)
+        return out
+    return dataqc_spiketest(dat, acc[-1], N[-1], L[-1], strict_validation=False)
+
 def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
     """
     Description:
@@ -381,6 +397,13 @@ def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3, strict_validation=False):
     return qcflag
 
 
+def dataqc_stuckvaluetest_wrapper(x, reso, num, strict_validation=False):
+    if is_none(reso) or is_fill(reso) or is_none(num) or is_fill(num):
+        out = np.empty(x.shape, np.int8)
+        out.fill(-99)
+        return out
+    return  dataqc_stuckvaluetest(x, reso[-1], num[-1], strict_validation=strict_validation)
+
 def dataqc_stuckvaluetest(x, reso, num=10, strict_validation=False):
     """
     Description:
@@ -450,7 +473,11 @@ def dataqc_stuckvaluetest(x, reso, num=10, strict_validation=False):
     return out
 
 def dataqc_gradienttest_wrapper(dat, x, ddatdx, mindx, startdat, toldat, strict_validation=False):
-    outdat, outx, outqc = dataqc_gradienttest(dat, x, -ddatdx, ddatdx, mindx, startdat, toldat, strict_validation=strict_validation)
+    if is_none(ddatdx) or is_fill(ddatdx) or is_none(mindx) or is_fill(mindx) or is_none(startdat) or is_fill(startdat) or is_none(toldat) or is_fill(toldat):
+        out = np.empty(dat.shape, dtype=np.int8)
+        out.fill(-99)
+        return out
+    outqc = dataqc_gradienttest(dat, x, [-ddatdx[-1], ddatdx[-1]], mindx[-1], startdat[-1], toldat[-1], strict_validation=strict_validation)
     return outqc
 
 

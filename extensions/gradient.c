@@ -23,21 +23,22 @@ int gradient(signed char *out, const double *dat, const double *x, size_t len, d
         }
     }
     for(i=1;i<len;i++) {
-        if(bad) { /* Only start again if dat[i] is within toldat of startdat */
-            if(fabs(dat[i] - startdat) <= toldat) { /* It's good again */
-                bad = false;
-            }
-            else {
-                out[i] = 0; /* still bad mark it and move on */
-            }
-            /* The test for this element is simple, if it's within the tolerance
-             * set it to startdat and continue on
-             */
-            continue; 
-        }
 
-        if (fabs((x[i]-x[i-1])) > mindx) {
+        if (fabs((x[i]-x[i-(1+skipped)])) > mindx) {
             /* If the change in x is greater than mindx */
+            if(bad) { /* Only start again if dat[i] is within toldat of startdat */
+                if(fabs(dat[i] - startdat) <= toldat) { /* It's good again */
+                    bad = false;
+                }
+                else {
+                    out[i] = 0; /* still bad mark it and move on */
+                }
+                /* The test for this element is simple, if it's within the tolerance
+                 * set it to startdat and continue on
+                 */
+                continue; /* Our work here is done, continue in the loop to the next
+                             element */
+            }
             ddatdx = (dat[i] - dat[i-(1+skipped)])/(x[i] - x[i-(1+skipped)]);
             /* Calculate the rate of change */
             if(ddatdx < grad_min || ddatdx > grad_max) {
@@ -58,6 +59,7 @@ int gradient(signed char *out, const double *dat, const double *x, size_t len, d
         else {
             /* dx was <= mindx */
             skipped++;
+            out[i] = -99;
         }
     }
     return 0;
