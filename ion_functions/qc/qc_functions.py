@@ -36,7 +36,7 @@ def dataqc_globalrangetest_minmax(dat, dat_min, dat_max, strict_validation=False
         out = np.empty(dat.shape, dtype=np.int8)
         out.fill(-99)
         return out
-    return dataqc_globalrangetest(dat, [dat_min[-1], dat_max[-1]], strict_validation=strict_validation)
+    return dataqc_globalrangetest(dat, [np.atleast_1d(dat_min)[-1], np.atleast_1d(dat_max)[-1]], strict_validation=strict_validation)
 
 
 def dataqc_globalrangetest(dat, datlim, strict_validation=False):
@@ -231,7 +231,7 @@ def dataqc_spiketest_wrapper(dat, acc, N, L, strict_validation=False):
         out = np.empty(dat.shape, dtype=np.int8)
         out.fill(-99)
         return out
-    return dataqc_spiketest(dat, acc[-1], N[-1], L[-1], strict_validation=False)
+    return dataqc_spiketest(dat, np.atleast_1d(acc)[-1], np.atleast_1d(N)[-1], np.atleast_1d(L)[-1], strict_validation=strict_validation)
 
 def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
     """
@@ -307,6 +307,13 @@ def dataqc_spiketest(dat, acc, N=5, L=5, strict_validation=False):
     out = spikevalues(dat, L, N, acc)
     return out
 
+
+def dataqc_polytrendtest_wrapper(dat, t, ord_n, nstd, strict_validation=False):
+    if is_none(ord_n) or is_fill(ord_n) or is_none(nstd) or is_fill(ord_n):
+        out = np.empty(dat.shape, dtype=np.int8)
+        out.fill(-99)
+        return out
+    return dataqc_polytrendtest(dat, t, np.atleast_1d(ord_n)[-1], np.atleast_1d(nstd)[-1], strict_validation=strict_validation)
 
 def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3, strict_validation=False):
     """
@@ -392,7 +399,7 @@ def dataqc_polytrendtest(dat, t, ord_n=1, nstd=3, strict_validation=False):
         trndtst = 1
 
     # insure output size equals input, even though test yields a single value.
-    qcflag = np.ones(ll).astype('int8') * trndtst
+    qcflag = np.ones(dat.shape).astype('int8') * trndtst
     return qcflag
 
 
@@ -401,7 +408,7 @@ def dataqc_stuckvaluetest_wrapper(x, reso, num, strict_validation=False):
         out = np.empty(x.shape, np.int8)
         out.fill(-99)
         return out
-    return  dataqc_stuckvaluetest(x, reso[-1], num[-1], strict_validation=strict_validation)
+    return  dataqc_stuckvaluetest(x, np.atleast_1d(reso)[-1], np.atleast_1d(num)[-1], strict_validation=strict_validation)
 
 def dataqc_stuckvaluetest(x, reso, num=10, strict_validation=False):
     """
@@ -476,7 +483,7 @@ def dataqc_gradienttest_wrapper(dat, x, ddatdx, mindx, startdat, toldat, strict_
         out = np.empty(dat.shape, dtype=np.int8)
         out.fill(-99)
         return out
-    outqc = dataqc_gradienttest(dat, x, [-ddatdx[-1], ddatdx[-1]], mindx[-1], startdat[-1], toldat[-1], strict_validation=strict_validation)
+    outqc = dataqc_gradienttest(dat, x, [-np.atleast_1d(ddatdx)[-1], np.atleast_1d(ddatdx)[-1]], np.atleast_1d(mindx)[-1], np.atleast_1d(startdat)[-1], np.atleast_1d(toldat)[-1], strict_validation=strict_validation)
     return outqc
 
 
