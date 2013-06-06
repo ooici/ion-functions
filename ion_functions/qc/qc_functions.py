@@ -23,10 +23,9 @@ except ImportError:
     log = logging.getLogger('ion-functions')
 
 def is_fill(arr):
-    return (arr == -9999).all()
-
-def is_none(val):
-    return val is None or (len(val) and (np.asanyarray(val) == np.array(None)).all())
+    return np.atleast_1d(arr)[-1] == -9999
+def is_none(arr):
+    return arr is None or (np.atleast_1d(arr)[-1] == None)
 
 def dataqc_globalrangetest_minmax(dat, dat_min, dat_max, strict_validation=False):
     '''
