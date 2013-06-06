@@ -89,6 +89,8 @@ The dependencies for building/installing the library are:  **autoconf**, **autom
 Setup a virtualenv to run ion-functions (use any name you like):
 
     mkvirtualenv --python=python2.7 ion_functions
+    workon ion_functions
+    pip install numpy==1.6.2
 
 #Source
 
