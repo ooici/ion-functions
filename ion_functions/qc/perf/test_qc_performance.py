@@ -1,5 +1,5 @@
 from ion_functions.data.perf.test_performance import PerformanceTestCase, a_year, a_day
-from ion_functions.qc.qc_functions import dataqc_globalrangetest as grt
+from ion_functions.qc.qc_functions import dataqc_globalrangetest_minmax as grt
 from ion_functions.qc.qc_functions import dataqc_spiketest as spiketest
 from ion_functions.qc.qc_functions import dataqc_stuckvaluetest as stuckvalue
 from ion_functions.qc.qc_functions import dataqc_polytrendtest as trend
@@ -16,8 +16,12 @@ class TestQCPerformance(PerformanceTestCase):
         sample_set.fill(17.)
         indexes = [i for i in xrange(a_year) if not i%20]
         sample_set[indexes] = 40
+        mins = np.empty(a_year, dtype=np.float)
+        maxs = np.empty(a_year, dtype=np.float)
+        mins.fill(10)
+        maxs.fill(10)
 
-        self.profile(stats, grt, sample_set, [10,20])
+        self.profile(stats, grt, sample_set, mins, maxs)
 
     def test_spiketest(self):
         stats = []
