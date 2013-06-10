@@ -4,6 +4,7 @@ from ion_functions.qc.qc_functions import dataqc_spiketest as spiketest
 from ion_functions.qc.qc_functions import dataqc_stuckvaluetest as stuckvalue
 from ion_functions.qc.qc_functions import dataqc_polytrendtest as trend
 from ion_functions.qc.qc_functions import dataqc_gradienttest as grad
+from ion_functions.qc.qc_functions import dataqc_localrangetest as local
 
 import numpy as np
 import unittest
@@ -53,6 +54,15 @@ class TestQCPerformance(PerformanceTestCase):
         sample_set = np.arange(a_year, dtype=np.float)
 
         self.profile(stats, grad, sample_set, sample_set, [-50,50], .1, [], 5)
+
+    def test_local_range(self):
+        stats = []
+        dat = np.sin(np.arange(a_year) / 60.) * 4 + 2
+        z = np.arange(a_year)
+
+        datlim = np.array([0,5] * a_year).reshape((a_year,2))
+        datlimz = np.arange(a_year)
+        self.profile(stats, local, dat, z, datlim, datlimz)
 
 
 
