@@ -6,14 +6,13 @@
 @brief Module containing OPTAA related temperature and salinity correction
     coefficients.
 """
-import numpy as np
 
-# Return the Temperature and Salinity (T/S) correction coefficients as a
+# Returns the Temperature and Salinity (T/S) correction coefficients as a
 # dictionary for use in the ion_functions/data/opt_functions module. Values are
 # from published literature and are available in:
 #
 #   WET Labs, Inc. 2009. AC Meter Protocol Document, Revision P.
-# 
+#
 # The original file is composed of 4 columns corresponding to the wavelength
 # (nm) and the wavelength dependent temperature correction coefficients,
 # salinity correction coefficients for the 'c' channel, and salinity correction
@@ -24,7 +23,7 @@ import numpy as np
 # file, available in ion_functions/data/matlab_scripts/optaa.
 #   awk '{
 #        printf("tscor[%4.1f] = [%.5f, %.6f, %.6f]\n", $1, $2, $3, $4)
-#    }' TS4.cor > temp.txt 
+#    }' TS4.cor > temp.txt
 #
 
 # initialize dictionary
