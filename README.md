@@ -62,13 +62,13 @@ The dependencies for building/installing the library are:  **autoconf**, **autom
 
 1. Linking Procedure:
 
-        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.la /usr/local/lib/  
-        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.so.3 /usr/local/lib/  
-        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.so.3.0.0 /usr/local/lib/  
-        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.so /usr/local/lib/  
-        sudo ln -s /usr/local/libgswteos/include/gswteos-10.h /usr/local/include/  
+        sudo ln -s /usr/local/libgswteos-10/lib/libgswteos-10.la /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos-10/lib/libgswteos-10.so.3 /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos-10/lib/libgswteos-10.so.3.0.0 /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos-10/lib/libgswteos-10.so /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos-10/include/gswteos-10.h /usr/local/include/  
 
-1. Ensure that the global C_INCLUDE_PATH and LD_LIBRARY_PATH includes /usr/local/lib in all profiles otherwise python won't run correctly:
+1. Ensure that the global `C_INCLUDE_PATH` and `LD_LIBRARY_PATH` includes /usr/local/lib in all profiles otherwise python won't run correctly:
 
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib  
         export C_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/local/include  
