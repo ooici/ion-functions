@@ -205,16 +205,13 @@ def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
     else:
         # Compute Delaunay Triangulation and use linear interpolation to
         # determine the N-dimensional lower limits
-        F = LinearNDInterpolator(z, dat)
-        points = np.reshape(np.array([datlimz, datlim[:, 0]]),
-                            [numlim, ndim+1])
-        lim1 = F(points)
+        F = LinearNDInterpolator(datlimz, datlim[:, 0].reshape(numlim, 1))
+        lim1 = F(z).reshape(dat.size)
+
         # Compute Delaunay Triangulation and use linear interpolation to
         # determine the N-dimensional upper limits
-        F = LinearNDInterpolator(z, dat)
-        points = np.reshape(np.array([datlimz, datlim[:, 1]]),
-                            [numlim, ndim+1])
-        lim2 = F(points)
+        F = LinearNDInterpolator(datlimz, datlim[:, 1].reshape(numlim, 1))
+        lim2 = F(z).reshape(dat.size)
 
     # replace NaNs from above interpolations
     ff = (np.isnan(lim1)) | (np.isnan(lim2))
