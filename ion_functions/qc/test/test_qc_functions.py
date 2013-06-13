@@ -12,6 +12,8 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 from ion_functions.qc import qc_functions as qcfunc
+import unittest
+import os
 
 
 @attr('UNIT', group='func')
@@ -193,6 +195,39 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         got = qcfunc.dataqc_localrangetest(dat, z, datlim, datlimz)
 
         self.assertTrue(np.array_equal(got, qcflag))
+
+    def test_dataqc_localrangetest_data(self):
+        testcases = [
+                'test-data/dataqc_localrangetest_testcase01.mat',
+                'test-data/dataqc_localrangetest_testcase02.mat',
+                # This one fails because MATLAB has a different interpolation alg
+                #'test-data/dataqc_localrangetest_testcase03.mat',
+                ]
+        for tc in testcases:
+            if not os.path.exists(tc):
+                raise unittest.SkipTest('%s not found' % tc)
+
+            import scipy.io
+            mat = scipy.io.loadmat(tc)
+
+            dat = mat['dat']
+            dat = dat[:,0]
+
+            z = mat['z']
+            z = z[:,0]
+
+            datlimz = mat['datlimz']
+            datlimz  = datlimz[:,0]
+
+            datlim = mat['datlim']
+
+            expected = mat['out']
+            expected = expected[:,0]
+
+            qc = qcfunc.dataqc_localrangetest(dat, z, datlim, datlimz)
+            np.testing.assert_array_equal(qc, expected)
+
+
 
     def test_dataqc_spiketest(self):
         """
