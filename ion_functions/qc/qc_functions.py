@@ -6,7 +6,7 @@
 @author Christopher Mueller
 @brief Module containing QC functions ported from matlab samples in DPS documents
 """
-from ion_functions.qc.qc_extensions import stuckvalues, spikevalues, gradientvalues
+from ion_functions.qc.qc_extensions import stuckvalues, spikevalues, gradientvalues, ntp_to_month 
 
 import time
 import numpy as np
@@ -96,6 +96,15 @@ def dataqc_globalrangetest(dat, datlim, strict_validation=False):
             raise ValueError('\'datlim\' must have at least 2 elements')
 
     return (datlim.min() <= dat) & (dat <= datlim.max()).astype('int8')
+
+def dataqc_localrangetest_wrapper(dat, time_v, pressure, datlim, datlimz, strict_validation=False):
+
+    # Convert time to months
+    time_v = np.asanyarray(time_v, dtype=np.float)
+    time_v = ntp_to_month(time_v)
+
+    z = np.column_stack([pressure, time_v])
+    return dataqc_localrangetest(dat, z, np.atleast_1d(datlim)[-1], np.atleast_1d(datlimz)[-1], strict_validation)
 
 
 def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
