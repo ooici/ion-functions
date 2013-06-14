@@ -13,6 +13,7 @@
 # TODO: wrapper functions.
 
 import numpy as np
+import numexpr as ne
 
 from ion_functions.data.adcp_functions import adcp_magvar
 from ion_functions.data.generic_functions import magnetic_declination
@@ -24,7 +25,7 @@ def nobska_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
     Nobska instrument for magnetic declination.
     """
     uu_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='east')
-    return uu_cor/100.  # convert from cm/s to m/s
+    return ne.evaluate('uu_cor/100.')  # convert from cm/s to m/s
 
 
 def nobska_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
@@ -34,7 +35,7 @@ def nobska_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
     function
     """
     vv_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='north')
-    return vv_cor/100.  # convert from cms/ to m/s
+    return ne.evaluate('vv_cor/100.')  # convert from cms/ to m/s
 
 
 def nortek_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
@@ -44,7 +45,7 @@ def nortek_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
     function
     """
     vv_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='east')
-    return vv_cor/1000.  # convert from mms/ to m/s
+    return ne.evaluate('vv_cor/1000.')  # convert from mms/ to m/s
 
 
 def nortek_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
@@ -54,7 +55,7 @@ def nortek_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
     function
     """
     vv_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='north')
-    return vv_cor/1000.  # convert from mms/ to m/s
+    return ne.evaluate('vv_cor/1000.')  # convert from mms/ to m/s
 
 
 

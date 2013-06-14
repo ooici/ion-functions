@@ -13,6 +13,7 @@ import datetime
 import time
 
 import numpy as np
+import numexpr as ne
 import geomag
 
 # Example function from ctd_functions.py
@@ -79,12 +80,12 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
     datestamp = datetime.datetime.utcfromtimestamp(unix_timestamp).date()
     
     # give the z value the proper vector direction (i.e negative down)
-    z = z*zflag
+    z = ne.evaluate('z*zflag')
     
     # geomag python library requires depth in feet (tisk tisk) and then
     # in the library converts them right back to meters!  Ridiculous!
     # ALL science shall be in GOD's units ... SI units!!!
-    z *= 3.28084  # m*3.28084 ft/m = ft
+    z = ne.evaluate('z * 3.28084')  # m*3.28084 ft/m = ft
     
     # TODO: Handling depths; should I use Udunits? Zflag or other?
     
@@ -131,7 +132,7 @@ def ntp_to_unix_time(ntp_timestamp):
     NTP_EPOCH = datetime.date(1900, 1, 1)
     NTP_DELTA = (SYSTEM_EPOCH - NTP_EPOCH).total_seconds()
     
-    unix_timestamp = ntp_timestamp - NTP_DELTA
+    unix_timestamp = ne.evaluate('ntp_timestamp - NTP_DELTA')
     return unix_timestamp
 
 
