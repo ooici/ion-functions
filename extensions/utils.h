@@ -3,6 +3,10 @@
 
 #include <stdbool.h>
 
+#ifndef NTP_OFFSET
+#define NTP_OFFSET 2208988800
+#endif
+
 /*
  * double polyval(const double *p, size_t N, double x)
  * --------------------------------------------------------------------------------
@@ -20,5 +24,5 @@ inline bool nearly_equal(double a, double b, double epsilon)
     return (diff < epsilon && diff > -epsilon);
 }
 
-
+short int ntp_month(double t);
 #endif /* __UTILS_H___*/

@@ -23,8 +23,15 @@ Topic :: Scientific/Engineering
 Topic :: Education
 Topic :: Software Development :: Libraries :: Python Modules'''
 
+extension_sources = ["ion_functions/qc/qc_extensions.pyx",
+                     "extensions/stuck.c",
+                     "extensions/spike.c",
+                     "extensions/gradient.c",
+                     "extensions/utils.c",
+                     "extensions/time_utils.c",]
 
-qc_extension = Extension("ion_functions.qc.qc_extensions", ["ion_functions/qc/qc_extensions.pyx", "extensions/stuck.c", "extensions/spike.c", "extensions/gradient.c"], include_dirs=[np.get_include(), "extensions/"])
+
+qc_extension = Extension("ion_functions.qc.qc_extensions", extension_sources, include_dirs=[np.get_include(), "extensions/"])
 
 
 setup(name = 'ion-functions', 
