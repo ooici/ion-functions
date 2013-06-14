@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include "spike.h"
 #include "utils.h"
+#include "time_utils.h"
 #include "gradient.h"
 
 void arange(double *arr, size_t len);
@@ -20,6 +21,9 @@ char test_gradient2(void);
 char test_gradient3(void);
 char test_gradient4(void);
 char test_gradient5(void);
+char test_time_month(void);
+char test_time_vector(void);
+char test_time_vector_split(void);
 void test(char (*func)(void));
 
 extern bool nearly_equal(double, double, double);
@@ -37,8 +41,12 @@ int main(int argc, char *argv[])
     test(&test_gradient3);
     test(&test_gradient4);
     test(&test_gradient5);
+    test(&test_time_month);
+    test(&test_time_vector);
+    test(&test_time_vector_split);
     return 0;
 }
+
 
 void test(char (*func)(void))
 {
@@ -50,6 +58,55 @@ void test(char (*func)(void))
         if(message)
             printf("%s\n", message);
     }
+}
+
+char test_time_vector()
+{
+    double dat[] = {3580142023.566965, 3580142024.566965, 3580142025.566965, 3580142026.566965, 3580142027.566965};
+    short int expected[] = {5, 5, 5, 5, 5};
+    short int results[5];
+
+    printf("test_time_vector... ");
+
+    ntp_month_vector(results, dat, 5);
+    for(int i=0;i<5;i++) {
+        if(!(expected[i] == results[i])) {
+            message = "Expected doesn't match received";
+            printf("\n");
+            return false;
+        }
+    }
+    return true;
+}
+
+char test_time_vector_split()
+{
+    double dat[] = {3565987200, 3568665600, 3571084800, 3573763200, 3576355200}; 
+    short int expected[] = {0,1,2,3,4};
+    short int results[5];
+
+    printf("test_time_vector_split... ");
+
+    ntp_month_vector(results, dat, 5);
+    for(int i=0;i<5;i++) {
+        if(!(expected[i] == results[i])) {
+            message = "Expected doesn't match received";
+            printf("\n");
+            return false;
+        }
+    }
+    return true;
+}
+char test_time_month()
+{
+    double tval = 3580142023.566965;
+    short int expected = 5;
+    short int received;
+    printf("test_time_month... ");
+    received = ntp_month(tval);
+    if(expected != received)
+        return false;
+    return true;
 }
 
 char test_gradient()
