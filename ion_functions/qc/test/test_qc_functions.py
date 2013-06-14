@@ -12,6 +12,9 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 from ion_functions.qc import qc_functions as qcfunc
+from ion_functions.qc.qc_functions import ntp_to_month
+import unittest
+import os
 
 
 @attr('UNIT', group='func')
@@ -193,6 +196,59 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         got = qcfunc.dataqc_localrangetest(dat, z, datlim, datlimz)
 
         self.assertTrue(np.array_equal(got, qcflag))
+
+    def test_dataqc_localrangetest_data(self):
+        testcases = [
+                'test-data/dataqc_localrangetest_testcase01.mat',
+                'test-data/dataqc_localrangetest_testcase02.mat',
+                # This one fails because MATLAB has a different interpolation alg
+                #'test-data/dataqc_localrangetest_testcase03.mat',
+                ]
+        for tc in testcases:
+            if not os.path.exists(tc):
+                raise unittest.SkipTest('%s not found' % tc)
+
+            import scipy.io
+            mat = scipy.io.loadmat(tc)
+
+            dat = mat['dat']
+            dat = dat[:,0]
+
+            z = mat['z']
+            z = z[:,0]
+
+            datlimz = mat['datlimz']
+            datlimz  = datlimz[:,0]
+
+            datlim = mat['datlim']
+
+            expected = mat['out']
+            expected = expected[:,0]
+
+            qc = qcfunc.dataqc_localrangetest(dat, z, datlim, datlimz)
+            np.testing.assert_array_equal(qc, expected)
+
+    def test_lrt_wrapper(self):
+        t = np.array([3580144703.7555027, 3580144704.7555027, 3580144705.7555027, 3580144706.7555027, 3580144707.7555027, 3580144708.7555027, 3580144709.7555027, 3580144710.7555027, 3580144711.7555027, 3580144712.7555027])
+        pressure = np.random.rand(10) * 2 + 33.0
+        t_v = ntp_to_month(t)
+        dat = t_v + pressure + (np.random.rand(10)*10 + 15)
+        def lim1(p,m):
+            return p+m+10
+        def lim2(p,m):
+            return p+m+20
+
+        pressure_grid, month_grid = np.mgrid[0:150:10, 0:11]
+        points = np.column_stack([pressure_grid.flatten(), month_grid.flatten()])
+        datlim_0 = lim1(points[:,0], points[:,1])
+        datlim_1 = lim2(points[:,0], points[:,1])
+        datlim = np.column_stack([datlim_0, datlim_1])
+        datlimz = points
+        datlim = np.array([datlim] * 10)
+        datlimz = np.array([datlimz] * 10)
+        qcfunc.dataqc_localrangetest_wrapper(dat, t, pressure, datlim, datlimz)
+
+
 
     def test_dataqc_spiketest(self):
         """

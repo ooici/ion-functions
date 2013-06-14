@@ -5,6 +5,7 @@ from ion_functions.qc.qc_functions import dataqc_stuckvaluetest as stuckvalue
 from ion_functions.qc.qc_functions import dataqc_polytrendtest as trend
 from ion_functions.qc.qc_functions import dataqc_gradienttest as grad
 from ion_functions.qc.qc_functions import dataqc_localrangetest as local
+from ion_functions.qc.qc_functions import ntp_to_month
 
 import numpy as np
 import unittest
@@ -64,6 +65,12 @@ class TestQCPerformance(PerformanceTestCase):
         datlimz = np.arange(a_year)
         self.profile(stats, local, dat, z, datlim, datlimz)
 
+    def test_ntp_to_month(self):
+        stats = []
+        t0 = 1356998400 + 2208988800 # 2013-01-01 + NTP Offset
+        dat = np.arange(a_year) + t0
+        dat = np.asanyarray(dat, dtype=np.float)
 
+        self.profile(stats, ntp_to_month, dat)
 
         
