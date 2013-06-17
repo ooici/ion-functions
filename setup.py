@@ -31,7 +31,7 @@ extension_sources = ["ion_functions/qc/qc_extensions.pyx",
                      "extensions/time_utils.c",]
 
 
-qc_extension = Extension("ion_functions.qc.qc_extensions", extension_sources, include_dirs=[np.get_include(), "extensions/"])
+qc_extension = Extension("ion_functions.qc.qc_extensions", extension_sources, include_dirs=[np.get_include(), "extensions/"], libraries=["m"])
 
 
 setup(name = 'ion-functions', 
