@@ -18,7 +18,7 @@
  */
 double polyval(const double *p, size_t N, double x);
 
-inline bool nearly_equal(double a, double b, double epsilon)
+static inline bool nearly_equal(double a, double b, double epsilon)
 {
     double diff = a - b;
     return (diff < epsilon && diff > -epsilon);
