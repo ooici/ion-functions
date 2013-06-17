@@ -62,13 +62,13 @@ The dependencies for building/installing the library are:  **autoconf**, **autom
 
 1. Linking Procedure:
 
-        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.la /usr/local/lib/  
-        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.so.3 /usr/local/lib/  
-        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.so.3.0.0 /usr/local/lib/  
-        sudo ln -s /usr/local/libgswteos/lib/libgswteos-10.so /usr/local/lib/  
-        sudo ln -s /usr/local/libgswteos/include/gswteos-10.h /usr/local/include/  
+        sudo ln -s /usr/local/libgswteos-10/lib/libgswteos-10.la /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos-10/lib/libgswteos-10.so.3 /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos-10/lib/libgswteos-10.so.3.0.0 /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos-10/lib/libgswteos-10.so /usr/local/lib/  
+        sudo ln -s /usr/local/libgswteos-10/include/gswteos-10.h /usr/local/include/  
 
-1. Ensure that the global C_INCLUDE_PATH and LD_LIBRARY_PATH includes /usr/local/lib in all profiles otherwise python won't run correctly:
+1. Ensure that the global `C_INCLUDE_PATH` and `LD_LIBRARY_PATH` includes /usr/local/lib in all profiles otherwise python won't run correctly:
 
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib  
         export C_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/local/include  
@@ -89,6 +89,8 @@ The dependencies for building/installing the library are:  **autoconf**, **autom
 Setup a virtualenv to run ion-functions (use any name you like):
 
     mkvirtualenv --python=python2.7 ion_functions
+    workon ion_functions
+    pip install numpy==1.6.2
 
 #Source
 
@@ -114,6 +116,22 @@ From the *coverage-model* directory, run the following command:
     bin/nosetests -v
 
 This will run all tests in the ion-functions repository.  The **-v** flag denotes verbose output (the name of each test prints as it runs).  For more *nose* options, refer to the [nose documentation](https://nose.readthedocs.org/en/latest/man.html)
+
+# Running C-Extension Unit Tests
+
+From the *ion-functions* directory, run the following command:
+
+    make
+
+This will compile the C-extension unit tests. To run the tests:
+
+    extensions/test
+
+You should see something of the like:
+
+    test_spike_simple... ok
+    test_spike_l simple... ok
+    test_spike_long... ok
 
 #Libraries Currently Included
 * [Numpy](http://www.scipy.org/Tentative_NumPy_Tutorial) – array manipulation

@@ -7,81 +7,81 @@
 @brief Module containing CO2 instrument family related functions
 """
 
+import numpy as np
+import numexpr as ne
+
+
 # wrapper functions to extract parameters from SAMI-II CO2 instruments (PCO2W)
 def pco2_abs434_ratio(light):
-     """
-     Wrapper function to extract the absorbance ratio at 434 nm from the pCO2
-     instrument light measurements.
-     """
-     a434ratio = light[6]
-          
-     # return new blank, or existing if not reset
-     return a434ratio
+    """
+    Function to extract the absorbance ratio at 434 nm from the pCO2
+    instrument light measurements.
+    """
+    a434ratio = light[6]
+
+    # return new blank, or existing if not reset
+    return a434ratio
 
 
 def pco2_abs620_ratio(light):
      """
-     Wrapper function to extract the absorbance ratio at 620 nm from the pCO2
+     Function to extract the absorbance ratio at 620 nm from the pCO2
      instrument light measurements.
      """
      a620ratio = light[7]
-          
+
      # return new blank, or existing if not reset
      return a620ratio
 
 
 def pco2_abs434_blank(mtype, light, a434blnk):
      """
-     Wrapper function to extract the blank absorbance at 434 nm from the pCO2
+     Function to extract the blank absorbance at 434 nm from the pCO2
      instrument light measurements.
      """
-     import numpy as np
-     
      # if the measurement type is 5 = blank, then return the new blank
      if mtype == 5:
           #a434blnk = -1. * np.log10(light[6] / 16384.)
           a434blnk = -1. * np.log10(light[6])
-          
+
      # return new blank, or existing if not reset
      return a434blnk
 
 
 def pco2_abs620_blank(mtype, light, a620blnk):
      """
-     Wrapper function to extract the blank absorbance at 620 nm from the pCO2
+     Function to extract the blank absorbance at 620 nm from the pCO2
      instrument light measurements.
      """
-     import numpy as np
-     
+
      # if the measurement type is 5 = blank, then return the new blank
      if mtype == 5:
           #a620blnk = -1. * np.log10(light[7] / 16384.)
           a620blnk = -1. * np.log10(light[7])
-          
+
      # return new blank, or existing if not reset
      return a620blnk
 
 
 def pco2_thermistor(traw):
      """
-     Wrapper function to convert the thermistor data from counts to degrees
+     Function to convert the thermistor data from counts to degrees
      Centigrade from the pCO2 instrument.
      """
-     import numpy as np
-     
+
      # convert raw thermistor readings from counts to degrees Centigrade
-     Rt = (traw / (4096. - traw)) * 17400.
-     InvT = 0.0010183 + 0.000241 * np.log(Rt) + 0.00000015 * np.log(Rt)**3
-     TempK = 1 / InvT
-     therm = TempK - 273.15
-     
+     Rt = ne.evaluate('(traw / (4096. - traw)) * 17400.')
+     InvT = ne.evaluate('0.0010183 + 0.000241 * log(Rt) + 0.00000015 * log(Rt)**3')
+     TempK = ne.evaluate('1 / InvT')
+     therm = ne.evaluate('TempK - 273.15')
+
      return therm
 
 
 def pco2_pco2wat(mtype, light, therm, ea434, eb434, ea620, eb620, 
                     calt, cala, calb, calc, a434blnk, a620blnk):
      """
-     Wrapper function to calculate the L1 PCO2WAT core data from the pCO2
+     Function to calculate the L1 PCO2WAT core data from the pCO2
      instrument.
      """
      if mtype == 4:
@@ -89,43 +89,41 @@ def pco2_pco2wat(mtype, light, therm, ea434, eb434, ea620, eb620,
                     calt, cala, calb, calc, a434blnk, a620blnk)
      else:
           pco2 = -99999999.
-          
+
      return pco2
 
 
-# L1a PCO2WAT calculation 
+# L1a PCO2WAT calculation
 def pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
                    calt, cala, calb, calc, a434blnk, a620blnk):
      """
      Description:
-     
+
           OOI Level 1 Partial Pressure of CO2 (pCO2) in seawater core data
           product, which is calculated from the Sunburst SAMI-II CO2 instrument
-          (PCO2W). 
-     
+          (PCO2W).
+
      Implemented by:
-     
+
           2013-04-20: Christopher Wingard. Initial code.
-     
+
      Usage:
-     
+
           pco2, therm = pco2_pco2wat(ref, light, therm, psal=35)
-     
+
                where
-     
+
           pco2 = measured pco2 in seawater [uatm]
           [TODO]
-          
-     References: 
-     
+
+     References:
+
           OOI (2012). Data Product Specification for Partial Pressure of CO2 in
                Seawater. Document Control Number 1341-00510.
                https://alfresco.oceanobservatories.org/ (See: Company Home >>
                OOI >> Controlled >> 1000 System Level >>
                1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
      """
-     import numpy as np
-    
      # set constants
      ea434 = ea434 - 29.3 * calt
      eb620 = eb620 - 70.6 * calt
@@ -143,19 +141,19 @@ def pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
      S620 = light[5]   # 434nm Signal Signal LED intensity
      Ratio434 = light[6] # 434nm Ratio
      Ratio620 = light[7] # 620nm Ratio
-     
+
      # calculate absorbance ratio, correcting for blanks
      A434 = -1. * np.lib.scimath.log10(Ratio434 / a434blnk) # 434 absorbance
      A620 = -1. * np.lib.scimath.log10(Ratio620 / a620blnk) # 620 absorbance
      Ratio = A620 / A434      # Absorbance ratio
-     
+
      # calculate pCO2
      V1 = Ratio - e1
      V2 = e2 - e3 * Ratio
      RCO21 = -1. * np.lib.scimath.log10(V1 / V2)
-     RCO22 = (therm - calt) * 0.007 + RCO21
-     Tcoeff = 0.0075778 - 0.0012389 * RCO22 - 0.00048757 * RCO22**2
-     Tcor_RCO2 =  RCO21 + Tcoeff * (therm - calt)
-     pco2 = 10.**((-1. * calb + (calb**2 - (4. * cala * (calc - Tcor_RCO2)))**0.5) / (2. * cala))
-     
+     RCO22 = ne.evaluate('(therm - calt) * 0.007 + RCO21')
+     Tcoeff = ne.evaluate('0.0075778 - 0.0012389 * RCO22 - 0.00048757 * RCO22**2')
+     Tcor_RCO2 =  ne.evaluate('RCO21 + Tcoeff * (therm - calt)')
+     pco2 = ne.evaluate('10.**((-1. * calb + (calb**2 - (4. * cala * (calc - Tcor_RCO2)))**0.5) / (2. * cala))')
+
      return np.real(pco2)
