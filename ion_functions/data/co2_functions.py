@@ -9,6 +9,7 @@
 
 import numpy as np
 import numexpr as ne
+from ion_functions import fill_value
 
 
 # wrapper functions to extract parameters from SAMI-II CO2 instruments (PCO2W)
@@ -88,7 +89,7 @@ def pco2_pco2wat(mtype, light, therm, ea434, eb434, ea620, eb620,
           pco2 = pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,  
                     calt, cala, calb, calc, a434blnk, a620blnk)
      else:
-          pco2 = -99999999.
+          pco2 = fill_value
 
      return pco2
 

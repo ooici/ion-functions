@@ -2,6 +2,7 @@
 from ion_functions.data.perf.test_performance import PerformanceTestCase
 from ion_functions.data.co2_functions import pco2_thermistor, pco2_abs434_blank, pco2_abs620_blank, pco2_pco2wat
 import numpy as np
+from ion_functions import fill_value
 
 class TestCO2Performance(PerformanceTestCase):
     def setUp(self):
@@ -15,14 +16,14 @@ class TestCO2Performance(PerformanceTestCase):
         self.cala = 0.0459
         self.calb = 0.6257
         self.calc = -1.5406
-        self.a434blnk = -99999999.
-        self.a620blnk = -99999999.
+        self.a434blnk = fill_value
+        self.a620blnk = fill_value
         
         # expected outputs
         self.therm = np.array([18.8526, 18.8765, 18.9245, 18.9485,
                           18.9485, 18.9485, 18.8765, 19.0686,
                           19.0686, 19.0446, 18.9725])
-        self.pco2 = np.array([-99999999., 294.1720, 311.3361, 319.0101,
+        self.pco2 = np.array([fill_value, 294.1720, 311.3361, 319.0101,
                          319.8925, 319.8950, 305.8104, 317.9661,
                          284.3676, 280.2324, 280.0354
                          ])

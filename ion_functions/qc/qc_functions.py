@@ -12,7 +12,7 @@ import time
 import numpy as np
 import numexpr as ne
 from scipy.interpolate import LinearNDInterpolator
-from ion_functions import utils
+from ion_functions import utils, fill_value
 
 # try to load the OOI logging module, using default Python logging module if
 # unavailable
@@ -23,7 +23,7 @@ except ImportError:
     log = logging.getLogger('ion-functions')
 
 def is_fill(arr):
-    return np.atleast_1d(arr)[-1] == -9999
+    return np.atleast_1d(arr)[-1] == fill_value
 def is_none(arr):
     return arr is None or (np.atleast_1d(arr)[-1] == None)
 

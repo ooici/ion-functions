@@ -11,3 +11,6 @@ from data.sfl_functions import sfl_trhph_chlorconc, sfl_trhph_vfltemp
 #from data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north, nobska_mag_corr_up, vel_mag_correction
 
 from data.generic_functions import extract_parameter, magnetic_declination, ntp_to_unix_time
+
+
+fill_value = -9999999.
