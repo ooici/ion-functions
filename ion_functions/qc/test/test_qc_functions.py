@@ -232,7 +232,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         t = np.array([3580144703.7555027, 3580144704.7555027, 3580144705.7555027, 3580144706.7555027, 3580144707.7555027, 3580144708.7555027, 3580144709.7555027, 3580144710.7555027, 3580144711.7555027, 3580144712.7555027])
         pressure = np.random.rand(10) * 2 + 33.0
         t_v = ntp_to_month(t)
-        dat = t_v + pressure + (np.random.rand(10)*10 + 15)
+        dat = t_v + pressure + np.arange(16,26)
         def lim1(p,m):
             return p+m+10
         def lim2(p,m):
@@ -246,7 +246,8 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         datlimz = points
         datlim = np.array([datlim] * 10)
         datlimz = np.array([datlimz] * 10)
-        qcfunc.dataqc_localrangetest_wrapper(dat, t, pressure, datlim, datlimz)
+        qc_out = qcfunc.dataqc_localrangetest_wrapper(dat, t, pressure, datlim, datlimz)
+        np.testing.assert_array_equal(qc_out, [1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0])
 
 
 
