@@ -13,6 +13,7 @@ ALL_KINDS = ('i', 'u', 'f', 'c', 'S', 'a', 'U')  # Does not include 'V' which is
 NUMERIC_KINDS = ('i', 'u', 'f', 'c')
 REAL_KINDS = ('i', 'u', 'f', 'S', 'a', 'U')  # All kinds but complex
 
+fill_value = -9999999. 
 
 def isnumeric(dat):
     """
