@@ -12,7 +12,7 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 from ion_functions.data import co2_functions as co2func
-from ion_functions import fill_value
+from ion_functions.utils import fill_value
 
 @attr('UNIT', group='func')
 class Testpco2FunctionsUnit(BaseUnitTestCase):

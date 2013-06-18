@@ -2,7 +2,7 @@
 from ion_functions.data.perf.test_performance import PerformanceTestCase
 from ion_functions.data.co2_functions import pco2_thermistor, pco2_abs434_blank, pco2_abs620_blank, pco2_pco2wat
 import numpy as np
-from ion_functions import fill_value
+from ion_functions.utils import fill_value
 
 class TestCO2Performance(PerformanceTestCase):
     def setUp(self):

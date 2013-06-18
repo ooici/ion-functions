@@ -12,7 +12,8 @@ import time
 import numpy as np
 import numexpr as ne
 from scipy.interpolate import LinearNDInterpolator
-from ion_functions import utils, fill_value
+from ion_functions import utils
+from ion_functions.utils import fill_value
 
 # try to load the OOI logging module, using default Python logging module if
 # unavailable

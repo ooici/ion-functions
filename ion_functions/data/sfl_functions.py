@@ -5,7 +5,7 @@
 @author Christopher Wingard
 @brief Module containing Seafloor Properties related data-calculations.
 """
-from ion_functions import fill_value
+from ion_functions.utils import fill_value
 def sfl_trhph_vfltemp(V_s, V_c, a, b, c, d, e):
     """
     Description:

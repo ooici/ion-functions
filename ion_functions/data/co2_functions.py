@@ -9,7 +9,7 @@
 
 import numpy as np
 import numexpr as ne
-from ion_functions import fill_value
+from ion_functions.utils import fill_value
 
 
 # wrapper functions to extract parameters from SAMI-II CO2 instruments (PCO2W)
