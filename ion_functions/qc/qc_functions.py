@@ -24,7 +24,7 @@ except ImportError:
     log = logging.getLogger('ion-functions')
 
 def is_fill(arr):
-    return np.atleast_1d(arr)[-1] == fill_value
+    return np.atleast_1d(arr)[-1] == -9999. # Not the normal fill value, it's hardcoded to the QC params
 def is_none(arr):
     return arr is None or (np.atleast_1d(arr)[-1] == None)
 
