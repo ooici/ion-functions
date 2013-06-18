@@ -5,7 +5,7 @@
 @author Christopher Wingard
 @brief Module containing Seafloor Properties related data-calculations.
 """
-
+from ion_functions.utils import fill_value
 def sfl_trhph_vfltemp(V_s, V_c, a, b, c, d, e):
     """
     Description:
@@ -147,6 +147,7 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
         
     # reset NaN values generated in interpolation functions above to system
     # default of -99999999
-    Cl[np.isnan(Cl)] = -99999999.
+    Cl[np.isnan(Cl)] = fill_value
     
     return Cl
+
