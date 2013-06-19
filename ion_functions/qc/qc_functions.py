@@ -105,7 +105,7 @@ def dataqc_localrangetest_wrapper(dat, time_v, pressure, datlim, datlimz, strict
     time_v = ntp_to_month(time_v)
 
     z = np.column_stack([pressure, time_v])
-    return dataqc_localrangetest(dat, z, np.atleast_1d(datlim)[-1], np.atleast_1d(datlimz)[-1], strict_validation)
+    return dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation)
 
 
 def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
