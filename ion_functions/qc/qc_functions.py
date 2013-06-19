@@ -105,8 +105,6 @@ def dataqc_localrangetest_wrapper(dat, time_v, pressure, datlim, datlimz, strict
     time_v = ntp_to_month(time_v)
 
     z = np.column_stack([pressure, time_v])
-    save = np.column_stack([datlimz, datlim])
-    np.savetxt('save.csv', save, delimiter=',')
     return dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation)
 
 
