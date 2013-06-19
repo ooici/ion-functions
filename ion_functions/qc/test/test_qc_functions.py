@@ -238,14 +238,12 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         def lim2(p,m):
             return p+m+20
 
-        pressure_grid, month_grid = np.mgrid[0:150:10, 0:11]
+        pressure_grid, month_grid = np.meshgrid(np.arange(0,150,10), np.arange(11))
         points = np.column_stack([pressure_grid.flatten(), month_grid.flatten()])
         datlim_0 = lim1(points[:,0], points[:,1])
         datlim_1 = lim2(points[:,0], points[:,1])
         datlim = np.column_stack([datlim_0, datlim_1])
         datlimz = points
-        datlim = np.array([datlim] * 10)
-        datlimz = np.array([datlimz] * 10)
         qc_out = qcfunc.dataqc_localrangetest_wrapper(dat, t, pressure, datlim, datlimz)
         np.testing.assert_array_equal(qc_out, [1 ,1 ,1 ,1 ,1 ,0 ,0 ,0 ,0 ,0])
 
