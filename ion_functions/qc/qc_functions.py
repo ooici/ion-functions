@@ -98,14 +98,26 @@ def dataqc_globalrangetest(dat, datlim, strict_validation=False):
 
     return (datlim.min() <= dat) & (dat <= datlim.max()).astype('int8')
 
-def dataqc_localrangetest_wrapper(dat, time_v, pressure, datlim, datlimz, strict_validation=False):
+def dataqc_localrangetest_wrapper(dat, datlim, datlimz, dims, pval_callback):
 
-    # Convert time to months
-    time_v = np.asanyarray(time_v, dtype=np.float)
-    time_v = ntp_to_month(time_v)
-
-    z = np.column_stack([pressure, time_v])
-    return dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation)
+    z = []
+    for dim in dims:
+        if dim == 'month':
+            # Convert time vector to vector of months
+            v = pval_callback('time')
+            v = np.asanyarray(v, dtype=np.float)
+            v = ntp_to_month(v)
+            z.append(v)
+        else:
+            # Fetch the dimension from the callback method
+            v = pval_callback(dim)
+            z.append(v)
+    if len(dims)>1:
+        z = np.column_stack(z)
+    else:
+        z = z[0]
+        datlimz = datlimz[:,0]
+    return dataqc_localrangetest(dat, z, datlim, datlimz)
 
 
 def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
