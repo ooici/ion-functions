@@ -108,11 +108,12 @@ def vel_mag_correction(uu, vv, lat, lon, timestamp, z,
     """
     # retrieve magnetic declination
     theta = magnetic_declination(lat, lon, timestamp, z, zflag=-1)
+    mean_theta = np.mean(theta) # Can't vectorize 
     
     # correct the velocities for magnetic declination
     #   the algorithm for Nobska & Nortek VELPTTU's are the same as
     #   adcp_magvar
-    uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
+    uu_cor, vv_cor = adcp_magvar(mean_theta, uu, vv)
     
     # return according to dirstr direction
     if dirstr == 'all':
