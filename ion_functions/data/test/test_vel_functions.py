@@ -60,17 +60,21 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
         vn = np.array([ 18.2,  9.9, 12. ,  6.6, 7.4,  3.4, -2.6,  0.2,
             -1.5,  4.1])
         vu = np.array([-1.1, -0.6, -1.4, -2, -1.7, -2, 1.3, -1.6, -1.1, -4.5])
-
-        vn_cor = nobska_mag_corr_north(ve, vn, lat, lon, ts, vu)
-        vn_expected = np.array([ 0.164012,  0.094738,  0.114471,  0.06986,  0.07029,
-                    0.049237, -0.009499,  0.019311,  0.012096,  0.070017])
-
-        np.testing.assert_array_almost_equal(vn_cor, vn_expected)
-
-        ve_cor = nobska_mag_corr_east(ve, vn, lat, lon, ts, vu)
         ve_expected = np.array([-0.085136, -0.028752, -0.036007, 0.002136,
             -0.023158, 0.043218, 0.056451, 0.054727, 0.088446, 0.085952])
+        vn_expected = np.array([ 0.164012,  0.094738,  0.114471,  0.06986,  0.07029,
+                    0.049237, -0.009499,  0.019311,  0.012096,  0.070017])
+        vu_expected = np.array([-0.011, -0.006, -0.014, -0.02, -0.017, -0.02,
+            0.013, -0.016, -0.011, -0.045])
 
-        np.testing.assert_array_almost_equal(ve_cor,ve_expected)
+
+        ve_cor = nobska_mag_corr_east(ve, vn, lat, lon, ts, vu)
+        vn_cor = nobska_mag_corr_north(ve, vn, lat, lon, ts, vu)
+        vu_cor = vu / 100.0
+
+        np.testing.assert_array_almost_equal(ve_cor, ve_expected)
+        np.testing.assert_array_almost_equal(vn_cor, vn_expected)
+        np.testing.assert_array_almost_equal(vu_cor, vu_expected)
+
 
 
