@@ -50,9 +50,9 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
     def test_vel3d_nobska(self):
         lat = 14.6846
         lon = -51.044
-        ts = np.array([3193419600, 3193423200, 3193426800, 3193430400,
-            3193434000, 3193437600, 3193441200, 3193444800, 3193448400,
-            3193452000],dtype=np.float)
+        ts = np.array([3319563600, 3319567200, 3319570800, 3319574400,
+            3319578000, 3319581600, 3319585200, 3319588800, 3319592400,
+            3319596000], dtype=np.float)
 
         ve = np.array([ -3.2,  0.1,  0. ,  2.3, -0.1,  5.6,  5.1,  5.8,
             8.8, 10.3])
@@ -64,13 +64,13 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
         vn_cor = nobska_mag_corr_north(ve, vn, lat, lon, ts, vu)
         vn_expected = np.array([ 0.164012,  0.094738,  0.114471,  0.06986,  0.07029,
                     0.049237, -0.009499,  0.019311,  0.012096,  0.070017])
-        self.assertTrue((np.abs(vn_cor - vn_expected) < 0.001).all())
+
+        np.testing.assert_array_almost_equal(vn_cor, vn_expected)
 
         ve_cor = nobska_mag_corr_east(ve, vn, lat, lon, ts, vu)
         ve_expected = np.array([-0.085136, -0.028752, -0.036007, 0.002136,
             -0.023158, 0.043218, 0.056451, 0.054727, 0.088446, 0.085952])
 
-        self.assertTrue((np.abs(ve_cor - ve_expected) < 0.001).all())
-
+        np.testing.assert_array_almost_equal(ve_cor,ve_expected)
 
 
