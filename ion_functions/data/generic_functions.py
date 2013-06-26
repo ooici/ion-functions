@@ -67,7 +67,7 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
         /DoDWMM.shtml
     """
     # convert ntp timestamp to unix timestamp and then a datetime object
-    unix_timestamps = ntp_timestamp - 2208988800
+    unix_timestamp = ntp_timestamp - 2208988800 # Faster if its stackless (not a function call)
     
     # the data timestamp is in UTC, and while the input to the WMM does
     # not specify, reasonably it should handle time as a UTC time rather
@@ -77,7 +77,7 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
     # than the uncertainty of almost all compasses and so local time
     # versus UTC can be ignored.
 
-    datestamps = np.vectorize(lambda x : datetime.datetime.utcfromtimestamp(x).date())(unix_timestamps)
+    datestamps = datetime.datetime.utcfromtimestamp(unix_timestamp).date()
     
     # give the z value the proper vector direction (i.e negative down)
     z = z*zflag
@@ -89,9 +89,7 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
     
     # TODO: Handling depths; should I use Udunits? Zflag or other?
     
-    # the magnetic declination at a given location & time
-    declination = np.vectorize(geomag.declination)
-    mag_dec = declination(lat, lon, z, datestamps)
+    mag_dec = geomag.declination(lat, lon, z, datestamps)
     return mag_dec
 
 

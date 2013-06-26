@@ -315,13 +315,7 @@ def adcp_magvar(theta, uu, vv):
     
     uu = np.atleast_1d(uu)
     vv = np.atleast_1d(vv)
-    
-    print uu.shape
-    print vv.shape
-    print np.array([uu,vv]).shape
-    print M.shape
     cor = np.dot(M , np.array([uu,vv]))
-    print cor.shape
         
     return cor[0], cor[1]
 
