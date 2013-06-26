@@ -194,3 +194,6 @@ def bilinear_interpolation(x, y, points):
             q12 * (x2 - x) * (y - y1) +
             q22 * (x - x1) * (y - y1)
            ) / ((x2 - x1) * (y2 - y1) + 0.0)
+
+def error(x,y):
+    return np.abs(x-y)/np.abs(y)

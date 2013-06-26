@@ -11,6 +11,7 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 from ion_functions.data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north
+from ion_functions.data.generic_functions import error
 
 
 @attr('UNIT', group='func')
@@ -61,9 +62,15 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
         vu = np.array([-1.1, -0.6, -1.4, -2, -1.7, -2, 1.3, -1.6, -1.1, -4.5])
 
         vn_cor = nobska_mag_corr_north(ve, vn, lat, lon, ts, vu)
-        np.testing.assert_array_equal(np.array([ 0.164012,  0.094738,  0.114471,  0.06986,  0.07029,
-                    0.049237, -0.009499,  0.019311,  0.012096,  0.070017]), vn_cor)
+        vn_expected = np.array([ 0.164012,  0.094738,  0.114471,  0.06986,  0.07029,
+                    0.049237, -0.009499,  0.019311,  0.012096,  0.070017])
+        self.assertTrue((np.abs(vn_cor - vn_expected) < 0.001).all())
 
+        ve_cor = nobska_mag_corr_east(ve, vn, lat, lon, ts, vu)
+        ve_expected = np.array([-0.085136, -0.028752, -0.036007, 0.002136,
+            -0.023158, 0.043218, 0.056451, 0.054727, 0.088446, 0.085952])
+
+        self.assertTrue((np.abs(ve_cor - ve_expected) < 0.001).all())
 
 
 
