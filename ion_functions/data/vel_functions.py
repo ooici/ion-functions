@@ -23,7 +23,7 @@ def nobska_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
     Wrapper function to correct the eastward velocity from a VEL3D
     Nobska instrument for magnetic declination.
     """
-    uu_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='east')
+    uu_cor = mag_correction(uu,vv,lat,lon,timestamp,z)[0]
     return uu_cor/100.  # convert from cm/s to m/s
 
 
@@ -33,7 +33,7 @@ def nobska_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
     Nobska instrument for magnetic declination.  See vel_mag_correction
     function
     """
-    vv_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='north')
+    vv_cor = mag_correction(uu,vv,lat,lon,timestamp,z)[1]
     return vv_cor/100.  # convert from cms/ to m/s
 
 
@@ -43,8 +43,8 @@ def nortek_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
     Nortek instrument for magnetic declination.  See vel_mag_correction
     function
     """
-    vv_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='east')
-    return vv_cor/1000.  # convert from mms/ to m/s
+    uu_cor = mag_correction(uu,vv,lat,lon,timestamp,z)[0]
+    return uu_cor/1000.  # convert from mms/ to m/s
 
 
 def nortek_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
@@ -53,7 +53,7 @@ def nortek_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
     Nortek instrument for magnetic declination.  See vel_mag_correction
     function
     """
-    vv_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='north')
+    vv_cor = mag_correction(uu,vv,lat,lon,timestamp,z)[1]
     return vv_cor/1000.  # convert from mms/ to m/s
 
 
@@ -61,8 +61,7 @@ def nortek_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
 
 
 # proper functions
-def vel_mag_correction(uu, vv, lat, lon, timestamp, z,
-                           zflag=-1, dirstr='all'):
+def vel_mag_correction(uu, vv, lat, lon, timestamp, z, zflag=-1):
     """
     Description:
 
@@ -114,10 +113,6 @@ def vel_mag_correction(uu, vv, lat, lon, timestamp, z,
     #   adcp_magvar
     uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
     
-    # return according to dirstr direction
-    if dirstr == 'all':
-        return (uu_cor, vv_cor)
-    elif dirstr == 'east':
-        return uu_cor
-    elif dirstr == 'north':
-        return vv_cor
+    return (uu_cor, vv_cor)
+
+mag_correction = np.vectorize(vel_mag_correction)
