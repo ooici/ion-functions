@@ -68,8 +68,8 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
             0.013, -0.016, -0.011, -0.045])
 
 
-        ve_cor = nobska_mag_corr_east(ve, vn, lat, lon, ts, vu)
-        vn_cor = nobska_mag_corr_north(ve, vn, lat, lon, ts, vu)
+        ve_cor = nobska_mag_corr_east(ve, vn, lat, lon, ts, 6)
+        vn_cor = nobska_mag_corr_north(ve, vn, lat, lon, ts, 6)
         vu_cor = vu / 100.0
 
         np.testing.assert_array_almost_equal(ve_cor, ve_expected)
