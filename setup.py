@@ -23,7 +23,7 @@ Topic :: Scientific/Engineering
 Topic :: Education
 Topic :: Software Development :: Libraries :: Python Modules'''
 
-extension_sources = ["ion_functions/qc/qc_extensions.pyx",
+qc_extension_sources = ["ion_functions/qc/qc_extensions.pyx",
                      "extensions/stuck.c",
                      "extensions/spike.c",
                      "extensions/gradient.c",
@@ -31,7 +31,15 @@ extension_sources = ["ion_functions/qc/qc_extensions.pyx",
                      "extensions/time_utils.c",]
 
 
-qc_extension = Extension("ion_functions.qc.qc_extensions", extension_sources, include_dirs=[np.get_include(), "extensions/"], libraries=["m"])
+
+qc_extension = Extension("ion_functions.qc.qc_extensions", qc_extension_sources, include_dirs=[np.get_include(), "extensions/"], libraries=["m"])
+
+wmm_extension_sources = ["ion_functions/data/wmm.pyx",
+                        "extensions/GeomagnetismLibrary.c",
+                        "extensions/wmm.c",]
+
+wmm_extension = Extension("ion_functions.data.wmm", wmm_extension_sources, include_dirs=[np.get_include(), "extensions/"], libraries=["m"])
+
 
 
 setup(name = 'ion-functions', 
@@ -45,7 +53,7 @@ setup(name = 'ion-functions',
         classifiers=classifiers.split('\n'),
         packages=packages,
         keywords=['oceanography', 'seawater'],
-        ext_modules=[qc_extension],
+        ext_modules=[qc_extension, wmm_extension],
         setup_requires=['setuptools_cython'],
         install_requires=[
             'ipython==0.13.0',

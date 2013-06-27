@@ -23,7 +23,7 @@ def nobska_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
     Wrapper function to correct the eastward velocity from a VEL3D
     Nobska instrument for magnetic declination.
     """
-    uu_cor = mag_correction(uu,vv,lat,lon,timestamp,z)[0]
+    uu_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z)[0]
     return uu_cor/100.  # convert from cm/s to m/s
 
 
@@ -33,7 +33,7 @@ def nobska_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
     Nobska instrument for magnetic declination.  See vel_mag_correction
     function
     """
-    vv_cor = mag_correction(uu,vv,lat,lon,timestamp,z)[1]
+    vv_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z)[1]
     return vv_cor/100.  # convert from cms/ to m/s
 
 
@@ -43,7 +43,7 @@ def nortek_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
     Nortek instrument for magnetic declination.  See vel_mag_correction
     function
     """
-    uu_cor = mag_correction(uu,vv,lat,lon,timestamp,z)[0]
+    uu_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z)[0]
     return uu_cor/1000.  # convert from mms/ to m/s
 
 
@@ -53,7 +53,7 @@ def nortek_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
     Nortek instrument for magnetic declination.  See vel_mag_correction
     function
     """
-    vv_cor = mag_correction(uu,vv,lat,lon,timestamp,z)[1]
+    vv_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z)[1]
     return vv_cor/1000.  # convert from mms/ to m/s
 
 
@@ -111,8 +111,8 @@ def vel_mag_correction(uu, vv, lat, lon, timestamp, z, zflag=-1):
     # correct the velocities for magnetic declination
     #   the algorithm for Nobska & Nortek VELPTTU's are the same as
     #   adcp_magvar
-    uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
+    magvar = np.vectorize(adcp_magvar)
+    uu_cor, vv_cor = magvar(theta, uu, vv)
     
     return (uu_cor, vv_cor)
 
-mag_correction = np.vectorize(vel_mag_correction)

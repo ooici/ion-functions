@@ -3,10 +3,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 #include "spike.h"
 #include "utils.h"
 #include "time_utils.h"
 #include "gradient.h"
+#include "wmm.h"
 
 void arange(double *arr, size_t len);
 signed char all(signed char *, size_t);
@@ -24,6 +26,7 @@ char test_gradient5(void);
 char test_time_month(void);
 char test_time_vector(void);
 char test_time_vector_split(void);
+char test_mag_decl(void);
 void test(char (*func)(void));
 
 extern bool nearly_equal(double, double, double);
@@ -44,6 +47,7 @@ int main(int argc, char *argv[])
     test(&test_time_month);
     test(&test_time_vector);
     test(&test_time_vector_split);
+    test(&test_mag_decl);
     return 0;
 }
 
@@ -59,6 +63,41 @@ void test(char (*func)(void))
             printf("%s\n", message);
     }
 }
+
+char test_mag_decl()
+{
+    double lat = 40.0;
+    double lon = -120.0;
+    double z = 0.0;
+    int year = 1900;
+    int mon = 1;
+    int day = 1;
+    double declination;
+    WMM_Model model;
+    char filename[] = "test-data/WMM.COF";
+
+    printf("test_mag_decl...");
+    if(wmm_initialize(filename, &model)) {
+        message = "Error initializing models";
+        printf("\n%s\n", wmm_errmsg);
+        return false;
+    }
+
+    declination = wmm_declination(&model, lat, lon, z, year, mon, day);
+    if(fabs(declination - 26.184622) > 0.00001) {
+        message = "Expected doesn't match received";
+        printf("\n%f != 26.184622\n", declination);
+        return false;
+    }
+
+    if(wmm_free(&model)) {
+        message = "Error freeing models";
+        printf("\n%s\n", wmm_errmsg);
+        return false;
+    }
+    return true;
+}
+
 
 char test_time_vector()
 {
