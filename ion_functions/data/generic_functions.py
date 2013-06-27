@@ -14,8 +14,9 @@ import time
 
 import numpy as np
 from ion_functions.data.wmm import WMM
+import pkg_resources
 
-wmm_model = 'test-data/WMM.COF'
+wmm_model = pkg_resources.resource_filename(__name__, 'WMM.COF')
 
 # Example function from ctd_functions.py
 def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):

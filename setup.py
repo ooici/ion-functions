@@ -64,6 +64,8 @@ setup(name = 'ion-functions',
             'geomag==0.9',
             'scipy==0.11.0',
             'cython'
-        ]
+        ],
+        package_data = {'ion_functions.data':['WMM.COF']},
+
 )
 
