@@ -95,7 +95,7 @@ cdef class WMM:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _velocity_correction(self, uu, vv, lat, lon, z, timestamp) with nogil:
+    def _velocity_correction(self, uu, vv, lat, lon, z, timestamp) nogil:
         cdef np.ndarray[double] uu_in = uu
         cdef np.ndarray[double] vv_in = vv
         cdef np.ndarray[double] uu_cor = np.empty(uu.shape, np.float)
