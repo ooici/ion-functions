@@ -13,7 +13,10 @@ import datetime
 import time
 
 import numpy as np
-import geomag
+from ion_functions.data.wmm import WMM
+import pkg_resources
+
+wmm_model = pkg_resources.resource_filename(__name__, 'WMM.COF')
 
 # Example function from ctd_functions.py
 def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
@@ -66,6 +69,7 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
         World Magnetic Model (2010). http://www.ngdc.noaa.gov/geomag/WMM
         /DoDWMM.shtml
     """
+    wmm = WMM(wmm_model)
     # convert ntp timestamp to unix timestamp and then a datetime object
     unix_timestamp = ntp_timestamp - 2208988800 # Faster if its stackless (not a function call)
     
@@ -76,20 +80,17 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
     # day timesteps results in an average error that is much smaller
     # than the uncertainty of almost all compasses and so local time
     # versus UTC can be ignored.
+    dates = np.vectorize(lambda x : datetime.datetime.utcfromtimestamp(x).date())
 
-    datestamps = datetime.datetime.utcfromtimestamp(unix_timestamp).date()
+    datestamps = dates(unix_timestamp)
     
     # give the z value the proper vector direction (i.e negative down)
     z = z*zflag
     
-    # geomag python library requires depth in feet (tisk tisk) and then
-    # in the library converts them right back to meters!  Ridiculous!
-    # ALL science shall be in GOD's units ... SI units!!!
-    z *= 3.28084  # m*3.28084 ft/m = ft
+    z /= 1000. # m -> km
+    dec = np.vectorize(lambda lat, lon, z, date : wmm.declination(lat, lon, z, date))
     
-    # TODO: Handling depths; should I use Udunits? Zflag or other?
-    
-    mag_dec = geomag.declination(lat, lon, z, datestamps)
+    mag_dec = dec(lat, lon, z, datestamps)
     return mag_dec
 
 
