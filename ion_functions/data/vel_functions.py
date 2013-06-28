@@ -25,7 +25,13 @@ def nobska_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
     Nobska instrument for magnetic declination.
     """
     wmm = WMM(wmm_model)
-    uu_cor = wmm.velocity_correction(uu, vv, lat, lon, z/1000., np.asanyarray(timestamp, dtype=np.int64) - 2208988800)[0]
+    uu = np.asanyarray(uu, dtype=np.float)
+    vv = np.asanyarray(vv, dtype=np.float)
+    lat = np.asanyarray(lat, dtype=np.float)
+    lon = np.asanyarray(lon, dtype=np.float)
+    z = np.asanyarray(z, dtype=np.float)/1000.
+    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
+    uu_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp )[0]
     return uu_cor/100.  # convert from cm/s to m/s
 
 
@@ -36,7 +42,13 @@ def nobska_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
     function
     """
     wmm = WMM(wmm_model)
-    vv_cor = wmm.velocity_correction(uu, vv, lat, lon, z/1000., np.asanyarray(timestamp, dtype=np.int64) - 2208988800)[1]
+    uu = np.asanyarray(uu, dtype=np.float)
+    vv = np.asanyarray(vv, dtype=np.float)
+    lat = np.asanyarray(lat, dtype=np.float)
+    lon = np.asanyarray(lon, dtype=np.float)
+    z = np.asanyarray(z, dtype=np.float)/1000.
+    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
+    vv_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp )[1]
     return vv_cor/100.  # convert from cm/s to m/s
 
 
@@ -47,7 +59,13 @@ def nortek_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
     function
     """
     wmm = WMM(wmm_model)
-    uu_cor = wmm.velocity_correction(uu, vv, lat, lon, z/1000., np.asanyarray(timestamp, dtype=np.int64) - 2208988800)[0]
+    uu = np.asanyarray(uu, dtype=np.float)
+    vv = np.asanyarray(vv, dtype=np.float)
+    lat = np.asanyarray(lat, dtype=np.float)
+    lon = np.asanyarray(lon, dtype=np.float)
+    z = np.asanyarray(z, dtype=np.float)/1000.
+    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
+    uu_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp )[0]
     return uu_cor/1000.  # convert from mms/ to m/s
 
 
@@ -58,7 +76,13 @@ def nortek_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
     function
     """
     wmm = WMM(wmm_model)
-    vv_cor = wmm.velocity_correction(uu, vv, lat, lon, z/1000., np.asanyarray(timestamp, dtype=np.int64) - 2208988800)[1]
+    uu = np.asanyarray(uu, dtype=np.float)
+    vv = np.asanyarray(vv, dtype=np.float)
+    lat = np.asanyarray(lat, dtype=np.float)
+    lon = np.asanyarray(lon, dtype=np.float)
+    z = np.asanyarray(z, dtype=np.float)/1000.
+    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
+    vv_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp )[1]
     return vv_cor/1000.  # convert from mms/ to m/s
 
 
