@@ -56,8 +56,37 @@ int wmm_free(WMM_Model *model)
     return 0;
 }
 
+size_t velocity_correction(const velocity_profile *in, WMM_Model *model, velocity_profile *out)
+{
+    size_t i=0;
+    double M[2];
+    double theta, theta_deg;
+    int y, m, d;
+    struct tm time_info;
+    if(in == NULL || out == NULL)
+        return 0;
+    if(in->len <= 0 || out->len <= 0)
+        return 0;
+    if(in->uu == NULL || in->vv == NULL || in->lat == NULL 
+            || in->lon == NULL || in->z == NULL 
+            || in->timestamp == NULL || out->uu == NULL 
+            || out->vv == NULL)
+        return 0;
+    for(i=0;i<out->len;i++) {
+        gmtime_r((time_t*) &in->timestamp[i], &time_info);
+        y = time_info.tm_year + 1900;
+        m = time_info.tm_mon + 1;
+        d = time_info.tm_mday;
 
-
+        theta_deg = wmm_declination(model, in->lat[i], in->lon[i], in->z[i], y, m, d);
+        theta = theta_deg * M_PI / 180.;
+        M[0] = cos(theta);
+        M[1] = sin(theta);
+        out->uu[i] =  in->uu[i] * M[0] + in->vv[i] * M[1];
+        out->vv[i] = -in->uu[i] * M[1] + in->vv[i] * M[0];
+    }
+    return i;
+}
 
 double wmm_declination(WMM_Model *model, double lat, double lon, double z, int year, int month, int day)
 {
