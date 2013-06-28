@@ -23,7 +23,7 @@ cdef extern from "wmm.h":
     int wmm_initialize(char *filename, WMM_Model *model)
     int wmm_free(WMM_Model *model)
     double wmm_declination(WMM_Model *model, double lat, double lon, double z, int year, int month, int day)
-    size_t velocity_correction(velocity_profile *in_vp, WMM_Model *model, velocity_profile *out_vp)
+    size_t wmm_velocity_correction(velocity_profile *in_vp, WMM_Model *model, velocity_profile *out_vp)
 
 cdef class WMM:
     cdef WMM_Model model
@@ -95,7 +95,7 @@ cdef class WMM:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def _velocity_correction(self, uu, vv, lat, lon, z, timestamp) nogil:
+    def _velocity_correction(self, uu, vv, lat, lon, z, timestamp):
         cdef np.ndarray[double] uu_in = uu
         cdef np.ndarray[double] vv_in = vv
         cdef np.ndarray[double] uu_cor = np.empty(uu.shape, np.float)
@@ -104,6 +104,7 @@ cdef class WMM:
         cdef np.ndarray[double] lon_in = lon
         cdef np.ndarray[double] z_in = z
         cdef np.ndarray[np.int64_t] timestamp_in = timestamp
+        cdef size_t retval
 
         cdef velocity_profile in_vp
         cdef velocity_profile out_vp
@@ -119,7 +120,7 @@ cdef class WMM:
         out_vp.uu = &uu_cor[0]
         out_vp.vv = &vv_cor[0]
 
-        retval = velocity_correction(&in_vp, &self.model, &out_vp)
+        retval = wmm_velocity_correction(&in_vp, &self.model, &out_vp)
         if retval != uu.shape[0]:
             raise RuntimeError("Failed to Process All Vector Elements")
         return uu_cor, vv_cor

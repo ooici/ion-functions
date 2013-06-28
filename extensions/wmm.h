@@ -23,7 +23,7 @@ typedef struct wmm_model_ {
     int initialized;
 } WMM_Model;
 
-size_t velocity_correction(const velocity_profile *in, WMM_Model *model, velocity_profile *out);
+size_t wmm_velocity_correction(const velocity_profile *in, WMM_Model *model, velocity_profile *out);
 
 int wmm_initialize(char *filename, WMM_Model *model);
 int wmm_free(WMM_Model *model);

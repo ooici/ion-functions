@@ -56,7 +56,7 @@ int wmm_free(WMM_Model *model)
     return 0;
 }
 
-size_t velocity_correction(const velocity_profile *in, WMM_Model *model, velocity_profile *out)
+size_t wmm_velocity_correction(const velocity_profile *in, WMM_Model *model, velocity_profile *out)
 {
     size_t i=0;
     double M[2];
@@ -90,10 +90,6 @@ size_t velocity_correction(const velocity_profile *in, WMM_Model *model, velocit
 
 double wmm_declination(WMM_Model *model, double lat, double lon, double z, int year, int month, int day)
 {
-    int nMax = 0;
-    int epochs = 1;
-    int NumTerms;
-
     MAGtype_Ellipsoid Ellip;
     MAGtype_CoordSpherical CoordSpherical;
     MAGtype_CoordGeodetic CoordGeodetic;

@@ -99,7 +99,7 @@ char test_velocity_corr()
         timestamp[i] = 3319563600 - 2208988800;
         uu_cor[i] = vv_cor[i] = 0;
     }
-    if(velocity_correction(&in, &wmm_model, &out) != 10) {
+    if(wmm_velocity_correction(&in, &wmm_model, &out) != 10) {
         message = "Incomplete processing";
         printf("\n");
         return false;
