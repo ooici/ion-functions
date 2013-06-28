@@ -3,10 +3,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 #include "spike.h"
 #include "utils.h"
 #include "time_utils.h"
 #include "gradient.h"
+#include "wmm.h"
 
 void arange(double *arr, size_t len);
 signed char all(signed char *, size_t);
@@ -24,6 +26,8 @@ char test_gradient5(void);
 char test_time_month(void);
 char test_time_vector(void);
 char test_time_vector_split(void);
+char test_mag_decl(void);
+char test_velocity_corr(void);
 void test(char (*func)(void));
 
 extern bool nearly_equal(double, double, double);
@@ -44,6 +48,8 @@ int main(int argc, char *argv[])
     test(&test_time_month);
     test(&test_time_vector);
     test(&test_time_vector_split);
+    test(&test_mag_decl);
+    test(&test_velocity_corr);
     return 0;
 }
 
@@ -59,6 +65,100 @@ void test(char (*func)(void))
             printf("%s\n", message);
     }
 }
+char test_velocity_corr()
+{
+    velocity_profile in, out;
+    double uu[10], vv[10], lat[10], lon[10], z[10];
+    double uu_cor[10], vv_cor[10];
+    int64_t timestamp[10];
+    WMM_Model wmm_model;
+    printf("test_velocity_corr...");
+    if(wmm_initialize("ion_functions/data/WMM.COF", &wmm_model)) {
+        message = "Error initializing models";
+        printf("\n%s\n", wmm_errmsg);
+        return false;
+    }
+    in.len = 10;
+    in.uu = uu;
+    in.vv = vv;
+    in.lat = lat;
+    in.lon = lon;
+    in.z = z;
+    in.timestamp = timestamp;
+    out.len = 10;
+    out.uu = uu_cor;
+    out.vv = vv_cor;
+
+    for(int i=0;i<10;i++)
+    {
+        uu[i] = -3.2;
+        vv[i] = 18.2;
+        lat[i] = 14.6846;
+        lon[i] = -51.044;
+        z[i] = -6./1000.;
+        timestamp[i] = 3319563600 - 2208988800;
+        uu_cor[i] = vv_cor[i] = 0;
+    }
+    if(velocity_correction(&in, &wmm_model, &out) != 10) {
+        message = "Incomplete processing";
+        printf("\n");
+        return false;
+    }
+    for(int i=0;i<10;i++) {
+        if(fabs(uu_cor[i] - (-8.5136)) > 0.0001) {
+            message = "uu_cor is incorrect";
+            printf("\n%f != -8.5136\n", uu_cor[i]);
+            return false;
+        }
+        if(fabs(vv_cor[i] - (16.4012)) > 0.0001) {
+            message = "vv_cor is incorrect";
+            printf("\n%f != 16.4012\n", vv_cor[i]);
+            return false;
+        }
+    }
+    if(wmm_free(&wmm_model)) {
+        message = "Error freeing models";
+        printf("\n%s\n", wmm_errmsg);
+        return false;
+    }
+
+    return true;
+}
+
+char test_mag_decl()
+{
+    double lat = 40.0;
+    double lon = -120.0;
+    double z = 0.0;
+    int year = 1900;
+    int mon = 1;
+    int day = 1;
+    double declination;
+    WMM_Model model;
+    char filename[] = "ion_functions/data/WMM.COF";
+
+    printf("test_mag_decl...");
+    if(wmm_initialize(filename, &model)) {
+        message = "Error initializing models";
+        printf("\n%s\n", wmm_errmsg);
+        return false;
+    }
+
+    declination = wmm_declination(&model, lat, lon, z, year, mon, day);
+    if(fabs(declination - 26.184622) > 0.00001) {
+        message = "Expected doesn't match received";
+        printf("\n%f != 26.184622\n", declination);
+        return false;
+    }
+
+    if(wmm_free(&model)) {
+        message = "Error freeing models";
+        printf("\n%s\n", wmm_errmsg);
+        return false;
+    }
+    return true;
+}
+
 
 char test_time_vector()
 {
