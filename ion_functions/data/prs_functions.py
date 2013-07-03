@@ -115,8 +115,9 @@ def prs_bottilt_tdir(x_tilt, y_tilt, ccmp):
     References:
 
         OOI (2013). Data Product Specification for Seafloor High-Resolution
-            Tilt. Document Control Number 1341-000060. https://alfresco.oceanobservatories.org/
-            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            Tilt. Document Control Number 1341-000060.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
             1341-000060_Data_Product_SPEC_BOTTILT_OOI.pdf)
      """
     ### Calculate the angle to use in the tilt direction formula

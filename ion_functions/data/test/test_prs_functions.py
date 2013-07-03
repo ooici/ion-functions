@@ -65,12 +65,12 @@ class TestPRSFunctionsUnit(BaseUnitTestCase):
             1341-00060_Data_Product_SPEC_BOTTILT_OOI.pdf)
 
         Note, DPS does not specify a test for this function. Values from CCMP
-        lookup table in DPS used to create this test by the function and test
-        author.
+        lookup table in DPS used to create this test by the function and
+        test_function author.
 
         Implemented by Christopher Wingard, July 2013
         """
-        # set inputs
+        # set known inputs
         scmp = np.atleast_1d([row[2] for row in self.lily])
         snum = np.atleast_1d([row[3] for row in self.lily])
 
