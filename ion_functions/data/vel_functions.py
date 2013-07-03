@@ -15,7 +15,8 @@
 import numpy as np
 
 from ion_functions.data.adcp_functions import adcp_magvar
-from ion_functions.data.generic_functions import magnetic_declination
+from ion_functions.data.generic_functions import magnetic_declination, wmm_model
+from ion_functions.data.wmm import WMM
 
 # wrapper functions for use in ION
 def nobska_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
@@ -23,7 +24,14 @@ def nobska_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
     Wrapper function to correct the eastward velocity from a VEL3D
     Nobska instrument for magnetic declination.
     """
-    uu_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='east')
+    wmm = WMM(wmm_model)
+    uu = np.asanyarray(uu, dtype=np.float)
+    vv = np.asanyarray(vv, dtype=np.float)
+    lat = np.asanyarray(lat, dtype=np.float)
+    lon = np.asanyarray(lon, dtype=np.float)
+    z = np.asanyarray(z, dtype=np.float)/1000.
+    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
+    uu_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp )[0]
     return uu_cor/100.  # convert from cm/s to m/s
 
 
@@ -33,8 +41,15 @@ def nobska_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
     Nobska instrument for magnetic declination.  See vel_mag_correction
     function
     """
-    vv_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='north')
-    return vv_cor/100.  # convert from cms/ to m/s
+    wmm = WMM(wmm_model)
+    uu = np.asanyarray(uu, dtype=np.float)
+    vv = np.asanyarray(vv, dtype=np.float)
+    lat = np.asanyarray(lat, dtype=np.float)
+    lon = np.asanyarray(lon, dtype=np.float)
+    z = np.asanyarray(z, dtype=np.float)/1000.
+    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
+    vv_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp )[1]
+    return vv_cor/100.  # convert from cm/s to m/s
 
 
 def nortek_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
@@ -43,8 +58,15 @@ def nortek_mag_corr_east(uu,vv,lat,lon,timestamp,z=0):
     Nortek instrument for magnetic declination.  See vel_mag_correction
     function
     """
-    vv_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='east')
-    return vv_cor/1000.  # convert from mms/ to m/s
+    wmm = WMM(wmm_model)
+    uu = np.asanyarray(uu, dtype=np.float)
+    vv = np.asanyarray(vv, dtype=np.float)
+    lat = np.asanyarray(lat, dtype=np.float)
+    lon = np.asanyarray(lon, dtype=np.float)
+    z = np.asanyarray(z, dtype=np.float)/1000.
+    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
+    uu_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp )[0]
+    return uu_cor/1000.  # convert from mms/ to m/s
 
 
 def nortek_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
@@ -53,7 +75,14 @@ def nortek_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
     Nortek instrument for magnetic declination.  See vel_mag_correction
     function
     """
-    vv_cor = vel_mag_correction(uu,vv,lat,lon,timestamp,z,dirstr='north')
+    wmm = WMM(wmm_model)
+    uu = np.asanyarray(uu, dtype=np.float)
+    vv = np.asanyarray(vv, dtype=np.float)
+    lat = np.asanyarray(lat, dtype=np.float)
+    lon = np.asanyarray(lon, dtype=np.float)
+    z = np.asanyarray(z, dtype=np.float)/1000.
+    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
+    vv_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp )[1]
     return vv_cor/1000.  # convert from mms/ to m/s
 
 
@@ -61,8 +90,7 @@ def nortek_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
 
 
 # proper functions
-def vel_mag_correction(uu, vv, lat, lon, timestamp, z,
-                           zflag=-1, dirstr='all'):
+def vel_mag_correction(uu, vv, lat, lon, timestamp, z, zflag=-1):
     """
     Description:
 
@@ -112,12 +140,8 @@ def vel_mag_correction(uu, vv, lat, lon, timestamp, z,
     # correct the velocities for magnetic declination
     #   the algorithm for Nobska & Nortek VELPTTU's are the same as
     #   adcp_magvar
-    uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
+    magvar = np.vectorize(adcp_magvar)
+    uu_cor, vv_cor = magvar(theta, uu, vv)
     
-    # return according to dirstr direction
-    if dirstr == 'all':
-        return (uu_cor, vv_cor)
-    elif dirstr == 'east':
-        return uu_cor
-    elif dirstr == 'north':
-        return vv_cor
+    return (uu_cor, vv_cor)
+
