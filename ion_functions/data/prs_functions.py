@@ -7,6 +7,7 @@
 """
 
 import numexpr as ne
+import numpy as np
 
 
 def prs_bottilt_ccmp(scmp, sn):
@@ -44,7 +45,11 @@ def prs_bottilt_ccmp(scmp, sn):
     from ion_functions.data.prs_functions_ccmp import cmp_lookup
 
     # use the lookup table to get the ccmp
-    ccmp = cmp_lookup[(sn, int(round(scmp)))]
+    ccmp = np.zeros(len(scmp))
+
+    for i in range(len(scmp)):
+        ccmp[i] = cmp_lookup[(sn[i], int(round(scmp[i])))]
+
     return ccmp
 
 
@@ -114,18 +119,30 @@ def prs_bottilt_tdir(x_tilt, y_tilt, ccmp):
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-000060_Data_Product_SPEC_BOTTILT_OOI.pdf)
      """
-    if x_tilt == 0 and y_tilt > 0:
-        angle = 90.0
-    elif x_tilt == 0 and y_tilt < 0:
-        angle = -90.0
-    elif y_tilt == 0:
-        angle = 0.0
-    else:
-        angle = ne.evaluate('arctan(y_tilt / x_tilt)')
+    ### Calculate the angle to use in the tilt direction formula
+    # default angle calculation -- in degrees
+    angle = ne.evaluate('arctan(y_tilt / x_tilt)')
+    angle = np.degrees(angle)
 
-    if x_tilt >= 0:
-        tdir = ne.evaluate('(90 - angle + ccmp) % 360')
-    else:
-        tdir = ne.evaluate('(270 - angle + ccmp) % 360')
+    # if X-Tilt == 0 and Y-Tilt > 0
+    mask = np.logical_and(x_tilt == 0, y_tilt > 0)
+    angle[mask] = 90.0
 
-    return int(round(tdir))
+    # if X-Tilt == 0 and Y-Tilt < 0
+    mask = np.logical_and(x_tilt == 0, y_tilt < 0)
+    angle[mask] = -90.0
+
+    # if Y-Tilt == 0
+    mask = np.equal(y_tilt, np.zeros(len(y_tilt)))
+    angle[mask] = 0.0
+
+    ### Calculate the tilt direction, using the X-Tilt to set the equation
+    # default tilt direction equation
+    tdir = ne.evaluate('(270 - angle + ccmp) % 360')
+
+    # if X-Tilt >= 0
+    tmp = ne.evaluate('(90 - angle + ccmp) % 360')
+    mask = np.greater_equal(x_tilt, np.zeros(len(x_tilt)))
+    tdir[mask] = tmp[mask]
+
+    return np.round(tdir)
