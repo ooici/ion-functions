@@ -74,7 +74,7 @@ class TestPRSFunctionsUnit(BaseUnitTestCase):
         scmp = np.atleast_1d([row[2] for row in self.lily])
         snum = np.atleast_1d([row[3] for row in self.lily])
 
-        # set known output
+        # set known output for the corrected compass direction
         ccmp = np.atleast_1d([row[4] for row in self.lily])
 
         # calculate the corrected compass direction

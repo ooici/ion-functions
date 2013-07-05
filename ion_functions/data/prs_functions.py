@@ -3,7 +3,8 @@
 @package ion_functions.data.prs_functions
 @file ion_functions/data/prs_functions.py
 @author Christopher Wingard
-@brief Module containing Seafloor Pressure related calculations.
+@brief Module containing calculations related to instruments in the Seafloor
+    Pressure family.
 """
 
 import numexpr as ne
@@ -14,7 +15,7 @@ def prs_bottilt_ccmp(scmp, sn):
     """
     Description:
 
-        OOI Level 1 Seafloor high-resolution tilt (BOTTILT) core data product,
+        OOI Level 1 Seafloor High-Resolution tilt (BOTTILT) core data product,
         derived from data output by the Applied Geomechanincs LILY tilt sensor
         on board the Bottom Pressure Tilt (BOTPT) instruments on the Regional
         Scale Nodes (RSN) at Axial Seamount. This function computes
@@ -37,8 +38,9 @@ def prs_bottilt_ccmp(scmp, sn):
     References:
 
         OOI (2013). Data Product Specification for Seafloor High-Resolution
-            Tilt. Document Control Number 1341-000060. https://alfresco.oceanobservatories.org/
-            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            Tilt. Document Control Number 1341-000060.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
             1341-000060_Data_Product_SPEC_BOTTILT_OOI.pdf)
     """
     # load the corrected compass directions table
@@ -57,7 +59,7 @@ def prs_bottilt_tmag(x_tilt, y_tilt):
     """
     Description:
 
-        OOI Level 1 Seafloor high-resolution tilt (BOTTILT) core data product,
+        OOI Level 1 Seafloor High-Resolution Tilt (BOTTILT) core data product,
         derived from data output by the Applied Geomechanincs LILY tilt sensor
         on board the Bottom Pressure Tilt (BOTPT) instruments on the Regional
         Scale Nodes (RSN) at Axial Seamount. This function computes
@@ -80,8 +82,9 @@ def prs_bottilt_tmag(x_tilt, y_tilt):
     References:
 
         OOI (2013). Data Product Specification for Seafloor High-Resolution
-            Tilt. Document Control Number 1341-000060. https://alfresco.oceanobservatories.org/
-            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            Tilt. Document Control Number 1341-000060.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
             1341-000060_Data_Product_SPEC_BOTTILT_OOI.pdf)
      """
     tmag = ne.evaluate('sqrt(x_tilt**2 + y_tilt**2)')
@@ -92,10 +95,11 @@ def prs_bottilt_tdir(x_tilt, y_tilt, ccmp):
     """
     Description:
 
-        OOI Level 1 Seafloor high-resolution tilt (BOTTILT) core data product,
+        OOI Level 1 Seafloor High-Resolution Tilt (BOTTILT) core data product,
         derived from data output by the Applied Geomechanincs LILY tilt sensor
         on board the Bottom Pressure Tilt (BOTPT) instruments on the Regional
-        Scale Nodes (RSN) at Axial Seamount.
+        Scale Nodes (RSN) at Axial Seamount. This function computes
+        BOTTILT-TDIR_L1.
 
     Implemented by:
 
@@ -120,7 +124,7 @@ def prs_bottilt_tdir(x_tilt, y_tilt, ccmp):
             >> Controlled >> 1000 System Level >>
             1341-000060_Data_Product_SPEC_BOTTILT_OOI.pdf)
      """
-    ### Calculate the angle to use in the tilt direction formula
+    ## Calculate the angle to use in the tilt direction formula
     # default angle calculation -- in degrees
     angle = ne.evaluate('arctan(y_tilt / x_tilt)')
     angle = np.degrees(angle)
@@ -137,7 +141,7 @@ def prs_bottilt_tdir(x_tilt, y_tilt, ccmp):
     mask = np.equal(y_tilt, np.zeros(len(y_tilt)))
     angle[mask] = 0.0
 
-    ### Calculate the tilt direction, using the X-Tilt to set the equation
+    ## Calculate the tilt direction, using the X-Tilt to set the equation
     # default tilt direction equation
     tdir = ne.evaluate('(270 - angle + ccmp) % 360')
 
