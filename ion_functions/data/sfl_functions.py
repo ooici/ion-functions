@@ -5,7 +5,7 @@
 @author Christopher Wingard
 @brief Module containing Seafloor Properties related data-calculations.
 """
-
+from ion_functions.utils import fill_value
 def sfl_trhph_vfltemp(V_s, V_c, a, b, c, d, e):
     """
     Description:
@@ -120,10 +120,10 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
     # select the optimal L0 Resistivity voltage
     V_R = V_R1 * 5.              # Option 1, default (V_R1 * 5)
     
-    vflag = V_R2 < 0.75         # Option 2 
+    vflag = np.where(V_R2 < 0.75)         # Option 2 
     V_R[vflag] = V_R3[vflag] / 5.
     
-    vflag = (V_R2 >= 0.75) & (V_R2 < 3.90)    # Option 3
+    vflag = np.where((V_R2 >= 0.75) & (V_R2 < 3.90))    # Option 3
     V_R[vflag] = V_R2[vflag]
     
     # convert resistivity to conductivity
@@ -145,8 +145,6 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
         else:
             Cl[i] = np.nan
         
-    # reset NaN values generated in interpolation functions above to system
-    # default of -99999999
-    Cl[np.isnan(Cl)] = -99999999.
-    
     return Cl
+
+

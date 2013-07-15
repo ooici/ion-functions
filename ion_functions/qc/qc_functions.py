@@ -13,6 +13,7 @@ import numpy as np
 import numexpr as ne
 from scipy.interpolate import LinearNDInterpolator
 from ion_functions import utils
+from ion_functions.utils import fill_value
 
 # try to load the OOI logging module, using default Python logging module if
 # unavailable
@@ -23,7 +24,7 @@ except ImportError:
     log = logging.getLogger('ion-functions')
 
 def is_fill(arr):
-    return np.atleast_1d(arr)[-1] == -9999
+    return np.atleast_1d(arr)[-1] == -9999. # Not the normal fill value, it's hardcoded to the QC params
 def is_none(arr):
     return arr is None or (np.atleast_1d(arr)[-1] == None)
 
@@ -97,14 +98,26 @@ def dataqc_globalrangetest(dat, datlim, strict_validation=False):
 
     return (datlim.min() <= dat) & (dat <= datlim.max()).astype('int8')
 
-def dataqc_localrangetest_wrapper(dat, time_v, pressure, datlim, datlimz, strict_validation=False):
+def dataqc_localrangetest_wrapper(dat, datlim, datlimz, dims, pval_callback):
 
-    # Convert time to months
-    time_v = np.asanyarray(time_v, dtype=np.float)
-    time_v = ntp_to_month(time_v)
-
-    z = np.column_stack([pressure, time_v])
-    return dataqc_localrangetest(dat, z, np.atleast_1d(datlim)[-1], np.atleast_1d(datlimz)[-1], strict_validation)
+    z = []
+    for dim in dims:
+        if dim == 'month':
+            # Convert time vector to vector of months
+            v = pval_callback('time')
+            v = np.asanyarray(v, dtype=np.float)
+            v = ntp_to_month(v)
+            z.append(v)
+        else:
+            # Fetch the dimension from the callback method
+            v = pval_callback(dim)
+            z.append(v)
+    if len(dims)>1:
+        z = np.column_stack(z)
+    else:
+        z = z[0]
+        datlimz = datlimz[:,0]
+    return dataqc_localrangetest(dat, z, datlim, datlimz)
 
 
 def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
