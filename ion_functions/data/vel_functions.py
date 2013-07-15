@@ -6,9 +6,6 @@
 @author Stuart Pearce
 @brief Module containing velocity family instrument related functions
 """
-# TODO: unittests in test_vel_functions.py, NOTE: no test data for
-# Nobska yet
-
 # TODO: Get the depth look up values working so that z can be used in
 # TODO: wrapper functions.
 

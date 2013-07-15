@@ -23,11 +23,13 @@ Conductivity, Temperature, Depth (CTD)
        Preload (CTDMO). CTDPF is an unknown as of 2013-05-10, since the DPSs
        don't cover this one.
        
-Dissolved Oxygen
+Dissolved Oxygen (DO)
 
-     * do2_functions.py
+     * do2_functions.py -- calculates L1 & L2 DOCONCS data products.
+       This module includes:
      
-       [TODO: Fill out with module names and descriptions]
+       do2_SVU  -- calculates DOCONCS_L1 from DOSTAs
+       do2_salinity_correction -- calculates DOCONCS_L2 from DOSTAs
      
 Optical Properties (OPT)
 
@@ -105,9 +107,23 @@ Water Velocity (VEL)
        adcp_ins2earth
        adcp_magvar
      
-     * vel_functions.py
+     * vel_functions.py -- Covers calculation of the L1 VEL3D Eastward
+       and Northward component data products from the VEL3D-B and VEL3D-CD
+       instruments.  This module includes
      
-       [TODO: Fill out with module names and descriptions]
+       nobska_mag_corr_east -- calculates VELPTTU-VLE_L1 from VEL3D-Bs (Nobska)
+       nobska_mag_corr_north -- calculates VELPTTU-VLN_L1 from VEL3D-Bs (Nobska)
+       nortek_mag_corr_east -- calculates VELPTTU-VLE_L1 from VEL3D-CDs (Nortek)
+       nortek_mag_corr_north -- calculates VELPTTU-VLN_L1 from VEL3D-CDs (Nortek)
+       
+Meteorology (MET)
+
+     * met_functions.py -- Covers calculation of the L1 WINDAVG Eastward
+       and Northward component data products from METBK instruments.
+       This module includes:
+       
+       metbk_mag_corr_east -- calculates WINDAVG-VLE_L1 from METBKs
+       metbk_mag_corr_north -- calculates WINDAVG-VLN_L1 from METBKs
 
 Additional Functions, available in generic_functions.py, provide for transforms
 and calculations that apply to multiple instrument families.
