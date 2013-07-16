@@ -18,7 +18,6 @@ from ion_functions.data.met_functions import windavg_mag_corr_east, windavg_mag_
 class TestMetFunctionsUnit(BaseUnitTestCase):
 
     def test_metbk_windavg(self):
-
         lat = 14.6846
         lon = -51.044
 

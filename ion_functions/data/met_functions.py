@@ -51,5 +51,5 @@ def windavg_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
     lon = np.asanyarray(lon, dtype=np.float)
     z = np.asanyarray(z, dtype=np.float)/1000.
     timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
-    vv_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp)[1]
-    return vv_cor
+    uu_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp)[0]
+    return uu_cor
