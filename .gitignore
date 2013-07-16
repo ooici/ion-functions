@@ -12,5 +12,6 @@ build
 *.o
 *.c
 !extensions/*.c
+extensions/test
 *.so
 notebooks/
