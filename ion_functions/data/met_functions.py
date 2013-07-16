@@ -33,7 +33,7 @@ def metbk_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
     z = np.asanyarray(z, dtype=np.float)/1000.
     timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
     vv_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp)[1]
-    return ne.evaluate('vv_cor/100.')  # convert from cm/s to m/s
+    return vv_cor
 
 
 def metbk_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
@@ -52,4 +52,4 @@ def metbk_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
     z = np.asanyarray(z, dtype=np.float)/1000.
     timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
     vv_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp)[1]
-    return ne.evaluate('vv_cor/100.')  # convert from cm/s to m/s
+    return vv_cor
