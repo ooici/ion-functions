@@ -17,7 +17,7 @@ from ion_functions.data.generic_functions import magnetic_declination, wmm_model
 from ion_functions.data.wmm import WMM
 
 
-def metbk_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
+def windavg_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
     """
     Corrects the northward wind velocity from a METBK
     instrument for magnetic declination.
@@ -36,7 +36,7 @@ def metbk_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
     return vv_cor
 
 
-def metbk_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
+def windavg_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
     """
     Corrects the eastward wind velocity from a METBK
     instrument for magnetic declination.

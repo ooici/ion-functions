@@ -11,14 +11,13 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 
-from ion_functions.data.met_functions import  # TODO: fill this out with the functions to be tested
+from ion_functions.data.met_functions import windavg_mag_corr_east, windavg_mag_corr_north
 
 
 @attr('UNIT', group='func')
-class TestMetFunctionsUnit(BaseUnitTestCase):  # TODO: Name the class appropriately
+class TestMetFunctionsUnit(BaseUnitTestCase):
 
-    # Nobska instrument outputs velocities in cm/s
-    def test_vel3d_nobska(self):
+    def test_metbk_windavg(self):
 
         lat = 14.6846
         lon = -51.044
@@ -53,8 +52,8 @@ class TestMetFunctionsUnit(BaseUnitTestCase):  # TODO: Name the class appropriat
         vu_expected = np.array([
             -0.011, -0.006, -0.014, -0.02, -0.017, -0.02,
             0.013, -0.016, -0.011, -0.045])
-        ve_cor = metbk_mag_corr_east(ve, vn, lat, lon, ts, 6)
-        vn_cor = metbk_mag_corr_north(ve, vn, lat, lon, ts, 6)
+        ve_cor = windavg_mag_corr_east(ve, vn, lat, lon, ts, 6)
+        vn_cor = windavg_mag_corr_north(ve, vn, lat, lon, ts, 6)
         vu_cor = vu
 
         np.testing.assert_array_almost_equal(ve_cor, ve_expected)
