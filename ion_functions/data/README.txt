@@ -122,8 +122,8 @@ Meteorology (MET)
        and Northward component data products from METBK instruments.
        This module includes:
        
-       metbk_mag_corr_east -- calculates WINDAVG-VLE_L1 from METBKs
-       metbk_mag_corr_north -- calculates WINDAVG-VLN_L1 from METBKs
+       windavg_mag_corr_east -- calculates WINDAVG-VLE_L1 from METBKs
+       windavg_mag_corr_north -- calculates WINDAVG-VLN_L1 from METBKs
 
 Additional Functions, available in generic_functions.py, provide for transforms
 and calculations that apply to multiple instrument families.
