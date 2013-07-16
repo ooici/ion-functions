@@ -11,11 +11,12 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 from ion_functions.data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north
+from ion_functions.data.vel_functions import nortek_mag_corr_east, nortek_mag_corr_north
 from ion_functions.data.generic_functions import error
 
 
 @attr('UNIT', group='func')
-class TestGenericFunctionsUnit(BaseUnitTestCase):
+class TestVelFunctionsUnit(BaseUnitTestCase):
 
     ## No VELPTTU Nobska test data as of yet.
     def test_nobska_mag_correction(self):
@@ -97,9 +98,9 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
         vn = self.vn * 10.
         vu = self.vu * 10.
 
-        ve_cor = nobska_mag_corr_east(
+        ve_cor = nortek_mag_corr_east(
             ve, vn, self.lat, self.lon, self.ts, 6)
-        vn_cor = nobska_mag_corr_north(
+        vn_cor = nortek_mag_corr_north(
             ve, vn, self.lat, self.lon, self.ts, 6)
         vu_cor = vu / 1000.0
 
