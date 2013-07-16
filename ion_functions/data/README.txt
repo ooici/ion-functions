@@ -75,6 +75,19 @@ pH (pH)
        ph_thermistor
        ph_phwater
 
+Seafloor Pressure (PRS)
+
+     * prs_functions -- Covers calculation of the L1 data products collected
+       from the BOTPT (BOTTILT), PRESF and PREST (both SFLPRES) instruments.
+       Note, functions for PRESF and PREST are implemented as Preload
+       ParameterFunctions, rather than herein. Also, no function is required
+       for the BOTPRES_L1 data product, as that value is output directly by the
+       instrument.
+       
+       prs_bottilt_ccmp -- computes the BOTTILT-CCMP_L1 data product
+       prs_bottilt_tmag -- computes the BOTTILT-TMAG_L1 data product
+       prs_bottilt_tdir -- computes the BOTTILT-TDIR_L1 data product
+       
 Seafloor Properties (SFL)
 
      * sfl_functions.py -- Covers calculation of L1 data products collected
