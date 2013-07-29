@@ -96,26 +96,26 @@ class TestCO2Performance(PerformanceTestCase):
             [440, 390, 20, 20, 35, 4.960e-07]
         ])
 
-    #def test_pco2_thermistor(self):
-    #    stats = []
-    #
-    #    sample_data = np.empty(3600 * 24 * 365, dtype='int32')
-    #    sample_data.fill(self.traw)
-    #    self.profile(stats, pco2_thermistor, sample_data)
+    def test_pco2_thermistor(self):
+        stats = []
 
-    #def test_pco2_calc_pco2(self):
-    #    stats = []
-    #
-    #    light = self.light
-    #    mtype = self.mtype
-    #    traw = np.empty(3600 * 24 * 365, dtype=np.int)
-    #    tout = pco2_thermistor(traw)
-    #    a434blnk = pco2_abs434_blank(mtype, light, self.a434blnk)
-    #    a620blnk = pco2_abs620_blank(mtype, light, self.a620blnk)
-    #
-    #    self.profile(stats, pco2_pco2wat, mtype, light, tout, self.ea434, self.eb434,
-    #                 self.ea620, self.eb620, self.calt, self.cala, self.calb,
-    #                 self.calc, a434blnk, a620blnk)
+        sample_data = np.empty(3600 * 24 * 365, dtype='int32')
+        sample_data.fill(self.traw)
+        self.profile(stats, pco2_thermistor, sample_data)
+
+    def test_pco2_calc_pco2(self):
+        stats = []
+
+        light = self.light
+        mtype = self.mtype
+        traw = np.empty(3600 * 24 * 365, dtype=np.int)
+        tout = pco2_thermistor(traw)
+        a434blnk = pco2_abs434_blank(mtype, light, self.a434blnk)
+        a620blnk = pco2_abs620_blank(mtype, light, self.a620blnk)
+
+        self.profile(stats, pco2_pco2wat, mtype, light, tout, self.ea434, self.eb434,
+                     self.ea620, self.eb620, self.calt, self.cala, self.calb,
+                     self.calc, a434blnk, a620blnk)
 
     def test_pco2_co2flux(self):
         stats = []
