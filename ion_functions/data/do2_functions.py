@@ -7,6 +7,7 @@
 @brief Module containing Dissolved Oxygen family functions
 """
 import numpy as np
+import numexpr as ne
 import pygsw.vectors as gsw
 
 
@@ -60,7 +61,7 @@ def do2_SVU(calphase, do_temp, csv):
     Ksv = csv[0] + csv[1]*do_temp + csv[2]*(do_temp**2)
     P0 = csv[3] + csv[4]*do_temp
     Pc = csv[5] + csv[6]*calphase
-    DO = ((P0/Pc) - 1) / Ksv
+    DO = ne.evaluate('((P0/Pc) - 1) / Ksv')
     return DO
     
 # TODO: the salinity correction is not finished.  Ultimately it needs
@@ -126,21 +127,19 @@ def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
     pdens = gsw.rho(SA,CT,pref)  # potential referenced to p=0
     
     # Convert from volume to mass units:
-    DO = 1000*DO/pdens
+    DO = ne.evaluate('1000*DO/pdens')
     
     # Pressure correction:
-    pcomp = 1 + (0.032*P)/1000
-    DO = pcomp*DO
-    
+    DO = ne.evaluate('(1 + (0.032*P)/1000) * DO')
+        
     # Salinity correction:
     S0 = 0
-    ts = np.log((298.15-do_t)/(273.15+do_t))
-    B = np.array([-6.24097e-3,
-    -6.93498e-3,
-    -6.90358e-3,
-    -4.29155e-3])
+    ts = ne.evaluate('log((298.15-do_t)/(273.15+do_t))')
+    B0 = -6.24097e-3
+    B1 = -6.93498e-3
+    B2 = -6.90358e-3
+    B3 = -4.29155e-3
     C0 = -3.11680e-7
-    Bts = B[0] + B[1]*ts + B[2]*ts**2 + B[3]*ts**3
-    scomp = np.exp((SP-S0)*Bts + C0*(SP**2-S0**2))
-    DO = scomp*DO
+    Bts = ne.evaluate('B0 + B1*ts + B2*ts**2 + B3*ts**3')
+    DO = ne.evaluate('exp((SP-S0)*Bts + C0*(SP**2-S0**2)) * DO')
     return DO

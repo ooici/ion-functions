@@ -9,10 +9,14 @@ waiting for resolution of paired tasks elsewhere in ION.
         do not report it).
     2013-05-09 Stuart Pearce
     
-2. Add unit tests for vel_functions.
+2. (DONE)Add unit tests for vel_functions.
     * waiting on project scientists to create test values.  The DPS had
         no test values listed.
     2013-05-09 Stuart Pearce
+    2013-07-16 DONE
+    * used the VELPT data to make my own data set.
+    
+    
 
 3. Add unit tests for do2_functions.
     * waiting on project scientists to create test values that work.

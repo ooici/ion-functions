@@ -13,10 +13,13 @@ import datetime
 import time
 
 import numpy as np
+import numexpr as ne
+
 from ion_functions.data.wmm import WMM
 import pkg_resources
 
 wmm_model = pkg_resources.resource_filename(__name__, 'WMM.COF')
+
 
 # Example function from ctd_functions.py
 def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
@@ -24,13 +27,15 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
     Description:
 
         Magnetic declination (a.k.a. magnetic variation) as a function
-        of location and date from the World Magnetic Model (WMM). Uses
-        the geomag Python library implementation of the WMM. Declination
-        is used in several OOI data product transformations.
+        of location and date from the World Magnetic Model (WMM).
+
+        Declination is used in several OOI data product transformations.
 
     Implemented by:
 
         2013-03-20: Stuart Pearce. Initial code.
+        2013-06-~:  Luke Campbell. Implemented the WMM C code for speed
+                    over the Python geomag library.
 
     Usage:
 
@@ -65,37 +70,32 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
         16.465045980896086
 
     References:
-    
+
         World Magnetic Model (2010). http://www.ngdc.noaa.gov/geomag/WMM
         /DoDWMM.shtml
     """
     wmm = WMM(wmm_model)
     # convert ntp timestamp to unix timestamp and then a datetime object
-    unix_timestamp = ntp_timestamp - 2208988800 # Faster if its stackless (not a function call)
-    
-    # the data timestamp is in UTC, and while the input to the WMM does
-    # not specify, reasonably it should handle time as a UTC time rather
-    # than a local time. If the WMM does expect a local time, since a
-    # date is required by the geomag library, the difference of discrete
-    # day timesteps results in an average error that is much smaller
-    # than the uncertainty of almost all compasses and so local time
-    # versus UTC can be ignored.
-    dates = np.vectorize(lambda x : datetime.datetime.utcfromtimestamp(x).date())
+    unix_timestamp = ntp_timestamp - 2208988800  # Faster if its stackless (not a function call)
+
+    dates = np.vectorize(lambda x: datetime.datetime.utcfromtimestamp(x).date())
 
     datestamps = dates(unix_timestamp)
-    
+
     # give the z value the proper vector direction (i.e negative down)
-    z = z*zflag
-    
-    z /= 1000. # m -> km
-    dec = np.vectorize(lambda lat, lon, z, date : wmm.declination(lat, lon, z, date))
-    
+    z = ne.evaluate('z*zflag')
+
+    z = ne.evaluate('z/1000.')  # m -> km
+    dec = np.vectorize(lambda lat, lon, z, date: wmm.declination(lat, lon, z, date))
+
     mag_dec = dec(lat, lon, z, datestamps)
     return mag_dec
 
 
 def ntp_to_unix_time(ntp_timestamp):
-    """
+    """DEPRECATED. Use 2208988800 seconds as the offset between an NTP
+    timestamp and a Unix timestamp instead.
+
     Description:
 
         Convert an NTP time stamp (epoch=1900-01-01) to a Unix timestamp
@@ -111,7 +111,7 @@ def ntp_to_unix_time(ntp_timestamp):
         unix_ts = ntp_to_unix_time(ntp_ts)
 
             where
-            
+
         ntp_ts = NTP timestamp [seconds since 1900-01-01]
         unix_ts = Unix timestamp [seconds since 1970-01-01]
 
@@ -124,14 +124,14 @@ def ntp_to_unix_time(ntp_timestamp):
         1365803237.9580002
 
     References:
-    
+
         The NTP FAQ and HOWTO (2006). http://www.ntp.org/ntpfaq/
     """
     SYSTEM_EPOCH = datetime.date(*time.gmtime(0)[0:3])
     NTP_EPOCH = datetime.date(1900, 1, 1)
     NTP_DELTA = (SYSTEM_EPOCH - NTP_EPOCH).total_seconds()
-    
-    unix_timestamp = ntp_timestamp - NTP_DELTA
+
+    unix_timestamp = ne.evaluate('ntp_timestamp - NTP_DELTA')
     return unix_timestamp
 
 
@@ -156,9 +156,9 @@ def extract_parameter(in_array, index):
         out_value = the desired parameter.
         in_array = the input array holding the value.
         index = 0-based index in array to value.
-    
-    References: 
-    
+
+    References:
+
         None.
     """
     out_value = in_array[index]
