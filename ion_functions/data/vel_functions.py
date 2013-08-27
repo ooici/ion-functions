@@ -58,8 +58,8 @@ def nobska_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
 
 def nortek_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
     """
-    Corrects the eastward velocity from a VEL3D
-    Nortek Vector instrument for magnetic declination.
+    Corrects the eastward velocity from VEL3D-CD Nortek Vector
+    and VELPT Nortek Aquadopp instruments for magnetic declination.
 
     This function is a wrapper around the method "velocity_correction"
     of the "ion_functions.data.wmm.WMM" class.
@@ -77,8 +77,8 @@ def nortek_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
 
 def nortek_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
     """
-    Corrects the northward velocity from a VEL3D
-    Nortek Vector instrument for magnetic declination.
+    Corrects the northward velocity from VEL3D-CD Nortek Vector
+    and VELPT Nortek Aquadopp instruments for magnetic declination.
 
     This function is a wrapper around the method "velocity_correction"
     of the "ion_functions.data.wmm.WMM" class.

@@ -16,7 +16,7 @@ def do2_SVU(calphase, do_temp, csv):
     Description:
 
         Stern-Volmer-Uchida equation for calculating temperature
-        corrected dissolved oxygen concentration. OOI L1 data product. 
+        corrected dissolved oxygen concentration. OOI L1 data product.
 
 
     Implemented by:
@@ -38,37 +38,39 @@ def do2_SVU(calphase, do_temp, csv):
             7 element float array, (see DOCONCS DPS)
 
     Example:
-        
+
         csv = np.array([0.002848, 0.000114, 1.51e-6, 70.42301, -0.10302,
                         -12.9462, 1.265377])
         calphase = 27.799
         do_temp = 19.841
-        
+
         DO = do2_SVU(calphase, do_temp, csv)
         print DO
         > 363.900534505
 
-    References: 
-    
+    References:
+
         OOI (2012). Data Product Specification for Oxygen Concentration
             from "Stable" Instruments. Document Control Number
             1341-00520. https://alfresco.oceanobservatories.org/ (See:
             Company Home >> OOI >> Controlled >> 1000 System Level
-            >> 1341-00520_Data_Product_SPEC_DOCONOCS_OOI.pdf)
+            >> 1341-00520_Data_Product_SPEC_DOCONCS_OOI.pdf)
     """
-    
+
     # Calculate DO using Stern-Volmer:
     Ksv = csv[0] + csv[1]*do_temp + csv[2]*(do_temp**2)
     P0 = csv[3] + csv[4]*do_temp
     Pc = csv[5] + csv[6]*calphase
     DO = ne.evaluate('((P0/Pc) - 1) / Ksv')
     return DO
-    
+
 # TODO: the salinity correction is not finished.  Ultimately it needs
 # TODO: two encapsulating-in-time CTD samples to be interpolated to O2
 # TODO: sample time.  Waiting on Luke and Chris M. to determine how best
 # TODO: to do this.  Note: the interpolation should be in another function
 # TODO: to accomodate the standalone DOSTA and CTDBP DOSTA.
+
+
 def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
     """
     Description:
@@ -83,9 +85,9 @@ def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
     Usage:
 
         DOc = do2_salinity_correction(DO,do_t,P,T,SP,lat,lon, pref=0)
-        
+
             where
-        
+
         DOc = corrected dissolved oxygen [micro-mole/kg].
         DO = uncorrected dissolved oxygen [micro-mole/L].
         do_t = Oxygen sensor temperature [deg C].
@@ -106,32 +108,32 @@ def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
         T = 1.97
         SP = 33.716000000000001
         lat,lon = -52.82, 87.64
-        
+
         DOc = do2_salinity_correction(DO,do_t,P,T,SP,lat,lon, pref=0)
         print DO
         > 335.967894709
 
-    References: 
-    
+    References:
+
          OOI (2012). Data Product Specification for Oxygen Concentration
             from "Stable" Instruments. Document Control Number
             1341-00520. https://alfresco.oceanobservatories.org/ (See:
             Company Home >> OOI >> Controlled >> 1000 System Level
-            >> 1341-00520_Data_Product_SPEC_DOCONOCS_OOI.pdf)
-        
+            >> 1341-00520_Data_Product_SPEC_DOCONCS_OOI.pdf)
+
     """
-    
+
     # density calculation from GSW toolbox
     SA = gsw.sa_from_sp(SP, P, lon, lat)
     CT = gsw.ct_from_t(SA, T, P)
-    pdens = gsw.rho(SA,CT,pref)  # potential referenced to p=0
-    
+    pdens = gsw.rho(SA, CT, pref)  # potential referenced to p=0
+
     # Convert from volume to mass units:
     DO = ne.evaluate('1000*DO/pdens')
-    
+
     # Pressure correction:
     DO = ne.evaluate('(1 + (0.032*P)/1000) * DO')
-        
+
     # Salinity correction:
     S0 = 0
     ts = ne.evaluate('log((298.15-do_t)/(273.15+do_t))')
@@ -143,3 +145,87 @@ def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
     Bts = ne.evaluate('B0 + B1*ts + B2*ts**2 + B3*ts**3')
     DO = ne.evaluate('exp((SP-S0)*Bts + C0*(SP**2-S0**2)) * DO')
     return DO
+
+
+def dofst_calculation(do_raw, offset, Soc, A, B, C, E, P, T, SP, lat, lon):
+    """
+        Description:
+
+        Salinity and pressure corrected dissolved oxygen concentration.
+        OOI L2 data product DOCONCS.
+
+    Implemented by:
+
+        2013-08-20: Stuart Pearce. Initial Code.
+
+    Usage:
+
+        DO = dostf_calculation(do_raw,Soc,A,B,C,E,P,T,SP,lat,lon)
+
+            where
+
+        DO = corrected dissolved oxygen [micro-mole/kg].
+        do_raw = Oxygen sensor voltage or frequency [V] or [Hz].
+        offset = Voltage or Frequency offset [V] or [Hz].
+        Soc = Oxygen signal slope
+        A = Residual temperature correction factor A
+        B = Residual temperature correction factor B
+        C = Residual temperature correction factor C
+        E = Pressure correction factor
+        P = PRESWAT water pressure [dbar]. (see
+            1341-00020_Data_Product_Spec_PRESWAT)
+        T = TEMPWAT water temperature [deg C]. (see
+            1341-00010_Data_Product_Spec_TEMPWAT)
+        SP = PRACSAL practical salinity [unitless]. (see
+            1341-00040_Data_Product_Spec_PRACSAL)
+        lat, lon = latitude and longitude of the instrument [degrees].
+
+    Example:
+        DO = 433.88488978325478
+        do_raw = 1.97
+        P = 5.4000000000000004
+        T = 1.97
+        SP = 33.716000000000001
+        lat,lon = -52.82, 87.64
+
+        DO = dofst_calculation(DO,do_t,P,T,SP,lat,lon, pref=0)
+        print DO
+        > 335.967894709
+
+    References:
+
+         OOI (2013). Data Product Specification for Fast Dissolved
+            Oxygen. Document Control Number 1341-00521.
+            https://alfresco.oceanobservatories.org/ (See:
+            Company Home >> OOI >> Controlled >> 1000 System Level
+            >> 1341-00521_Data_Product_SPEC_DOCONCF_OOI.pdf)
+    """
+    # Get potential density using the TEOS-10 toolbox
+    SA = gsw.sa_from_sp(SP, P, lon, lat)
+    pot_rho_t = gsw.pot_rho_t_exact(SA, T, P, 0)
+
+    # Oxygen saturation value after Garcia and Gordon (1992)
+    A0 = 2.00907
+    A1 = 3.22014
+    A2 = 4.0501
+    A3 = 4.94457
+    A4 = -0.256847
+    A5 = 3.88767
+    B0 = -0.00624523
+    B1 = -0.00737614
+    B2 = -0.010341
+    B3 = -0.00817083
+    C0 = -0.000000488682
+    temp_K = T + 273.15
+    Ts = np.log((298.15 - T) / (temp_K))
+    Oxsol = np.exp(
+        A0 + A1*Ts + A2*Ts**2 + A3*Ts**3 + A4*Ts**4 + A5*Ts**5 +
+        SP * (B0 + B1*Ts + B2*Ts**2 + B3*Ts**3) +
+        C0*SP**2)
+
+    # Intermediate step: Dissolved Oxygen concentration in [mL/L]
+    DO_int = Soc * (do_raw + offset) * Oxsol * (1.0 + A*T + B*T**2 + C*T**3) * np.exp((E * P)/temp_K)
+
+    # Correct DO_int for Potential Density and convert to [micromole/Kg]
+    DO = DO_int * 44660. / (pot_rho_t)
+    return (DO, DO_int)
