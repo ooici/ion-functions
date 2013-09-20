@@ -43,7 +43,7 @@ wmm_extension = Extension("ion_functions.data.wmm", wmm_extension_sources, inclu
 
 
 setup(name = 'ion-functions', 
-        version='0.0.1',
+        version='2.1.0',
         description='Python Function collection for ION',
         long_description=open('README.md').read(),
         license='LICENSE.txt',
