@@ -99,6 +99,22 @@ def dataqc_globalrangetest(dat, datlim, strict_validation=False):
     return (datlim.min() <= dat) & (dat <= datlim.max()).astype('int8')
 
 def dataqc_localrangetest_wrapper(dat, datlim, datlimz, dims, pval_callback):
+    if is_none(datlim) or is_fill(datlim):
+        out = np.empty(dat.shape, dtype=np.int8)
+        out.fill(-99)
+        return out
+    if is_none(datlimz) or is_fill(datlimz):
+        out = np.empty(dat.shape, dtype=np.int8)
+        out.fill(-99)
+        return out
+    if is_none(dims):
+        out = np.empty(dat.shape, dtype=np.int8)
+        out.fill(-99)
+        return out
+    if is_none(pval_callback):
+        out = np.empty(dat.shape, dtype=np.int8)
+        out.fill(-99)
+        return out
 
     z = []
     for dim in dims:
