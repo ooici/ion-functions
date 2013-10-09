@@ -191,6 +191,12 @@ def dataqc_localrangetest(dat, z, datlim, datlimz, strict_validation=False):
             if not utils.isreal(arg).all():
                 raise ValueError('\'{0}\' must be real'.format(k))
 
+    if len(datlim.shape) == 3 and datlim.shape[0] == 1:
+        datlim = datlim.reshape(datlim.shape[1:])
+
+    if len(datlimz.shape) == 3 and datlimz.shape[0] == 1:
+        datlimz = datlimz.reshape(datlimz.shape[1:])
+
     # test size and shape of the input arrays datlimz and datlim, setting test
     # variables.
     array_size = datlimz.shape
