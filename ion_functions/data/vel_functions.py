@@ -16,6 +16,22 @@ from ion_functions.data.adcp_functions import adcp_magvar
 from ion_functions.data.generic_functions import magnetic_declination, wmm_model
 from ion_functions.data.wmm import WMM
 
+def valid_lat(lat):
+    if isinstance(lat, np.ndarray):
+        if np.any(lat > 90) or np.any(lat < -90):
+            return False
+        return True
+    else:
+        return -90 <= lat and lat <= 90
+
+def valid_lon(lon):
+    if isinstance(lon, np.ndarray):
+        if np.any(lon > 180) or np.any(lon < -180):
+            return False
+        return True
+    else:
+        return -180 <= lon and lon <= 180
+
 
 # wrapper functions for use in ION
 def nobska_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
@@ -26,6 +42,8 @@ def nobska_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
     This function is a wrapper around the method "velocity_correction"
     of the "ion_functions.data.wmm.WMM" class.
     """
+    if not valid_lat(lat) or not valid_lon(lon):
+        return np.ones(uu.shape, dtype=np.float) * -9999
     wmm = WMM(wmm_model)
     uu = np.asanyarray(uu, dtype=np.float)
     vv = np.asanyarray(vv, dtype=np.float)
@@ -45,6 +63,8 @@ def nobska_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
     This function is a wrapper around the method "velocity_correction"
     of the "ion_functions.data.wmm.WMM" class.
     """
+    if not valid_lat(lat) or not valid_lon(lon):
+        return np.ones(uu.shape, dtype=np.float) * -9999
     wmm = WMM(wmm_model)
     uu = np.asanyarray(uu, dtype=np.float)
     vv = np.asanyarray(vv, dtype=np.float)
@@ -64,6 +84,8 @@ def nortek_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
     This function is a wrapper around the method "velocity_correction"
     of the "ion_functions.data.wmm.WMM" class.
     """
+    if not valid_lat(lat) or not valid_lon(lon):
+        return np.ones(uu.shape, dtype=np.float) * -9999
     wmm = WMM(wmm_model)
     uu = np.asanyarray(uu, dtype=np.float)
     vv = np.asanyarray(vv, dtype=np.float)
@@ -83,6 +105,8 @@ def nortek_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
     This function is a wrapper around the method "velocity_correction"
     of the "ion_functions.data.wmm.WMM" class.
     """
+    if not valid_lat(lat) or not valid_lon(lon):
+        return np.ones(uu.shape, dtype=np.float) * -9999
     wmm = WMM(wmm_model)
     uu = np.asanyarray(uu, dtype=np.float)
     vv = np.asanyarray(vv, dtype=np.float)
