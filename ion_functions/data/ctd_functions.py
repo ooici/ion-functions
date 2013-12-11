@@ -206,6 +206,7 @@ def ctd_sbe16plus_condwat(c0, t1, p1, g, h, i, j, cpcor, ctcor):
             where
 
         c = sea water conductivity (CONDWAT_L1) [S m-1]
+        c0 = sea water conductivity (CONDWAT_L0) [counts]
         t1 = sea water temperature (TEMPWAT_L1) [deg_C]
         p1 = sea water pressure (PRESWAT_L1) [deg_C]
         g = conductivity calibration coefficients
@@ -297,7 +298,7 @@ def ctd_density(SP, t, p, lat, lon):
         
             where
     
-        rho = Density (seawater density) [kg m^-3]
+        rho = Density (seawater density) [kg m-3]
         SP = Practical Salinity (PSS-78) [unitless], (see
             1341-00040_Data_Product_Spec_PRACSAL)
         t = temperature (seawater temperature) [deg_C], (see
