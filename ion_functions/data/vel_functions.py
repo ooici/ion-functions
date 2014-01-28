@@ -16,6 +16,7 @@ from ion_functions.data.adcp_functions import adcp_magvar
 from ion_functions.data.generic_functions import magnetic_declination, wmm_model
 from ion_functions.data.wmm import WMM
 
+
 def valid_lat(lat):
     if isinstance(lat, np.ndarray):
         if np.any(lat > 90) or np.any(lat < -90):
@@ -23,6 +24,7 @@ def valid_lat(lat):
         return True
     else:
         return -90 <= lat and lat <= 90
+
 
 def valid_lon(lon):
     if isinstance(lon, np.ndarray):
@@ -156,7 +158,7 @@ def nortek_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
 #        z = Instrument depth relative to sea level (positive
 #            values only) [meters].
 #        dirstr = String of the direction for the requested component
-#            ('east','north','all').  The default is 'all'.   
+#            ('east','north','all').  The default is 'all'.
 #
 #    References:
 #
@@ -176,4 +178,3 @@ def nortek_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
 #    uu_cor, vv_cor = magvar(theta, uu, vv)
 #
 #    return (uu_cor, vv_cor)
-
