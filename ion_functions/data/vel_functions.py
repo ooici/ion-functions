@@ -12,8 +12,7 @@
 import numpy as np
 import numexpr as ne
 
-from ion_functions.data.adcp_functions import adcp_magvar
-from ion_functions.data.generic_functions import magnetic_declination, wmm_model
+from ion_functions.data.generic_functions import wmm_model
 from ion_functions.data.wmm import WMM
 
 
