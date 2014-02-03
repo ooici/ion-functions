@@ -16,7 +16,7 @@ from ion_functions.data import flo_functions as flofunc
 @attr('UNIT', group='func')
 class TestOptFunctionsUnit(BaseUnitTestCase):
 
-    def test_opt_functions(self):
+    def test_flo_functions(self):
         """
         Test the functions in the flo_functions.py module.
 
@@ -43,8 +43,10 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         cdom_counts_output = np.array([51., 50., 50., 52., 50., 51., 51., 51., 51., 51., 49., 52., 52., 53., 52., 51.])
         
         # expected outputs
-        chla_expected = np.array([0.1089, 0.0847, 0.0726, 0.0847, 0.0847, 0.0726, 0.0726, 0.0847, 0.0847, 0.1089, 0.0726, 0.0726, 0.0726, 0.0605, 0.0605, 0.0847])
-        cdom_expected = np.array([0.2544, 0.1696, 0.1696, 0.3392, 0.1696, 0.2544, 0.2544, 0.2544, 0.2544, 0.2544, 0.0848, 0.3392, 0.3392, 0.424, 0.3392, 0.2544])
+        chla_expected = np.array([0.1089, 0.0847, 0.0726, 0.0847, 0.0847, 0.0726, 0.0726, 0.0847, 0.0847, 0.1089,
+                                  0.0726, 0.0726, 0.0726, 0.0605, 0.0605, 0.0847])
+        cdom_expected = np.array([0.2544, 0.1696, 0.1696, 0.3392, 0.1696, 0.2544, 0.2544, 0.2544, 0.2544, 0.2544,
+                                  0.0848, 0.3392, 0.3392, 0.424, 0.3392, 0.2544])
         
         # compute chla and cdom values
         chla_calc = np.zeros(16)
