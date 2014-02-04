@@ -89,3 +89,75 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_allclose(c_ts, cpd_ts, rtol=1e-4, atol=1e-4)
         np.testing.assert_allclose(a_ts, apd_ts, rtol=1e-4, atol=1e-4)
         np.testing.assert_allclose(a_ts_s, apd_ts_s, rtol=1e-4, atol=1e-4)
+
+    def test_opt_par_satlantic(self):
+                """
+        Test the opt_par_satlantic function.
+
+        Values based on that described in DPS as available on Alfresco:
+        
+        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY ACTIVE RADIATION (PAR)
+        FROM SATLANTIC INSTRUMENT ON RSN SHALLOW PROFILER
+        Document Control Number 1341-00720. https://alfresco.oceanobservatories.org/
+        (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+        1341-00720_Data_Product_SPEC_OPTPARW_Satl_OOI.pdf)
+            
+        Implemented by Craig Risien, February 2014
+        """
+
+   # test inputs
+    Im = 1.3589
+    a0 = 2156849800.8
+    a1 = 2.586852835e-006  
+    
+    par_count = np.array([2159403328, 2159400384, 2159396992, 2159400384, 2159407488, 2159399296, 2159400384,
+                          2159404800, 2159403904, 2159402240, 2159403200, 2159409728, 2159409792, 2159408320,
+                          2159407808, 2159402304, 2159402688, 2159407552, 2159404160, 2159403776, 2159402048,
+                          2159404544])
+
+    # expected outputs
+    par_expected = np.array([8.976348585, 8.965999618, 8.954075807, 8.965999618, 8.990972126, 8.962174999,
+                             8.965999618, 8.981523069, 8.978373383, 8.972523967, 8.97589863, 8.998846341,
+                             8.999071318, 8.993896835, 8.992097014, 8.972748944, 8.97409881, 8.991197104,
+                             8.979273293, 8.977923428, 8.971849034, 8.980623159])
+        
+    # compute par values
+    par_calc = np.zeros(22)
+    for i in range(0,22):
+        par_calc[i] = optfunc.opt_par_satlantic(par_count[i], a0, a1, Im)
+               
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
+    
+    
+    def test_opt_par_biospherical(self):
+                """
+        Test the opt_par_biospherical function.
+
+        Values based on that described in DPS as available on Alfresco:
+        
+        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY ACTIVE RADIATION (PAR)
+        FROM SATLANTIC INSTRUMENT ON RSN SHALLOW PROFILER
+        Document Control Number 1341-00721. https://alfresco.oceanobservatories.org/
+        (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+        1341-00721_Data_Product_SPEC_OPTPARW_Bios_OOI.pdf)
+            
+        Implemented by Craig Risien, February 2014
+        """
+
+   # test inputs
+    offset = 0.0101
+    scale = 5.897e-04
+    
+    par_volts = np.array([1.016793, 0.599800, 0.452400, 0.305000, 0.187000, 0.178900, 0.069100, 0.039600, 0.010100])
+
+    # expected outputs
+    par_expected = np.array([1707.13, 1000.00, 750.00, 500.00, 300.00, 286.25, 100.00, 50.00, 0.00])
+        
+    # compute par values
+    par_calc = np.zeros(9)
+    for i in range(0,9):
+        par_calc[i] = optfunc.opt_par_biospherical(par_volts[i], offset, scale)
+               
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
