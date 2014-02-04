@@ -10,36 +10,70 @@
 
 # common imports
 import datetime
-import time
-
 import numpy as np
 import numexpr as ne
+import os
+import pkg_resources
+import time
 
 from ion_functions.data.wmm import WMM
-import pkg_resources
-
-wmm_model = pkg_resources.resource_filename(__name__, 'WMM.COF')
 
 
-# Example function from ctd_functions.py
 def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
+    """
+    Description:
+
+        Wrapper function, vectorizing inputs to wmm_declination
+
+    Implemented by:
+
+        2014-02-02: Christopher Wingard. Initial Code.
+    """
+    decln = np.vectorize(wmm_declination)
+    mag_dec = decln(lat, lon, ntp_timestamp, z, zflag)
+    return mag_dec
+
+
+def set_wmm_model(year):
+    """
+    Based on year of sample, determine which WMM model coefficients file to
+    use. Raises an exception if the file does not exist.
+    """
+    # set the WMM Coefficients file name based on year input.
+    cof_file = 'WMM%4d.COF' % year
+
+    # see if the file exists, if not raise an exception error.
+    try:
+        wmm_model = pkg_resources.resource_string(__name__, cof_file)
+    except pkg_resources.ResolutionError as e:
+        print("Error Type %s: Unable to find the WMM%4d.COF Coefficients file" % e, year)
+    else:
+        return wmm_model
+
+
+def wmm_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
     """
     Description:
 
         Magnetic declination (a.k.a. magnetic variation) as a function
         of location and date from the World Magnetic Model (WMM).
 
-        Declination is used in several OOI data product transformations.
+        The magnetic declination correction is used to correct velocity vectors
+        in several OOI data product transformations.
 
     Implemented by:
 
         2013-03-20: Stuart Pearce. Initial code.
-        2013-06-~:  Luke Campbell. Implemented the WMM C code for speed
+        2013-06:    Luke Campbell. Implemented the WMM C code for speed
                     over the Python geomag library.
+        2014-02-02: Christopher Wingard. Adjusted to allow for updates to the
+                    WMM coefficients table (WMM.COF), that are updated every 5
+                    years. Renamed to wmm_declination in order to keep
+                    magnetic_declination name preserved in other modules.
 
     Usage:
 
-        mag_dec = magnetic_declination(lat,lon,z,ntp_timestamp,zflag=-1)
+        mag_dec = wmm_declination(lat,lon,z,ntp_timestamp,zflag=-1)
 
             where
 
@@ -64,31 +98,51 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
         >>> z = -1000
         >>> ntp_timestamp = 3574792037.958   # 2013-04-12 14:47:17
 
-        >>> mag_dec = magnetic_declination(lat, lon, z,
+        >>> mag_dec = wmm_declination(lat, lon, z,
         >>>                               ntp_timestamp, -1)
         >>> print mag_dec
         16.465045980896086
 
     References:
 
-        World Magnetic Model (2010). http://www.ngdc.noaa.gov/geomag/WMM
-        /DoDWMM.shtml
+        Maus, S., S. Macmillan, S. McLean, B. Hamilton, A. Thomson, M. Nair,
+            and C. Rollins, 2010, The US/UK World Magnetic Model for 2010-2015,
+            NOAA Technical Report NESDIS/NGDC.
+            http://www.ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
+
     """
-    wmm = WMM(wmm_model)
     # convert ntp timestamp to unix timestamp and then a datetime object
-    unix_timestamp = ntp_timestamp - 2208988800  # Faster if its stackless (not a function call)
+    unix_timestamp = ntp_timestamp - 2208988800.
+    dates = datetime.datetime.utcfromtimestamp(unix_timestamp).date()
 
-    dates = np.vectorize(lambda x: datetime.datetime.utcfromtimestamp(x).date())
+    # determine which WMM model to use.
+    if dates.year >= 2010 and dates.year < 2015:
+        wmm_model = set_wmm_model(2010)
 
-    datestamps = dates(unix_timestamp)
+    if dates.year >= 2015 and dates.year < 2020:
+        wmm_model = set_wmm_model(2015)
 
-    # give the z value the proper vector direction (i.e negative down)
-    z = ne.evaluate('z*zflag')
+    if dates.year >= 2020 and dates.year < 2025:
+        wmm_model = set_wmm_model(2020)
 
-    z = ne.evaluate('z/1000.')  # m -> km
-    dec = np.vectorize(lambda lat, lon, z, date: wmm.declination(lat, lon, z, date))
+    if dates.year >= 2025 and dates.year < 2030:
+        wmm_model = set_wmm_model(2025)
 
-    mag_dec = dec(lat, lon, z, datestamps)
+    if dates.year >= 2030 and dates.year < 2035:
+        wmm_model = set_wmm_model(2030)
+
+    wmm = WMM(wmm_model)  # World Magnetic Model calculates magnetic declination
+
+    # set the depth to negative for below sealevel (if needed) and convert from
+    # meters to kilometers.
+    z = ne.evaluate('z / 1000.')  # m -> km
+    if z > 0 & zflag == -1:   # check that depth is a positive number first
+        z = ne.evaluate('zflag * z')    # convert z to indicate depth
+
+    # calculate the magnetic declination
+    print 'here'
+    mag_dec = wmm.declination(lat, lon, z, dates)
+
     return mag_dec
 
 
@@ -182,7 +236,7 @@ def bilinear_interpolation(x, y, points):
     # See formula at:  http://en.wikipedia.org/wiki/Bilinear_interpolation
 
     # order points by x, then by y
-    pts = np.sort(points.view('f8,f8,f8'), order=['f0','f1'])
+    pts = np.sort(points.view('f8,f8,f8'), order=['f0', 'f1'])
     (x1, y1, q11), (_x1, y2, q12), (x2, _y1, q21), (_x2, _y2, q22) = points
 
     if x1 != _x1 or x2 != _x2 or y1 != _y1 or y2 != _y2:
@@ -193,8 +247,8 @@ def bilinear_interpolation(x, y, points):
     return (q11 * (x2 - x) * (y2 - y) +
             q21 * (x - x1) * (y2 - y) +
             q12 * (x2 - x) * (y - y1) +
-            q22 * (x - x1) * (y - y1)
-           ) / ((x2 - x1) * (y2 - y1) + 0.0)
+            q22 * (x - x1) * (y - y1)) / ((x2 - x1) * (y2 - y1) + 0.0)
 
-def error(x,y):
-    return np.abs(x-y)/np.abs(y)
+
+def error(x, y):
+    return np.abs(x - y) / np.abs(y)

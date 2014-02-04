@@ -10,12 +10,11 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 from ion_functions.data import adcp_functions as adcpfunc
-from ion_functions.data.wmm import WMM
-from ion_functions.data.generic_functions import wmm_model
+from ion_functions.data.generic_functions import magnetic_declination
 
 
 @attr('UNIT', group='func')
-class TestCTDFunctionsUnit(BaseUnitTestCase):
+class TestADCPFunctionsUnit(BaseUnitTestCase):
 
     def test_adcp_beam2earth(self):
         """
@@ -65,30 +64,24 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         self.assertTrue(np.allclose(got_vv, vv, rtol=1e4, atol=0))
         self.assertTrue(np.allclose(got_ww, ww, rtol=1e4, atol=0))
 
-    #
-    #**** NO LONGER USED BECAUSE OF WMM.VELOCITY_CORRECTIONS ****
-    #
-    #def test_adcp_magvar(self):
-    #    """
-    #    Test adcp_beam2ins and adcp_ins2earth functions.
-    #
-    #    Values based on those defined in DPS:
-    #
-    #    OOI (2012). Data Product Specification for Velocity Profile and Echo
-    #        Intensity. Document Control Number 1341-00750.
-    #        https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
-    #        >> Controlled >> 1000 System Level >>
-    #        1341-00750_Data_Product_SPEC_VELPROF_OOI.pdf)
-    #
-    #    Implemented by Christopher Wingard, April 2013
-    #    """
-    #    # apply the correction, assumption in adcpfunc.adcp_magvar is the
-    #    # magnetic declination would be a scalar and uu and vv would be
-    #    # velocity profiles (e.g. arrays)
-    #    wmm = WMM(wmm_model)
-    #    uu_cor, vv_cor = wmm(16.9604, np.array([0.4413]),
-    #                                          np.array([0.1719]))
-    #
-    #    # test the transform
-    #    self.assertTrue(np.allclose(uu_cor, 0.4722, rtol=1e4, atol=0))
-    #    self.assertTrue(np.allclose(vv_cor, 0.0357, rtol=1e4, atol=0))
+    def test_adcp_magvar(self):
+        """
+        Test adcp_magvar function.
+
+        Values based on those defined in DPS:
+
+        OOI (2012). Data Product Specification for Velocity Profile and Echo
+            Intensity. Document Control Number 1341-00750.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00750_Data_Product_SPEC_VELPROF_OOI.pdf)
+
+        Implemented by Christopher Wingard, April 2013
+        """
+        # apply the magnetic declination correction.
+        uu_cor, vv_cor = adcpfunc.adcp_magvar(16.9604, np.array([0.4413]),
+                                              np.array([0.1719]))
+
+        # test the transform
+        self.assertTrue(np.allclose(uu_cor, 0.4722, rtol=1e4, atol=0))
+        self.assertTrue(np.allclose(vv_cor, 0.0357, rtol=1e4, atol=0))
