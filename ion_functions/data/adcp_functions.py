@@ -9,7 +9,7 @@
 import numpy as np
 import numexpr as ne
 
-from ion_functions.data.generic_functions import magnetic_declination
+from ion_functions.data.generic_functions import magnetic_declination, magnetic_correction
 
 
 # Wrapper functions to create 1:1 outputs for ParameterFunctions in Preload
@@ -61,9 +61,8 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     zm = ne.evaluate('z / 10.')
 
     # calculate the magnetic declination using the WWM2010 model
-    dec = np.vectorize(magnetic_declination)
-    theta = dec(lat, lon, dt, zm)
-    uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
+    theta = magnetic_declination(lat, lon, dt, zm)
+    uu_cor, vv_cor = magnetic_correction(theta, uu, vv)
 
     # scale eastward velocity to m/s
     uu_cor = ne.evaluate('uu_cor / 1000.')  # mm/s -> m/s
@@ -120,9 +119,8 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     zm = ne.evaluate('z / 10.')
 
     # calculate the magnetic declination using the WWM2010 model
-    dec = np.vectorize(magnetic_declination)
-    theta = dec(lat, lon, dt, zm)
-    uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
+    theta = magnetic_declination(lat, lon, dt, zm)
+    uu_cor, vv_cor = magnetic_correction(theta, uu, vv)
 
     # scale northward velocity to m/s
     vv_cor = ne.evaluate('vv_cor / 1000.')  # mm/s -> m/s
@@ -173,9 +171,8 @@ def adcp_earth_eastward(u, v, z, lat, lon, dt):
     zm = ne.evaluate('z / 10.')
 
     # calculate the magnetic declination using the WWM2010 model
-    dec = np.vectorize(magnetic_declination)
-    theta = dec(lat, lon, dt, zm)
-    uu_cor, vv_cor = adcp_magvar(theta, u, v)
+    theta = magnetic_declination(lat, lon, dt, zm)
+    uu_cor, vv_cor = magnetic_correction(theta, u, v)
 
     # scale eastward velocity from [mm s-1] to [m s-1]
     uu_cor = ne.evaluate('uu_cor / 1000.')
@@ -193,9 +190,8 @@ def adcp_earth_northward(u, v, z, lat, lon, dt):
     zm = ne.evaluate('z / 10.')
 
     # calculate the magnetic declination using the WWM2010 model
-    dec = np.vectorize(magnetic_declination)
-    theta = dec(lat, lon, dt, zm)
-    uu_cor, vv_cor = adcp_magvar(theta, u, v)
+    theta = magnetic_declination(lat, lon, dt, zm)
+    uu_cor, vv_cor = magnetic_correction(theta, u, v)
 
     # scale northward velocity from [mm s-1] to [m s-1]
     vv_cor = ne.evaluate('vv_cor / 1000.')
@@ -337,57 +333,3 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
         ww[i] = vel[2]
 
     return (uu, vv, ww)
-
-
-def adcp_magvar(theta, uu, vv):
-    """
-    Description:
-
-        This function corrects the velocity profiles for the magnetic
-        declination at the measurement location. The calculation is defined in
-        the Data Product Specification for Velocity Profile and Echo Intensity
-        - DCN 1341-00750. Magnetic declination is obtained from the WMM 2010
-        model toolbox.
-
-    Implemented by:
-
-        2013-04-10: Christopher Wingard. Initial code.
-
-    Usage:
-
-        uu_cor, vv_cor = adcp_magvar(theta, uu, vv)
-
-            where
-
-        uu_cor = eastward velocity profiles in earth coordinates [mm s-1], with
-            the correction for magnetic variation applied.
-        vv_cor = northward velocity profiles in earth coordinates [mm s-1],
-            with the correction for magnetic variation applied.
-
-        theta = magnetic variation based on location (latitude, longitude and
-            altitude) and date [degrees]
-        uu = uncorrected eastward velocity profiles in Earth coordinates
-            [mm s-1]
-        vv = uncorrected northward velocity profiles in Earth coordinates
-            [mm s-1]
-
-    References:
-
-        OOI (2012). Data Product Specification for Velocity Profile and Echo
-            Intensity. Document Control Number 1341-00750.
-            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
-            >> Controlled >> 1000 System Level >>
-            1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
-    """
-
-    theta_rad = np.radians(theta)
-    M = np.array([
-        [np.cos(theta_rad), np.sin(theta_rad)],
-        [-np.sin(theta_rad), np.cos(theta_rad)]
-    ])
-
-    uu = np.atleast_1d(uu)
-    vv = np.atleast_1d(vv)
-    cor = np.dot(M, np.array([uu, vv]))
-
-    return cor[0], cor[1]

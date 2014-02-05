@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 @package ion_functions.data.generic_functions
 @file ion_functions/data/generic_functions.py
@@ -8,22 +7,47 @@
     used for calculating values in Parameter Functions
 """
 
-# common imports
+# Common imports
 import datetime
 import numpy as np
 import numexpr as ne
-import os
 import pkg_resources
 import time
 
+# ION Functions imports
 from ion_functions.data.wmm import WMM
 
 
-def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
+def magnetic_declination(lat, lon, ntp_timestamp, z=0.0, zflag=-1):
     """
     Description:
 
-        Wrapper function, vectorizing inputs to wmm_declination
+        Wrapper function, vectorizing inputs to wmm_declination. Provides the
+        magnetic declination for a platform given its location (latitude and
+        longitude), the date (from the ntp_timestamp), the depth or height of
+        the instrument in meters (z), and a flag value (zflag) to indicate
+        whether the instrument is underwater (zflag = -1) or above water (zflag
+        = 1).
+
+    Usage:
+
+        mag_dec = magnetic_declination(lat,lon,ntp_timestamp,z,zflag)
+
+            where
+
+        mag_dec = magnetic declination/variation value [degrees from N].
+            Positive values are eastward, negative westward of North.
+        lat = latitude of the instrument [decimal degrees].  East is
+            positive, West negative.
+        lon = longitude of the instrument [decimal degrees]. North
+            is positive, South negative.
+        ntp_timestamp = NTP time stamp from a data particle
+            [secs since 1900-01-01].
+        z = depth or height of instrument relative to sealevel [meters].
+            Positive values only. Default value is 0.
+        zflag = indicates whether to use z as a depth or height relative
+            to sealevel. -1=depth (i.e. -z) and 1=height (i.e. +z). -1
+            is the default
 
     Implemented by:
 
@@ -32,6 +56,65 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
     decln = np.vectorize(wmm_declination)
     mag_dec = decln(lat, lon, ntp_timestamp, z, zflag)
     return mag_dec
+
+
+def magnetic_correction(theta, u, v):
+    """
+    Description:
+
+        This function corrects velocity profiles for the magnetic variation
+        (declination) at the measurement location. This calculation is used by
+        several different data products (e.g. VELPROF, WINDAVG) from multiple
+        instrument classes. The magnetic declination is obtained from the 2010
+        World Magnetic Model (WMM2010) provided by NOAA (see wmm_declination).
+
+    Implemented by:
+
+        2013-04-10: Christopher Wingard. Initial code.
+        2014-02-05: Christopher Wingadr. Converted to generic_function from
+                    original implementation under adcp_functions/adcp_magvar.
+
+    Usage:
+
+        u_cor, v_cor = magnetic_correction(theta, u, v)
+
+            where
+
+        u_cor = eastward velocity profiles, in earth coordinates, with
+            the correction for magnetic variation applied.
+        v_cor = northward velocity profiles, in earth coordinates,
+            with the correction for magnetic variation applied.
+
+        theta = magnetic variation based on location (latitude, longitude and
+            altitude) and date [degrees]
+        u = uncorrected eastward velocity profiles in Earth coordinates
+        v = uncorrected northward velocity profiles in Earth coordinates
+
+    References:
+
+        OOI (2012). Data Product Specification for Velocity Profile and Echo
+            Intensity. Document Control Number 1341-00750.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00750_Data_Product_SPEC_VELPROF_OOI.pdf)
+
+        OOI (2013). Data Product Specification for Turbulent Velocity Profile 
+            and Echo Intensity. Document Control Number 1341-00760.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00760_Data_Product_SPEC_VELPROF_OOI.pdf)
+    """
+    theta_rad = np.radians(theta)
+    M = np.array([
+        [np.cos(theta_rad), np.sin(theta_rad)],
+        [-np.sin(theta_rad), np.cos(theta_rad)]
+    ])
+
+    u = np.atleast_1d(u)
+    v = np.atleast_1d(v)
+    cor = np.dot(M, np.array([u, v]))
+
+    return cor[0], cor[1]
 
 
 def set_wmm_model(year):
@@ -44,14 +127,14 @@ def set_wmm_model(year):
 
     # see if the file exists, if not raise an exception error.
     try:
-        wmm_model = pkg_resources.resource_string(__name__, cof_file)
+        wmm_model = pkg_resources.resource_filename(__name__, cof_file)
     except pkg_resources.ResolutionError as e:
         print("Error Type %s: Unable to find the WMM%4d.COF Coefficients file" % e, year)
     else:
         return wmm_model
 
 
-def wmm_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
+def wmm_declination(lat, lon, ntp_timestamp, z=0.0, zflag=-1):
     """
     Description:
 
@@ -73,7 +156,7 @@ def wmm_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
 
     Usage:
 
-        mag_dec = wmm_declination(lat,lon,z,ntp_timestamp,zflag=-1)
+        mag_dec = wmm_declination(lat,lon,ntp_timestamp,z,zflag)
 
             where
 
@@ -109,7 +192,6 @@ def wmm_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
             and C. Rollins, 2010, The US/UK World Magnetic Model for 2010-2015,
             NOAA Technical Report NESDIS/NGDC.
             http://www.ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
-
     """
     # convert ntp timestamp to unix timestamp and then a datetime object
     unix_timestamp = ntp_timestamp - 2208988800.
@@ -140,7 +222,6 @@ def wmm_declination(lat, lon, ntp_timestamp, z=0, zflag=-1):
         z = ne.evaluate('zflag * z')    # convert z to indicate depth
 
     # calculate the magnetic declination
-    print 'here'
     mag_dec = wmm.declination(lat, lon, z, dates)
 
     return mag_dec
