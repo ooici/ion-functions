@@ -12,8 +12,7 @@
 import numpy as np
 import numexpr as ne
 
-from ion_functions.data.generic_functions import wmm_model
-from ion_functions.data.wmm import WMM
+from ion_functions.data.generic_functions import magnetic_declination, magnetic_correction
 
 
 def valid_lat(lat):
@@ -45,14 +44,9 @@ def nobska_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
     """
     if not valid_lat(lat) or not valid_lon(lon):
         return np.ones(uu.shape, dtype=np.float) * -9999
-    wmm = WMM(wmm_model)
-    uu = np.asanyarray(uu, dtype=np.float)
-    vv = np.asanyarray(vv, dtype=np.float)
-    lat = np.asanyarray(lat, dtype=np.float)
-    lon = np.asanyarray(lon, dtype=np.float)
-    z = np.asanyarray(z, dtype=np.float)/1000.
-    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
-    uu_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp)[0]
+
+    theta = magnetic_declination(lat, lon, timestamp, z)
+    uu_cor = magnetic_correction(theta, uu, vv)[0]
     return ne.evaluate('uu_cor/100.')  # convert from cm/s to m/s
 
 
@@ -66,14 +60,9 @@ def nobska_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
     """
     if not valid_lat(lat) or not valid_lon(lon):
         return np.ones(uu.shape, dtype=np.float) * -9999
-    wmm = WMM(wmm_model)
-    uu = np.asanyarray(uu, dtype=np.float)
-    vv = np.asanyarray(vv, dtype=np.float)
-    lat = np.asanyarray(lat, dtype=np.float)
-    lon = np.asanyarray(lon, dtype=np.float)
-    z = np.asanyarray(z, dtype=np.float)/1000.
-    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
-    vv_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp)[1]
+
+    theta = magnetic_declination(lat, lon, timestamp, z)
+    vv_cor = magnetic_correction(theta, uu, vv)[1]
     return ne.evaluate('vv_cor/100.')  # convert from cm/s to m/s
 
 
@@ -87,14 +76,9 @@ def nortek_mag_corr_east(uu, vv, lat, lon, timestamp, z=0):
     """
     if not valid_lat(lat) or not valid_lon(lon):
         return np.ones(uu.shape, dtype=np.float) * -9999
-    wmm = WMM(wmm_model)
-    uu = np.asanyarray(uu, dtype=np.float)
-    vv = np.asanyarray(vv, dtype=np.float)
-    lat = np.asanyarray(lat, dtype=np.float)
-    lon = np.asanyarray(lon, dtype=np.float)
-    z = np.asanyarray(z, dtype=np.float)/1000.
-    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
-    uu_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp)[0]
+
+    theta = magnetic_declination(lat, lon, timestamp, z)
+    uu_cor = magnetic_correction(theta, uu, vv)[0]
     return ne.evaluate('uu_cor/1000.')  # convert from mms/ to m/s
 
 
@@ -108,14 +92,9 @@ def nortek_mag_corr_north(uu, vv, lat, lon, timestamp, z=0):
     """
     if not valid_lat(lat) or not valid_lon(lon):
         return np.ones(uu.shape, dtype=np.float) * -9999
-    wmm = WMM(wmm_model)
-    uu = np.asanyarray(uu, dtype=np.float)
-    vv = np.asanyarray(vv, dtype=np.float)
-    lat = np.asanyarray(lat, dtype=np.float)
-    lon = np.asanyarray(lon, dtype=np.float)
-    z = np.asanyarray(z, dtype=np.float)/1000.
-    timestamp = np.asanyarray(timestamp, dtype=np.int64) - 2208988800
-    vv_cor = wmm.velocity_correction(uu, vv, lat, lon, z, timestamp)[1]
+
+    theta = magnetic_declination(lat, lon, timestamp, z)
+    uu_cor = magnetic_correction(theta, uu, vv)[1]
     return ne.evaluate('vv_cor/1000.')  # convert from mms/ to m/s
 
 

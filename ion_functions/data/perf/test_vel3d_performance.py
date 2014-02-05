@@ -6,15 +6,16 @@ from ion_functions.data.vel_functions import nobska_mag_corr_east, nobska_mag_co
 #def nobska_mag_corr_north(uu,vv,lat,lon,timestamp,z=0):
 import numpy as np
 
+
 class TestVel3DBPerformance(PerformanceTestCase):
     def setUp(self):
         self.lat = 14.6846
         self.lon = -51.044
-        self.ts = np.ones(a_day*2,dtype=np.int) * 3319563600
+        self.ts = np.ones(a_day*2, dtype=np.int) * 3319563600
         self.ve = np.ones(a_day*2, dtype=np.float) * -3.2
         self.vn = np.ones(a_day*2, dtype=np.float) * 18.2
         self.vu = np.ones(a_day*2, dtype=np.float) * -1.1
-    
+
     def test_mag_corr_east(self):
         stats = []
 

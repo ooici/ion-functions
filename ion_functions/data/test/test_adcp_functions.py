@@ -9,8 +9,10 @@ from nose.plugins.attrib import attr
 from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
+import sys
+import inspect
+
 from ion_functions.data import adcp_functions as adcpfunc
-from ion_functions.data.generic_functions import magnetic_declination
 
 
 @attr('UNIT', group='func')
@@ -63,25 +65,3 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         self.assertTrue(np.allclose(got_uu, uu, rtol=1e4, atol=0))
         self.assertTrue(np.allclose(got_vv, vv, rtol=1e4, atol=0))
         self.assertTrue(np.allclose(got_ww, ww, rtol=1e4, atol=0))
-
-    def test_adcp_magvar(self):
-        """
-        Test adcp_magvar function.
-
-        Values based on those defined in DPS:
-
-        OOI (2012). Data Product Specification for Velocity Profile and Echo
-            Intensity. Document Control Number 1341-00750.
-            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
-            >> Controlled >> 1000 System Level >>
-            1341-00750_Data_Product_SPEC_VELPROF_OOI.pdf)
-
-        Implemented by Christopher Wingard, April 2013
-        """
-        # apply the magnetic declination correction.
-        uu_cor, vv_cor = adcpfunc.adcp_magvar(16.9604, np.array([0.4413]),
-                                              np.array([0.1719]))
-
-        # test the transform
-        self.assertTrue(np.allclose(uu_cor, 0.4722, rtol=1e4, atol=0))
-        self.assertTrue(np.allclose(vv_cor, 0.0357, rtol=1e4, atol=0))
