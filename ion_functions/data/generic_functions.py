@@ -198,21 +198,7 @@ def wmm_declination(lat, lon, ntp_timestamp, z=0.0, zflag=-1):
     dates = datetime.datetime.utcfromtimestamp(unix_timestamp).date()
 
     # determine which WMM model to use.
-    if dates.year >= 2010 and dates.year < 2015:
-        wmm_model = set_wmm_model(2010)
-
-    if dates.year >= 2015 and dates.year < 2020:
-        wmm_model = set_wmm_model(2015)
-
-    if dates.year >= 2020 and dates.year < 2025:
-        wmm_model = set_wmm_model(2020)
-
-    if dates.year >= 2025 and dates.year < 2030:
-        wmm_model = set_wmm_model(2025)
-
-    if dates.year >= 2030 and dates.year < 2035:
-        wmm_model = set_wmm_model(2030)
-
+    wmm_model = set_wmm_model(2010)
     wmm = WMM(wmm_model)  # World Magnetic Model calculates magnetic declination
 
     # set the depth to negative for below sealevel (if needed) and convert from
