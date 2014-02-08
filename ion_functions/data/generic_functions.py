@@ -197,9 +197,9 @@ def wmm_declination(lat, lon, ntp_timestamp, z=0.0, zflag=-1):
     unix_timestamp = ntp_timestamp - 2208988800.
     dates = datetime.datetime.utcfromtimestamp(unix_timestamp).date()
 
-    # determine which WMM model to use.
+    # determine which WMM model to use (only one currently is for 2010-2015).
     wmm_model = set_wmm_model(2010)
-    wmm = WMM(wmm_model)  # World Magnetic Model calculates magnetic declination
+    wmm = WMM(wmm_model)
 
     # set the depth to negative for below sealevel (if needed) and convert from
     # meters to kilometers.
