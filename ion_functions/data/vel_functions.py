@@ -1,13 +1,10 @@
 #!/usr/bin/env python
-
 """
 @package ion_functions.data.vel_functions
 @file ion_functions/data/vel_functions.py
 @author Stuart Pearce
 @brief Module containing velocity family instrument related functions
 """
-# TODO: Get the depth look up values working so that z can be used in
-# TODO: wrapper functions.
 
 import numpy as np
 import numexpr as ne
@@ -158,7 +155,7 @@ def vel_mag_correction(u, v, lat, lon, ntp_timestamp, z=0.0, zflag=-1):
     # retrieve the magnetic declination
     theta = magnetic_declination(lat, lon, ntp_timestamp, z, zflag)
 
-    # correct the velocities for magnetic declination
+    # apply the magnetic variation correction
     magvar = np.vectorize(magnetic_correction)
     u_cor, v_cor = magvar(theta, u, v)
 
