@@ -210,6 +210,15 @@ def adcp_earth_eastward(u, v, z, lat, lon, dt):
     Wrapper function to compute the Eastward Velocity Profile (VELPROF-VLE)
     from the Earth coordinate transformed data.
     """
+    # Test shapes of inputs to determine if we are dealing with one record or
+    # several records. Reshape scalars input as size m arrays to size m x 1
+    # arrays.
+    if isscalar(z) is False:
+        z = z.reshape(z.shape[0], 1)
+        lat = lat.reshape(lat.shape[0], 1)
+        lon = lon.reshape(lon.shape[0], 1)
+        dt = dt.reshape(dt.shape[0], 1)
+
     # scale decimeter depth input to meters
     zm = ne.evaluate('z / 10.')
 
@@ -233,6 +242,15 @@ def adcp_earth_northward(u, v, z, lat, lon, dt):
     Wrapper function to compute the Northward Velocity Profile (VELPROF-VLN)
     from the Earth coordinate transformed data.
     """
+    # Test shapes of inputs to determine if we are dealing with one record or
+    # several records. Reshape scalars input as size m arrays to size m x 1
+    # arrays.
+    if isscalar(z) is False:
+        z = z.reshape(z.shape[0], 1)
+        lat = lat.reshape(lat.shape[0], 1)
+        lon = lon.reshape(lon.shape[0], 1)
+        dt = dt.reshape(dt.shape[0], 1)
+
     # scale decimeter depth input to meters
     zm = ne.evaluate('z / 10.')
 
@@ -289,12 +307,12 @@ def adcp_beam2ins(b1, b2, b3, b4):
             >> Controlled >> 1000 System Level >>
             1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
     """
-
-    theta = 20.0 / 180.0 * np.pi
-    a = 1.0 / (2.0 * np.sin(theta))
-    b = 1.0 / (4.0 * np.cos(theta))
+    pi = np.pi
+    theta = ne.evaluate('20.0 / 180.0 * pi')
+    a = ne.evaluate('1.0 / (2.0 * sin(theta))')
+    b = ne.evaluate('1.0 / (4.0 * cos(theta))')
     c = 1.0
-    d = a / np.sqrt(2.0)
+    d = ne.evaluate('a / sqrt(2.0)')
 
     u = ne.evaluate('c * a * (b1 - b2)')
     v = ne.evaluate('c * a * (b4 - b3)')
@@ -370,7 +388,8 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
         [-np.sin(Rrad), 0.0, np.cos(Rrad)]])
     M = M1 * M2 * M3
 
-    # apply the Earth transform
+    # insure we are dealing with array inputs and determine the number of bins
+    # for output arrays
     u = np.atleast_1d(u)
     v = np.atleast_1d(v)
     w = np.atleast_1d(w)
@@ -378,6 +397,8 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
     uu = np.zeros(nbins)
     vv = np.zeros(nbins)
     ww = np.zeros(nbins)
+
+    # apply the Earth transform
     for i in range(nbins):
         inst = np.array([u[i], v[i], w[i]]).reshape(3, 1)
         vel = np.dot(M, inst).reshape(3)

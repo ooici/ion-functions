@@ -90,10 +90,10 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         b2 = np.tile(self.b2, (24, 1))
         b3 = np.tile(self.b3, (24, 1))
         b4 = np.tile(self.b4, (24, 1))
-        heading = np.ones((24, 1)) * self.heading
-        pitch = np.ones((24, 1)) * self.pitch
-        roll = np.ones((24, 1)) * self.roll
-        orient = np.ones((24, 1)) * self.orient
+        heading = np.ones(24) * self.heading
+        pitch = np.ones(24) * self.pitch
+        roll = np.ones(24) * self.roll
+        orient = np.ones(24) * self.orient
 
         # reset expected results for multiple records
         uu = np.tile(self.uu, (24, 1))
@@ -101,7 +101,12 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         ww = np.tile(self.ww, (24, 1))
 
         u, v, w, e = beam2ins(b1, b2, b3, b4)
-        got_uu, got_vv, got_ww = ins2earth(u, v, w, heading, pitch, roll, orient)
+        h = heading.reshape(heading.shape[0], 1)
+        p = pitch.reshape(pitch.shape[0], 1)
+        r = roll.reshape(roll.shape[0], 1)
+        vf = orient.reshape(orient.shape[0], 1)
+
+        got_uu, got_vv, got_ww = ins2earth(u, v, w, h, p, r, vf)
 
         # test the beam to earth coordinate transforms for multiple records
         np.testing.assert_array_almost_equal(got_uu / 1000, uu, 4)
@@ -113,7 +118,7 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         Tests magnetic_correction function for ADCPs set to output data in the
         Earth Coordinate system.
 
-        Values were not defined in DPS, were recreated from values above:
+        Values were not defined in DPS, were recreated using test values above:
 
         OOI (2012). Data Product Specification for Velocity Profile and Echo
             Intensity. Document Control Number 1341-00750.
@@ -142,14 +147,14 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         b2 = np.tile(self.b2, (24, 1))
         b3 = np.tile(self.b3, (24, 1))
         b4 = np.tile(self.b4, (24, 1))
-        heading = np.ones((24, 1)) * self.heading
-        pitch = np.ones((24, 1)) * self.pitch
-        roll = np.ones((24, 1)) * self.roll
-        orient = np.ones((24, 1)) * self.orient
-        depth = np.ones((24, 1)) * self.depth
-        lat = np.ones((24, 1)) * self.lat
-        lon = np.ones((24, 1)) * self.lon
-        ntp = np.ones((24, 1)) * self.ntp
+        heading = np.ones(24) * self.heading
+        pitch = np.ones(24) * self.pitch
+        roll = np.ones(24) * self.roll
+        orient = np.ones(24) * self.orient
+        depth = np.ones(24) * self.depth
+        lat = np.ones(24) * self.lat
+        lon = np.ones(24) * self.lon
+        ntp = np.ones(24) * self.ntp
 
         # reset expected results for multiple records
         uu_cor = np.tile(self.uu_cor, (24, 1))
@@ -157,7 +162,11 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
 
         # compute the results for multiple records
         u, v, w, e = beam2ins(b1, b2, b3, b4)
-        uu, vv, ww = ins2earth(u, v, w, heading, pitch, roll, orient)
+        h = heading.reshape(heading.shape[0], 1)
+        p = pitch.reshape(pitch.shape[0], 1)
+        r = roll.reshape(roll.shape[0], 1)
+        vf = orient.reshape(orient.shape[0], 1)
+        uu, vv, ww = ins2earth(u, v, w, h, p, r, vf)
         got_uu_cor = af.adcp_earth_eastward(uu, vv, depth, lat, lon, ntp)
         got_vv_cor = af.adcp_earth_northward(uu, vv, depth, lat, lon, ntp)
 
