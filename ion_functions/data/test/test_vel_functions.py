@@ -12,9 +12,6 @@ from ion_functions.test.base_test import BaseUnitTestCase
 import numpy as np
 from ion_functions.data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north
 from ion_functions.data.vel_functions import nortek_mag_corr_east, nortek_mag_corr_north, valid_lat, valid_lon
-from ion_functions.data.generic_functions import error
-
-
 
 
 # these test data definitions are used in the test methods
@@ -76,7 +73,7 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_array_almost_equal(ve_cor, VE_EXPECTED)
         np.testing.assert_array_almost_equal(vn_cor, VN_EXPECTED)
         np.testing.assert_array_almost_equal(vu_cor, VU_EXPECTED)
-        
+
     def test_latlon_valid(self):
         lat = np.array([-90, -80, 0, 80, 90])
         self.assertTrue(valid_lat(lat))
@@ -87,7 +84,7 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         self.assertTrue(valid_lat(30) and valid_lat(-30))
 
         self.assertFalse(valid_lat(-9999) or valid_lat(-99) or valid_lat(92))
-        
+
         lon = np.array([-180, -80, 0, 80, 180])
         self.assertTrue(valid_lon(lon))
 
@@ -103,8 +100,6 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
             VE, VN, -9999, -9999, TS, 6)
         vn_cor = nobska_mag_corr_north(
             VE, VN, -9999, -9999, TS, 6)
-        vu_cor = VU / 100.0
 
         np.testing.assert_array_almost_equal(ve_cor, np.ones(VU.shape) * -9999)
         np.testing.assert_array_almost_equal(vn_cor, np.ones(VU.shape) * -9999)
-
