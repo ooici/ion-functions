@@ -591,7 +591,12 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
                         172.5, 172.5, 172.5,
                         44.9, 45.0, 45.1, 45.2])
         usec = doy * 24 * 60 * 60 * 1e6
-        dt = np.datetime64('2012-01-01') + np.timedelta64(usec)
+        #Edited by Craig Risien on 02/12/2014 to fix issue/error using np.timedelta
+        #Changed dt = np.datetime64('2012-01-01') + np.timedelta64(usec) to the following:
+        dt1 = np.datetime64('2012-01-01')
+        dt2 = np.array(usec, dtype='timedelta64[us]')
+        dt = dt1+dt2
+        
         dt = dt.astype(np.float) / 1e6
 
         z = np.array([87.8905, 39.8829, -0.0847, 0.0847,
