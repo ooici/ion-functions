@@ -9,6 +9,7 @@
 
 # imports
 import numpy as np
+from ion_functions.utils import isscalar
 
 
 # wrapper functions to extract L0 parameters from SAMI-II pH instruments (PHSEN)
@@ -92,7 +93,8 @@ def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0):
         # Iterate through the records
         for iRec in range(nRec):
             pH[iRec] = ph_phwater(ref[iRec, :], light[iRec, :], therm[iRec],
-                                  ea434, eb434, ea578, eb578, psal[iRec])
+                                  ea434[iRec], eb434[iRec], ea578[iRec],
+                                  eb578[iRec], psal[iRec])
 
     return pH
 
