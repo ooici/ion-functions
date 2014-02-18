@@ -11,17 +11,21 @@ Conductivity, Temperature, Depth (CTD)
        PRESWAT data products, and the L2 PRACSAL and DENSITY data products.
        This module includes the following functions:
        
-       ctd_sbe16plus_condwat -- calculates CONDWAT_L1 from CTDBP series
-       ctd_sbe16plus_tempwat -- calculates TEMPWAT_L1 from CTDBP series
-       ctd_sbe16plus_preswat -- calculates PRESWAT_L1 from CTDBP series
-       ctd_sbe16digi_preswat -- calculates PRESWAT_L1 from CTDBP series
+       ctd_sbe16plus_condwat -- calculates CONDWAT_L1 from CTDBP(CDEFNO) and CTDPF(AB)
+       ctd_sbe16plus_tempwat -- calculates TEMPWAT_L1 from CTDBP(CDEFNO) and CTDPF(AB)
+       ctd_sbe16plus_preswat -- calculates PRESWAT_L1 from CTDBP(CDEF) and CTDPF(AB)
+       ctd_sbe16digi_preswat -- calculates PRESWAT_L1 from CTDBP(N and O series) only
+       ctd_sbe37im_condwat   -- calculates CONDWAT_L1 from CTDMO all series (GHQR) 
+       ctd_sbe37im_tempwat   -- calculates TEMPWAT_L1 from CTDMO all series (GHQR) 
+       ctd_sbe37im_preswat   -- calculates PRESWAT_L1 from CTDMO all series (GHQR) 
+       ctd_sbe52mp_condwat   -- calculates CONDWAT_L1 from CTDPF all series (CKL)
+       ctd_sbe52mp_tempwat   -- calculates TEMPWAT_L1 from CTDPF all series (CKL)
+       ctd_sbe52mp_preswat   -- calculates PRESWAT_L1 from CTDPF all series (CKL)
        ctd_pracsal -- calculates PRACSAL_L2 from all CTDs
        ctd_density -- calculates DENSITY_L2 from all CTDs
        
-       CTDMO, CTDGV, CTDAV produce either the L1 data products directly (CTDAV
-       and CTDPF), or the functions are represented by numeric expressions in
-       Preload (CTDMO). CTDPF is an unknown as of 2013-05-10, since the DPSs
-       don't cover this one.
+       CTDAV (all series) and CTDGV (all series) produce the L1 data products directly.
+       CTDPF (series J,O,R) are unassigned as of 2014-02-17.
        
 Dissolved Oxygen (DO)
 
