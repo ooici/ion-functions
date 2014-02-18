@@ -13,7 +13,7 @@ from ion_functions.data import ctd_functions as ctdfunc
 import numpy as np
 import inspect
 from pygsw import vectors as gsw
-import sys
+#import sys
 
 
 @attr('UNIT', group='func')
@@ -26,16 +26,19 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         Initial code by Luke Campbell, 2013-05-10
         Implemented by Christopher Wingard, 2013-05-10
         Generalized function handling by Russell Desiderio, 2014-02-03
+        Modified by Russell Desiderio, 2014-02-18:
+            Could not import pyon.util.log function, so to keep stderr
+            from writing to automatic builds I commented it out.
         """
-        sys.stderr.write('\n\ntest nan inputs to function:\n\n')
+        #sys.stderr.write('\n\ntest nan inputs to function:\n\n')
         functions = inspect.getmembers(ctdfunc, inspect.isfunction)
         for i in range(len(functions)):
             fname = functions[i][0]
             f = functions[i][1]
             argspec = inspect.getargspec(f)
             retval = f(*[np.nan for i in argspec.args])
-            stringout = fname + ':  ' + str(retval) + '\n'
-            sys.stderr.write(stringout)
+            #stringout = fname + ':  ' + str(retval) + '\n'
+            #sys.stderr.write(stringout)
             self.assertTrue(np.isnan(retval))
 
     def test_ctd_sbe16plus_tempwat(self):
@@ -58,7 +61,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         a2 = -1.027561e-6
         a3 = 1.749446e-7
         tout = ctdfunc.ctd_sbe16plus_tempwat(t0, a0, a1, a2, a3)
-        self.assertTrue(np.allclose(tout, 22.544681, rtol=1e-6, atol=0))
+        np.testing.assert_allclose(tout, 22.544681, rtol=1e-6, atol=0)
 
     def test_ctd_sbe37im_tempwat(self):
         """
@@ -77,7 +80,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         t0 = 340357.0
 
         tout = ctdfunc.ctd_sbe37im_tempwat(t0)
-        self.assertTrue(np.allclose(tout, 24.035700, rtol=1e-6, atol=0))
+        np.testing.assert_allclose(tout, 24.035700, rtol=1e-6, atol=0)
 
     def test_ctd_sbe52mp_tempwat(self):
         """
@@ -96,7 +99,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         t0 = 200000.0
 
         tout = ctdfunc.ctd_sbe52mp_tempwat(t0)
-        self.assertTrue(np.allclose(tout, 15.000000, rtol=1e-6, atol=0))
+        np.testing.assert_allclose(tout, 15.000000, rtol=1e-6, atol=0)
 
     def test_ctd_sbe16plus_preswat(self):
         """
@@ -129,7 +132,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         p = ctdfunc.ctd_sbe16plus_preswat(p0, therm0, ptempa0, ptempa1, ptempa2,
                                           ptca0, ptca1, ptca2, ptcb0, ptcb1, ptcb2,
                                           pa0, pa1, pa2)
-        self.assertTrue(np.allclose(p, 27.282116, rtol=1e-6, atol=0))
+        np.testing.assert_allclose(p, 27.282116, rtol=1e-6, atol=0)
 
     def test_ctd_sbe16digi_preswat(self):
         """
@@ -155,7 +158,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         T5 = 0.0
 
         p = ctdfunc.ctd_sbe16digi_preswat(p0, t0, C1, C2, C3, D1, D2, T1, T2, T3, T4, T5)
-        self.assertTrue(np.allclose(p, 49.999967, rtol=1e-6, atol=0))
+        np.testing.assert_allclose(p, 49.999967, rtol=1e-6, atol=0)
 
     def test_ctd_sbe37im_preswat(self):
         """
@@ -174,7 +177,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         p_range_psia = 1000.0
 
         p = ctdfunc.ctd_sbe37im_preswat(p0, p_range_psia)
-        self.assertTrue(np.allclose(p, 0.04536611, rtol=1e-6, atol=0))
+        np.testing.assert_allclose(p, 0.04536611, rtol=1e-6, atol=0)
 
     def test_ctd_sbe52mp_preswat(self):
         """
@@ -192,7 +195,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         p0 = 201000.0
 
         p = ctdfunc.ctd_sbe52mp_preswat(p0)
-        self.assertTrue(np.allclose(p, 2000.000000, rtol=1e-6, atol=0))
+        np.testing.assert_allclose(p, 2000.000000, rtol=1e-6, atol=0)
 
     def test_ctd_sbe16plus_condwat(self):
         """
@@ -218,7 +221,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         ctcor = 3.2500e-006
 
         c = ctdfunc.ctd_sbe16plus_condwat(c0, t1, p1, g, h, i, j, cpcor, ctcor)
-        self.assertTrue(np.allclose(c, 4.969069, rtol=1e-6, atol=0))
+        np.testing.assert_allclose(c, 4.969069, rtol=1e-6, atol=0)
 
     def test_ctd_sbe37im_condwat(self):
         """
@@ -236,7 +239,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         c0 = 400000.0
 
         c = ctdfunc.ctd_sbe37im_condwat(c0)
-        self.assertTrue(np.allclose(c, 3.500000, rtol=1e-6, atol=0))
+        np.testing.assert_allclose(c, 3.500000, rtol=1e-6, atol=0)
 
     def test_ctd_sbe52mp_condwat(self):
         """
@@ -254,7 +257,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         c0 = 305000.0
 
         c = ctdfunc.ctd_sbe52mp_condwat(c0)
-        self.assertTrue(np.allclose(c, 3.000000, rtol=1e-6, atol=0))
+        np.testing.assert_allclose(c, 3.000000, rtol=1e-6, atol=0)
 
     def test_ctd_pracsal(self):
         """
@@ -292,7 +295,7 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
                                  34.898526,
                                  34.999244,
                                  34.999494])
-        self.assertTrue(np.allclose(output, check_values))
+        np.testing.assert_allclose(output, check_values, rtol=1e-6, atol=0)
 
     def test_ctd_density(self):
         """
@@ -322,4 +325,4 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
                                  1031.13498,
                                  1039.28768,
                                  1050.30616])
-        self.assertTrue(np.allclose(output, check_values))
+        np.testing.assert_allclose(output, check_values, rtol=1e-6, atol=0)
