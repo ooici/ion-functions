@@ -3,7 +3,7 @@
 """
 @package ion_functions.test.flo_functions
 @file ion_functions/test/flo_functions.py
-@author Craig Risien
+@author Christopher Wingard
 @brief Unit tests for flo_functions module
 """
 
@@ -12,13 +12,54 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 from ion_functions.data import flo_functions as flofunc
+from ion_functions.utils import fill_value
+
 
 @attr('UNIT', group='func')
-class TestOptFunctionsUnit(BaseUnitTestCase):
+class TestSFLFunctionsUnit(BaseUnitTestCase):
 
-    def test_flo_functions(self):
+    def test_flo_bback_total(self):
         """
-        Test the functions in the flo_functions.py module.
+        Test flo_bback_total function.
+
+        Values based on those described in DPS as available on Alfresco:
+
+        OOI (2012). Data Product Specification for Optical Backscatter (Red
+            Wavelengths). Document Control Number 1341-00540.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00540_Data_Product_SPEC_FLUBSCT_OOI.pdf)
+
+        Implemented by Christopher Wingard, April 2013
+        """
+
+        test_array = np.array([
+            55, 57, 55, 56, 54, 54, 55, 54, 55, 56, 55
+        ])
+        beta = 3.058e-6 * (test_array - 47)
+
+        # set known outputs
+        bback = np.array([
+            0.000192, 0.000234, 0.000192, 0.000213, 0.000171, 0.000171,
+            0.000192, 0.000171, 0.000192, 0.000213, 0.000192
+        ])
+
+        # set default constants
+        degC = 20.0
+        psu = 32.0
+        theta = 117.0
+        wlngth = 700.0
+        xfactor = 1.10
+
+        # calculate the Vent Fluid Temperature
+        bbout = flofunc.flo_bback_total(beta, degC, psu, theta, wlngth, xfactor)
+
+        # How'd we do?
+        np.testing.assert_allclose(bbout, bback, rtol=1e-6, atol=1e-6)
+
+    def test_flo_chla_cdom(self):
+        """
+        Test the flo_chla and flo_cdom functions.
 
         Values based on test data in DPSs and available on Alfresco.
         
