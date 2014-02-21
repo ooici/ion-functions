@@ -3,7 +3,11 @@
 """
 @package ion_functions.test.flo_functions
 @file ion_functions/test/flo_functions.py
+<<<<<<< HEAD
 @author Christopher Wingard
+=======
+@author Craig Risien
+>>>>>>> 78e66739c1350fc4ac9fa993a4aed99e0562b92d
 @brief Unit tests for flo_functions module
 """
 
@@ -12,6 +16,7 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 from ion_functions.data import flo_functions as flofunc
+<<<<<<< HEAD
 from ion_functions.utils import fill_value
 
 
@@ -60,6 +65,15 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
     def test_flo_chla_cdom(self):
         """
         Test the flo_chla and flo_cdom functions.
+=======
+
+@attr('UNIT', group='func')
+class TestOptFunctionsUnit(BaseUnitTestCase):
+
+    def test_flo_functions(self):
+        """
+        Test the functions in the flo_functions.py module.
+>>>>>>> 78e66739c1350fc4ac9fa993a4aed99e0562b92d
 
         Values based on test data in DPSs and available on Alfresco.
         
