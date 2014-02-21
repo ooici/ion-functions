@@ -26,6 +26,8 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
                             0.1880, -0.1680,  0.2910, -0.1790, 0.0080]) * 1000
         self.b4 = np.array([-0.2160, -0.6050, -0.0920, -0.0580,  0.4840,
                             -0.0050,  0.3380,  0.1750, -0.0800, -0.5490]) * 1000
+        self.echo = np.array([0, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250])
+        self.sfactor = 0.45
         self.heading = 98.4100
         self.pitch = 0.6900
         self.roll = -2.5400
@@ -50,6 +52,10 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
                                 -0.1595, 0.3471, -0.1983, 0.0053, -1.0261])
         self.vv_cor = np.array([-0.3855, -0.0916, -0.9773, -0.9707, -1.2140,
                                 0.3188, -0.9940, -0.0308, -0.3229, -0.2582])
+
+        # set the expecte results -- echo intensity conversion from counts to dB
+        self.dB = np.array([0.00, 11.25, 22.50, 33.75, 45.00, 56.25, 67.50,
+                            78.75, 90.00, 101.25, 112.50])
 
     def test_adcp_beam(self):
         """
@@ -173,3 +179,19 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         # test the magnetic variation correction
         np.testing.assert_array_almost_equal(got_uu_cor, uu_cor, 4)
         np.testing.assert_array_almost_equal(got_vv_cor, vv_cor, 4)
+
+    def test_adcp_echo(self):
+        """
+        """
+        # the single record case
+        got = af.adcp_backscatter(self.echo, self.sfactor)
+        np.testing.assert_array_almost_equal(got, self.dB, 4)
+
+        # the multi-record case -- inputs
+        raw = np.tile(self.echo, (24, 1))
+        sf = np.ones(24) * self.sfactor
+
+        # the multi-record case -- outputs
+        dB = np.tile(self.dB, (24, 1))
+        got = af.adcp_backscatter(raw, sf)
+        np.testing.assert_array_almost_equal(got, dB, 4)
