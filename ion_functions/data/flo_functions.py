@@ -2,7 +2,6 @@
 """
 @package ion_functions.data.flo_functions
 @file ion_functions/data/flo_functions.py
-<<<<<<< HEAD
 @author Christopher Wingard
 @brief Module containing Fluorometer Three Wavelength (FLORT) and Fluorometer
     Two Wavelength (FLORD) instrument family related functions
@@ -274,17 +273,6 @@ def flo_density_seawater(degC, psu):
     return rho_sw
 
 
-=======
-@author Craig Risien
-@brief Module containing calculations related to instruments in the fluorescence family.
-"""
-
-# Import NumExpr
-
-import numexpr as ne
-    
-    
->>>>>>> 78e66739c1350fc4ac9fa993a4aed99e0562b92d
 def flo_scale_and_offset(counts_output, counts_dark, scale_factor):
     """
     Description:
@@ -397,46 +385,3 @@ def flo_cdom(counts_output, counts_dark, scale_factor):
     cdom_conc = flo_scale_and_offset(counts_output, counts_dark, scale_factor)
     return cdom_conc
 
-<<<<<<< HEAD
-=======
-
-#def flo_flubsct(counts_output, counts_dark, scale_factor):
-#    """
-#    Description:
-#
-#        The OOI Level 1 Optical backscatter (red wavelengths) core data product is an estimate of
-#        turbidity and suspended solids in seawater that scatter photons of light in the back direction. Red
-#        wavelengths of light fall between roughly 630 and 740nm. Turbidity commonly describes water
-#        clarity and is a gross assessment of light attenuation factors like suspended solids, but not a
-#        direct measurement of them, only their effect (Boss, et al, 2009). Optical backscatter meters
-#        measure red light scattered from suspended matter which is a proxy for turbidity and suspended
-#        solids. The size, composition and shape of the suspended particles affect the meters response,
-#        so pre-deployment field verification is necessary to define a standard that adequately represents
-#        the expected type and size of suspended matter found in situ is crucial to achieve the highest
-#        quality data.
-#
-#    Implemented by:
-#
-#        2014-01-30: Craig Risien. Initial Code
-#        
-#    Usage:
-#
-#        backscat = flo_flubsct(counts_output, counts_dark, scale_factor)
-#
-#            where
-#
-#        opt_backscat = Optical backscatter (FLUBSCT_L1) [red wavelengths / meter / steradian]
-#        counts_output = calibrated sample voltage output (FLUBSCT_L0) [counts]
-#        counts_dark = measured signal output of fluormeter in clean water with black tape over the detector [counts]
-#        scale_factor = multiplier
-#
-#    References:
-#    
-#        OOI (2012). Data Product Specification for Fluorometric Chlorophyll-a Concentration. Document Control Number
-#        1341-00540. https://alfresco.oceanobservatories.org/
-#        (See: Company Home >> OOI >> Controlled >> 1000 System Level >> 1341-00540_Data_Product_SPEC_FLUBSCT_OOI.pdf)
-#    """
-#
-#    backscat = flo_scale_and_offset(counts_output, counts_dark, scale_factor)
-#    return backscat
->>>>>>> 78e66739c1350fc4ac9fa993a4aed99e0562b92d
