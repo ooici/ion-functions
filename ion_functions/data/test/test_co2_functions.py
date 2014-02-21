@@ -68,33 +68,49 @@ class Testpco2FunctionsUnit(BaseUnitTestCase):
                          ])
 
         # parse the data strings
-        light = np.zeros(14, dtype=np.int)
-        pco2out = np.zeros(11)
-        tout = np.zeros(11)
-        vbout = np.zeros(11)
+        mtype = np.zeros(11, dtype=np.int)
+        light = np.zeros((11, 14), dtype=np.int)
+        traw = np.zeros(11, dtype=np.int)
+        a434blnk = np.zeros(11, dtype=np.float)
+        a620blnk = np.zeros(11, dtype=np.float)
+        pco2out = np.zeros(11, dtype=np.float)
+        tout = np.zeros(11, dtype=np.float)
         for i in range(11):
             # parse the raw strings into subelements, such as the driver would
             # provide.
             s = raw_strings[i]
-            mtype = int((s[5:7]), 16)
-            traw = int((s[75:79]), 16)
+            mtype[i] = int((s[5:7]), 16)
+            traw[i] = int((s[75:79]), 16)
             strt = 15
             step = 4
             for j in range(14):
-                light[j] = int((s[strt:strt+step]), 16)
+                light[i, j] = int((s[strt:strt+step]), 16)
                 strt += step
 
             # compute the thermistor temperature in deg_C, blanks and pco2
-            tout[i] = co2func.pco2_thermistor(traw)
-            a434blnk = co2func.pco2_abs434_blank(mtype, light, a434blnk)
-            a620blnk = co2func.pco2_abs620_blank(mtype, light, a620blnk)
-            pco2out[i] = co2func.pco2_pco2wat(mtype, light, tout[i], ea434,
+            tout[i] = co2func.pco2_thermistor(traw[i])
+            a434blnk[i] = co2func.pco2_abs434_blank(mtype[i], light[i], a434blnk[i])
+            a620blnk[i] = co2func.pco2_abs620_blank(mtype[i], light[i], a620blnk[i])
+            pco2out[i] = co2func.pco2_pco2wat(mtype[i], light[i], tout[i], ea434,
                                               eb434, ea620, eb620, calt, cala,
-                                              calb, calc, a434blnk, a620blnk)
+                                              calb, calc, a434blnk[i], a620blnk[i])
 
-        print pco2out
-        self.assertTrue(np.allclose(pco2out, pco2, rtol=1e-4, atol=1e-4))
-        self.assertTrue(np.allclose(tout, therm, rtol=1e-4, atol=1e-4))
+        np.testing.assert_allclose(pco2out, pco2, rtol=1e-4, atol=1e-4)
+        np.testing.assert_allclose(tout, therm, rtol=1e-4, atol=1e-4)
+
+        # now test it as a multi-record block.
+        tout = co2func.pco2_thermistor(traw)
+        print traw
+        a434blnk = co2func.pco2_abs434_blank(mtype, light, a434blnk)
+        print a434blnk
+        a620blnk = co2func.pco2_abs620_blank(mtype, light, a620blnk)
+        print a620blnk
+        pco2out = co2func.pco2_pco2wat(mtype, light, tout, ea434,
+                                       eb434, ea620, eb620, calt, cala,
+                                       calb, calc, a434blnk, a620blnk)
+
+        np.testing.assert_allclose(pco2out, pco2, rtol=1e-4, atol=1e-4)
+        np.testing.assert_allclose(tout, therm, rtol=1e-4, atol=1e-4)
 
     def test_pco2_co2flux(self):
         """
