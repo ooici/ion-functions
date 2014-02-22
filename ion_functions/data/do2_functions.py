@@ -18,11 +18,6 @@ def do2_SVU(calphase, do_temp, csv):
         Stern-Volmer-Uchida equation for calculating temperature
         corrected dissolved oxygen concentration. OOI L1 data product.
 
-
-    Implemented by:
-
-        2013-04-26: Stuart Pearce. Initial Code.
-
     Usage:
 
         DO = do2_SVU(calphase, do_temp, csv)
@@ -38,7 +33,6 @@ def do2_SVU(calphase, do_temp, csv):
             7 element float array, (see DOCONCS DPS)
 
     Example:
-
         csv = np.array([0.002848, 0.000114, 1.51e-6, 70.42301, -0.10302,
                         -12.9462, 1.265377])
         calphase = 27.799
@@ -48,8 +42,10 @@ def do2_SVU(calphase, do_temp, csv):
         print DO
         > 363.900534505
 
-    References:
+    Implemented by:
+        2013-04-26: Stuart Pearce. Initial Code.
 
+    References:
         OOI (2012). Data Product Specification for Oxygen Concentration
             from "Stable" Instruments. Document Control Number
             1341-00520. https://alfresco.oceanobservatories.org/ (See:
@@ -64,12 +60,6 @@ def do2_SVU(calphase, do_temp, csv):
     DO = ne.evaluate('((P0/Pc) - 1) / Ksv')
     return DO
 
-# TODO: the salinity correction is not finished.  Ultimately it needs
-# TODO: two encapsulating-in-time CTD samples to be interpolated to O2
-# TODO: sample time.  Waiting on Luke and Chris M. to determine how best
-# TODO: to do this.  Note: the interpolation should be in another function
-# TODO: to accomodate the standalone DOSTA and CTDBP DOSTA.
-
 
 def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
     """
@@ -77,10 +67,6 @@ def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
 
         Salinity and pressure corrected dissolved oxygen concentration.
         OOI L2 data product DOCONCS.
-
-    Implemented by:
-
-        2013-04-26: Stuart Pearce. Initial Code.
 
     Usage:
 
@@ -92,9 +78,11 @@ def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
         DO = uncorrected dissolved oxygen [micro-mole/L].
         do_t = Oxygen sensor temperature [deg C].
         P = PRESWAT water pressure [dbar]. (see
-            1341-00020_Data_Product_Spec_PRESWAT)
+            1341-00020_Data_Product_Spec_PRESWAT). Interpolated to the
+            same timestamp as DO.
         T = TEMPWAT water temperature [deg C]. (see
-            1341-00010_Data_Product_Spec_TEMPWAT)
+            1341-00010_Data_Product_Spec_TEMPWAT). Interpolated to the
+            same timestamp as DO.
         SP = PRACSAL practical salinity [unitless]. (see
             1341-00040_Data_Product_Spec_PRACSAL)
         lat, lon = latitude and longitude of the instrument [degrees].
@@ -113,8 +101,10 @@ def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
         print DO
         > 335.967894709
 
-    References:
+    Implemented by:
+        2013-04-26: Stuart Pearce. Initial Code.
 
+    References:
          OOI (2012). Data Product Specification for Oxygen Concentration
             from "Stable" Instruments. Document Control Number
             1341-00520. https://alfresco.oceanobservatories.org/ (See:
@@ -147,16 +137,114 @@ def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
     return DO
 
 
-def dofst_calculation(do_raw, offset, Soc, A, B, C, E, P, T, SP, lat, lon):
+def do2_dofst_volt(voltage_counts, Voffset, Soc, A, B, C, E, P, T, SP, lat, lon):
+    """do2_dofst_frequency  A Wrapper function for dofst_calc.
+
+    Takes voltage counts measured from an SBE 43F Oxygen sensor (Oattached
+    to a SBE 52-MP profiling CTD, and converts the counts to a voltage
+    and converts the voltage to dissolved oxygen in units of
+    micromoles/kg for the OOI level 2 data product DOCONCF L2 (fast
+    response oxygen) in combination with salinity, temperature, and
+    pressure from the CTD
+
+    Usage:
+        DO = dostf_calculation(volt_counts,Voffset,Soc,A,B,C,E,P,T,SP,lat,lon)
+
+            where
+
+        DO = corrected dissolved oxygen [micro-mole/kg].
+        volt_counts = Oxygen sensor voltage [V].
+        offset = Voltage offset [V].
+        Soc = Oxygen signal slope
+        A = Residual temperature correction factor A
+        B = Residual temperature correction factor B
+        C = Residual temperature correction factor C
+        E = Pressure correction factor
+        P = PRESWAT water pressure [dbar]. (see
+            1341-00020_Data_Product_Spec_PRESWAT)
+        T = TEMPWAT water temperature [deg C]. (see
+            1341-00010_Data_Product_Spec_TEMPWAT)
+        SP = PRACSAL practical salinity [unitless]. (see
+            1341-00040_Data_Product_Spec_PRACSAL)
+        lat, lon = latitude and longitude of the instrument [degrees].
+
+    Example:
+        v_counts = 16384
+        P = 201.2
+        T = 30.3
+        SP = 31.2
+        lat,lon = 39.0, -70.5
+        A = -3.1867e-3, B = 1.7749e-4, C = -3.5718e-6
+        E = 0.036, Voffset = -0.5186, Soc = 0.4396
+
+        DO = do2_dofst_volt(v_counts,Voffset,Soc,A,B,C,E,P,T,SP,lat,lon)
+        print DO
+        > 61.89990653
+
+    See Also: dofst_calc
     """
-        Description:
+    # convert voltage counts to volts
+    volts = voltage_counts / 13107.
+
+    do = dofst_calc(volts, Voffset, Soc, A, B, C, E, P, T, SP, lat, lon)
+    return do
+
+
+def do2_dofst_frequency(frequency, Foffset, Soc, A, B, C, E, P, T, SP, lat, lon):
+    """do2_dofst_frequency  A Wrapper function for dofst_calc.
+
+    Takes a frequency measured from an SBE 43F Oxygen
+    sensor connected to a SBE 52-MP profiling CTD, and converts the
+    frequency to dissolved oxygen in units of micromoles/kg for the OOI
+    level 2 data product DOCONCF L2 (fast response oxygen) in
+    combination with salinity, temperature, and pressure from the CTD
+
+    Usage:
+        DO = dostf_calculation(frequency,Foffset,Soc,A,B,C,E,P,T,SP,lat,lon)
+
+            where
+
+        DO = corrected dissolved oxygen [micro-mole/kg].
+        frequency = Oxygen sensor frequency [Hz].
+        offset = Frequency offset [Hz].
+        Soc = Oxygen signal slope
+        A = Residual temperature correction factor A
+        B = Residual temperature correction factor B
+        C = Residual temperature correction factor C
+        E = Pressure correction factor
+        P = PRESWAT water pressure [dbar]. (see
+            1341-00020_Data_Product_Spec_PRESWAT)
+        T = TEMPWAT water temperature [deg C]. (see
+            1341-00010_Data_Product_Spec_TEMPWAT)
+        SP = PRACSAL practical salinity [unitless]. (see
+            1341-00040_Data_Product_Spec_PRACSAL)
+        lat, lon = latitude and longitude of the instrument [degrees].
+
+    Example:
+        f = 4354
+        P = 60.5200
+        T = 15.5257
+        SP = 34.1145
+        lat,lon = 45.0, -125.0
+        A = -4.1168e-3, B = 2.4818e-4, C = -3.8820e-6
+        E = 0.036, Foffset = -839.55, Soc = 2.9968e-4
+
+        DO = do2_dofst_frequency(f,Foffset,Soc,A,B,C,E,P,T,SP,lat,lon)
+        print DO
+        > 256.97434863158
+
+    See Also: dofst_calc
+    """
+    do = dofst_calc(frequency, Foffset, Soc, A, B, C, E, P, T, SP, lat, lon)
+    return do
+
+
+def dofst_calc(do_raw, offset, Soc, A, B, C, E, P, T, SP, lat, lon):
+    """
+    Description:
 
         Salinity and pressure corrected dissolved oxygen concentration.
         OOI L2 data product DOCONCS.
-
-    Implemented by:
-
-        2013-08-20: Stuart Pearce. Initial Code.
 
     Usage:
 
@@ -181,19 +269,22 @@ def dofst_calculation(do_raw, offset, Soc, A, B, C, E, P, T, SP, lat, lon):
         lat, lon = latitude and longitude of the instrument [degrees].
 
     Example:
-        DO = 433.88488978325478
-        do_raw = 1.97
-        P = 5.4000000000000004
-        T = 1.97
-        SP = 33.716000000000001
-        lat,lon = -52.82, 87.64
+        do_raw = 4354  # frequency in Hz
+        P = 60.5200
+        T = 15.5257
+        SP = 34.1145
+        lat,lon = 45.0, -125.0
+        A = -4.1168e-3, B = 2.4818e-4, C = -3.8820e-6
+        E = 0.036, Foffset = -839.55, Soc = 2.9968e-4
 
-        DO = dofst_calculation(DO,do_t,P,T,SP,lat,lon, pref=0)
+        DO = dofst_calc(do_raw,Foffset,Soc,A,B,C,E,P,T,SP,lat,lon)
         print DO
-        > 335.967894709
+        > 256.97434863158
+
+    Implemented by:
+        2013-08-20: Stuart Pearce. Initial Code.
 
     References:
-
          OOI (2013). Data Product Specification for Fast Dissolved
             Oxygen. Document Control Number 1341-00521.
             https://alfresco.oceanobservatories.org/ (See:
@@ -205,6 +296,7 @@ def dofst_calculation(do_raw, offset, Soc, A, B, C, E, P, T, SP, lat, lon):
     pot_rho_t = gsw.pot_rho_t_exact(SA, T, P, 0)
 
     # Oxygen saturation value after Garcia and Gordon (1992)
+    #   empirical polynomial coefficients
     A0 = 2.00907
     A1 = 3.22014
     A2 = 4.0501
@@ -216,7 +308,7 @@ def dofst_calculation(do_raw, offset, Soc, A, B, C, E, P, T, SP, lat, lon):
     B2 = -0.010341
     B3 = -0.00817083
     C0 = -0.000000488682
-    temp_K = T + 273.15
+    temp_K = T + 273.15  # temperature in Kelvin
     Ts = np.log((298.15 - T) / (temp_K))
     Oxsol = np.exp(
         A0 + A1*Ts + A2*Ts**2 + A3*Ts**3 + A4*Ts**4 + A5*Ts**5 +
