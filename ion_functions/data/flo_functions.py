@@ -2,8 +2,7 @@
 """
 @package ion_functions.data.flo_functions
 @file ion_functions/data/flo_functions.py
-<<<<<<< HEAD
-@author Christopher Wingard
+@author Christopher Wingard and Craig Risien
 @brief Module containing Fluorometer Three Wavelength (FLORT) and Fluorometer
     Two Wavelength (FLORD) instrument family related functions
 """
@@ -274,28 +273,17 @@ def flo_density_seawater(degC, psu):
     return rho_sw
 
 
-=======
-@author Craig Risien
-@brief Module containing calculations related to instruments in the fluorescence family.
-"""
-
-# Import NumExpr
-
-import numexpr as ne
-    
-    
->>>>>>> 78e66739c1350fc4ac9fa993a4aed99e0562b92d
 def flo_scale_and_offset(counts_output, counts_dark, scale_factor):
     """
     Description:
 
         This scale and offset function is a simple numeric expression that can
         be applied to the CHLAFLO, CDOMFLO, FLUBSCT data products
-        
+
     Implemented by:
 
         2014-01-30: Craig Risien. Initial Code
-        
+
     Usage:
 
         value = flo_scale_and_offset(counts_output, counts_dark, scale_factor)
@@ -308,7 +296,7 @@ def flo_scale_and_offset(counts_output, counts_dark, scale_factor):
         scale_factor = multiplier [micrograms / liter / volts]
 
     References:
-    
+
         N/A
     """
 
@@ -333,7 +321,7 @@ def flo_chla(counts_output, counts_dark, scale_factor):
     Implemented by:
 
         2014-01-30: Craig Risien. Initial Code
-        
+
     Usage:
 
         chla_conc = flo_chla(counts_output, counts_dark, scale_factor)
@@ -346,7 +334,7 @@ def flo_chla(counts_output, counts_dark, scale_factor):
         scale_factor = multiplier [micrograms / liter / volts]
 
     References:
-    
+
         OOI (2012). Data Product Specification for Fluorometric Chlorophyll-a Concentration. Document Control Number
         1341-00530. https://alfresco.oceanobservatories.org/
         (See: Company Home >> OOI >> Controlled >> 1000 System Level >> 1341-00530_Data_Product_SPEC_CHLAFLO_OOI.pdf)
@@ -397,8 +385,6 @@ def flo_cdom(counts_output, counts_dark, scale_factor):
     cdom_conc = flo_scale_and_offset(counts_output, counts_dark, scale_factor)
     return cdom_conc
 
-<<<<<<< HEAD
-=======
 
 #def flo_flubsct(counts_output, counts_dark, scale_factor):
 #    """
@@ -431,7 +417,7 @@ def flo_cdom(counts_output, counts_dark, scale_factor):
 #        scale_factor = multiplier
 #
 #    References:
-#    
+#
 #        OOI (2012). Data Product Specification for Fluorometric Chlorophyll-a Concentration. Document Control Number
 #        1341-00540. https://alfresco.oceanobservatories.org/
 #        (See: Company Home >> OOI >> Controlled >> 1000 System Level >> 1341-00540_Data_Product_SPEC_FLUBSCT_OOI.pdf)
@@ -439,4 +425,3 @@ def flo_cdom(counts_output, counts_dark, scale_factor):
 #
 #    backscat = flo_scale_and_offset(counts_output, counts_dark, scale_factor)
 #    return backscat
->>>>>>> 78e66739c1350fc4ac9fa993a4aed99e0562b92d

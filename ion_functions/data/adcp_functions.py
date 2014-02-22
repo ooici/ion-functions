@@ -14,6 +14,46 @@ from ion_functions.utils import isscalar
 
 
 # Wrapper functions to create 1:1 outputs for ParameterFunctions in Preload
+def adcp_backscatter(raw, sfactor):
+    """
+    Description:
+
+        Converts the echo intensity data from counts to dB using a facotry
+        specified scale factor (nominally 0.45 dB/count for the Workhorse
+        family of ADCPs and 0.61 dB/count for the ExplorerDVL family). As
+        defined in the Data Product Specification for Velocity Profile and Echo
+        Intensity - DCN 1341-00750.
+
+    Implemented by:
+
+        2014-04-21: Christopher Wingard. Initial code.
+
+    Usage:
+
+        dB = adcp_backscatter(raw, sfactor)
+
+            where
+
+        dB = Relative Echo Intensity (ECHOINT_L1) [dB]
+
+        raw = raw echo intensity (ECHOINT_L0) [count]
+        sfactor = factory supplied scale factor, instrument and beam specific [dB/count]
+
+    References:
+
+        OOI (2012). Data Product Specification for Velocity Profile and Echo
+            Intensity. Document Control Number 1341-00750.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
+    """
+    if isscalar(sfactor) is False:
+        sfactor = sfactor.reshape(sfactor.shape[0], 1)
+
+    dB = ne.evaluate("raw * sfactor")
+    return dB
+
+
 def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     """
     Description:
