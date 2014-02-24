@@ -44,13 +44,17 @@ Optical Properties (OPT)
           functions below.
        opt_optical_absorption -- wrapper function to calculate OPTABSN_L2 from
           functions below.
-       opt_pressure -- Calculates measured pressure, if sensor is installed.
        opt_internal_temp -- Calculates internal instrument temperature.
-       opt_external_temp -- Calculates external, in situ temperature.
        opt_pd_calc -- Converts raw measurements to either beam attenuation or
-          optical absorbtion
+          optical absorbtion depending on input.
        opt_tempsal_corr -- Applies temperature and salinity corrections.
        opt_scatter_corr -- Applies proportional scatter correction to OPTABSN.
+
+       opt_pressure -- Calculates in situ pressure, if auxiliary sensor is installed.
+          this product is not used in the calculation of OPTATTN nor OPTABSN.
+       opt_external_temp -- Calculates external in situ temperature, if auxiliary sensor
+          is installed. Normally this product is not used in the calculation of OPTATTN
+          nor OPTABSN; rather, TEMPWAT_L1 from a co-located CTD would be used.
        
      * opt_functions_tscor.py -- Provides an array of the published
        wavelength-dependent temperature and salinity correction factors. Values
