@@ -12,7 +12,7 @@ import numexpr as ne
 from ion_functions.data.generic_functions import magnetic_declination, magnetic_correction
 
 # NOTE:
-#    The previous version of this module had each function return the an
+#    The previous version of this module had each function return an
 #    array of all fill values (-9999) if the lat or lon is invalid. This
 #    should not occur. Really lat and lon should be checked and handled
 #    in the QAQC functions, and only apply a fill value for the single
@@ -24,36 +24,6 @@ from ion_functions.data.generic_functions import magnetic_declination, magnetic_
 #               (this message should be removed if/when the lats & lons
 #               are checked in the QCQA functions)
 from exceptions import ValueError
-
-
-def valid_lat(lat):
-    """valid_lat(lat) -> boolean
-
-    Checks if inputs are valid latitude values.
-    Returns True if value is between -90 and 90,
-    False otherwise.
-    """
-    if isinstance(lat, np.ndarray):
-        if np.any(lat > 90) or np.any(lat < -90):
-            return False
-        return True
-    else:
-        return -90 <= lat and lat <= 90
-
-
-def valid_lon(lon):
-    """valid_lon(lon) -> boolean
-
-    Checks if inputs are valid longitude values.
-    Returns True if value is between -180 and 180,
-    False otherwise.
-    """
-    if isinstance(lon, np.ndarray):
-        if np.any(lon > 180) or np.any(lon < -180):
-            return False
-        return True
-    else:
-        return -180 <= lon and lon <= 180
 
 
 # wrapper functions for use in ION
@@ -169,6 +139,31 @@ def nobska_mag_corr_north(u, v, lat, lon, timestamp, z=0):
     return v_cor
 
 
+def nobska_scale_up_vel(w):
+    """
+    Converts a Nobska MAVS-4 (VEL3D-B) vertical velocity measurement
+    from cm/s to m/s
+
+    Usage:
+
+        w_mps = nobska_scale_up_vel(w_cmps)
+
+            where
+
+        w_mps = Output vertical velocity. [m/s]
+        w_cmps = Input vertical velocity. [cm/s]
+
+    References:
+
+        OOI (2012). Data Product Specification for Turbulent Point Water
+            Velocity. Document Control Number 1341-00781.
+            https://alfresco.oceanobservatories.org/ (See: Company Home
+            >> OOI >> Controlled >> 1000 System Level >>
+            1341-00781_Data_Product_SPEC_VELPTTU_Nobska_OOI.pdf)
+    """
+    return w / 100.0
+
+
 def nortek_mag_corr_east(u, v, lat, lon, timestamp, z=0.0):
     """
     Corrects the eastward velocity from VEL3D-CD Nortek Vector, VEL3D-K
@@ -281,7 +276,34 @@ def nortek_mag_corr_north(u, v, lat, lon, timestamp, z=0.0):
     return v_cor
 
 
-# major function
+def nortek_up_vel(w):
+    """
+    Returns a Nortek instrument (VEL3D-C,D,K or VELPT) vertical velocity
+    measurement. This function is an identity function to return the
+    same value, but is required because of how OOINet and OOI have
+    designated the system to work.
+
+    Usage:
+
+        w = nortek_up_vel(w)
+
+            where
+
+        w = Output and Input vertical velocity.  [m/s]
+
+    References:
+
+        OOI (2012). Data Product Specification for Turbulent Point Water
+            Velocity. Document Control Number 1341-00781.
+            https://alfresco.oceanobservatories.org/ (See: Company Home
+            >> OOI >> Controlled >> 1000 System Level >>
+            1341-00781_Data_Product_SPEC_VELPTTU_Nobska_OOI.pdf)
+    """
+    return w
+
+
+##### Sub functions #####
+# the main sub-function
 def vel_mag_correction(u, v, lat, lon, ntp_timestamp, z=0.0, zflag=-1):
     """
     Description:
@@ -352,3 +374,34 @@ def vel_mag_correction(u, v, lat, lon, ntp_timestamp, z=0.0, zflag=-1):
     u_cor, v_cor = magvar(theta, u, v)
 
     return u_cor, v_cor
+
+
+# helper sub-functions
+def valid_lat(lat):
+    """valid_lat(lat) -> boolean
+
+    Checks if inputs are valid latitude values.
+    Returns True if value is between -90 and 90,
+    False otherwise.
+    """
+    if isinstance(lat, np.ndarray):
+        if np.any(lat > 90) or np.any(lat < -90):
+            return False
+        return True
+    else:
+        return -90 <= lat and lat <= 90
+
+
+def valid_lon(lon):
+    """valid_lon(lon) -> boolean
+
+    Checks if inputs are valid longitude values.
+    Returns True if value is between -180 and 180,
+    False otherwise.
+    """
+    if isinstance(lon, np.ndarray):
+        if np.any(lon > 180) or np.any(lon < -180):
+            return False
+        return True
+    else:
+        return -180 <= lon and lon <= 180
