@@ -42,7 +42,8 @@ def pco2_abs434_ratio(light):
             OOI >> Controlled >> 1000 System Level >>
             1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
     """
-    a434ratio = light[6]
+    light = np.atleast_2d(light)
+    a434ratio = light[:, 6]
     return a434ratio
 
 
@@ -76,34 +77,33 @@ def pco2_abs620_ratio(light):
             OOI >> Controlled >> 1000 System Level >>
             1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
     """
+    light = np.atleast_2d(light)
     a620ratio = light[7]
     return a620ratio
 
 
-def pco2_abs434_blank(mtype, light, a434blank):
+def pco2_blank(raw_blank):
     """
     Description:
 
-        Extract the absorbance blank at 434 nm from the pCO2 instrument light
-        measurements.
+        Calculates the absorbance blank at 434 or 620 nm from the SAMI2-pCO2
+        instrument.
 
     Implemented by:
 
         2013-04-20: Christopher Wingard. Initial code.
         2014-02-19: Christopher Wingard. Updated comments.
+        2014-02-28: Christopher Wingard. Updated to except raw blank values
+                    from a sparse array.
 
     Usage:
 
-        a434blank = pco2_abs434_blank(light)
+        blank = pco2_blank(raw_blank)
 
             where
 
-        a434blank = optical absorbance blank at 434 nm [counts]
-        mtype = measurement type, where 4 == actual measurement and 5 == a
-            blank measurement [unitless]
-        light = array of light measurements
-        a434blank = existing absorbance blank measurement, updated
-            approximately every 3.5 days [counts]
+        blank = optical absorbance blank at 434 or 620 nm [unitless]
+        raw_blank = raw optical absorbance blank at 434 or 620 nm [counts]
 
     References:
 
@@ -113,55 +113,10 @@ def pco2_abs434_blank(mtype, light, a434blank):
             OOI >> Controlled >> 1000 System Level >>
             1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
     """
-    # if the measurement type is 5 = blank, then return the new blank
-    if mtype == 5:
-        #a434blank = -1. * np.log10(light[6] / 16384.)
-        a434blank = -1. * np.log10(light[6])
+    #blank = -1. * np.log10(raw_blank / 16384.)
+    blank = -1. * np.log10(raw_blank)
 
-    # return new blank, or existing if not reset
-    return a434blank
-
-
-def pco2_abs620_blank(mtype, light, a620blank):
-    """
-    Description:
-
-        Extract the absorbance blank at 620 nm from the pCO2 instrument light
-        measurements.
-
-    Implemented by:
-
-        2013-04-20: Christopher Wingard. Initial code.
-        2014-02-19: Christopher Wingard. Updated comments.
-
-    Usage:
-
-        a620blank = pco2_abs620_blank(light)
-
-            where
-
-        a620blank = optical absorbance blank at 620 nm [counts]
-        mtype = measurement type, where 4 == actual measurement and 5 == a
-            blank measurement [unitless]
-        light = array of light measurements
-        a620blank = existing absorbance blank measurement, updated
-            approximately every 3.5 days [counts]
-
-    References:
-
-        OOI (2012). Data Product Specification for Partial Pressure of CO2 in
-            Seawater. Document Control Number 1341-00510.
-            https://alfresco.oceanobservatories.org/ (See: Company Home >>
-            OOI >> Controlled >> 1000 System Level >>
-            1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
-    """
-    # if the measurement type is 5 = blank, then return the new blank
-    if mtype == 5:
-        #a620blank = -1. * np.log10(light[7] / 16384.)
-        a620blank = -1. * np.log10(light[7])
-
-    # return new blank, or existing if not reset
-    return a620blank
+    return blank
 
 
 def pco2_thermistor(traw):
@@ -194,8 +149,8 @@ def pco2_thermistor(traw):
             1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
     """
     # convert raw thermistor readings from counts to degrees Centigrade
-    Rt = (traw / (4096. - traw)) * 17400.
-    InvT = 0.0010183 + 0.000241 * np.log(Rt) + 0.00000015 * np.log(Rt)**3
+    Rt = np.log((traw / (4096. - traw)) * 17400.)
+    InvT = 0.0010183 + 0.000241 * Rt + 0.00000015 * Rt**3
     TempK = 1 / InvT
     therm = TempK - 273.15
 
@@ -247,11 +202,37 @@ def pco2_pco2wat(mtype, light, therm, ea434, eb434, ea620, eb620,
             OOI >> Controlled >> 1000 System Level >>
             1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
     """
-    if mtype == 4:
-        pco2 = pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
-                              calt, cala, calb, calc, a434blank, a620blank)
-    else:
-        pco2 = fill_value
+    # reset inputs to arrays
+    ### measurements
+    mtype = np.atleast_1d(mtype)
+    light = np.atleast_2d(light)
+    therm = np.atleast_1d(therm)
+    ### calibration coefficients
+    ea434 = np.atleast_1d(ea434)
+    eb434 = np.atleast_1d(eb434)
+    ea620 = np.atleast_1d(ea620)
+    eb620 = np.atleast_1d(eb620)
+    calt = np.atleast_1d(calt)
+    cala = np.atleast_1d(cala)
+    calb = np.atleast_1d(calb)
+    calc = np.atleast_1d(calc)
+    ### blank measurements
+    a434blank = np.atleast_1d(a434blank)
+    a620blank = np.atleast_1d(a620blank)
+
+    # index through the measurements
+    indx = 0
+    pco2 = np.ones(mtype.shape[0]) * fill_value
+    for m in mtype:
+        if m == 4:
+            pco2[indx] = pco2_calc_pco2(light[indx, :], therm[indx], ea434[indx],
+                                        eb434[indx], ea620[indx], eb620[indx],
+                                        calt[indx], cala[indx], calb[indx],
+                                        calc[indx], a434blank[indx], a620blank[indx])
+        else:
+            pco2[indx] = fill_value
+
+        indx += 1
 
     return pco2
 

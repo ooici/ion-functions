@@ -18,20 +18,8 @@ from ion_functions.utils import fill_value
 @attr('UNIT', group='func')
 class Testpco2FunctionsUnit(BaseUnitTestCase):
 
-    def test_pco2_pco2wat(self):
-        """
-        Test pco2_pco2wat function.
-
-        Values based on those described in DPS as available on Alfresco:
-
-        OOI (2012). Data Product Specification for Partial Pressure of CO2 in
-            Seawater. Document Control Number 1341-00490.
-            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
-            >> Controlled >> 1000 System Level >>
-            1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
-
-        Implemented by Christopher Wingard, April 2013
-        """
+    def setUp(self):
+        ###### Test data for PCO2W ######
         raw_strings = np.array([
             '*7E2705CBACEE7F007D007D0B2A00BF080500E00187034A008200790B2D00BE080600DE0C1406C98C',
             '*7E2704CBACEECB008000880B2900B2080600D300FB0263007F00890B2B00B4080700CE0C5106C884',
@@ -47,70 +35,89 @@ class Testpco2FunctionsUnit(BaseUnitTestCase):
         ])
 
         # reagent constants (instrument and reagent bag specific)
-        ea434 = 19706.
-        ea620 = 34.
-        eb434 = 3073.
-        eb620 = 44327.
-        calt = 16.5
-        cala = 0.0459
-        calb = 0.6257
-        calc = -1.5406
-        a434blnk = fill_value
-        a620blnk = fill_value
+        self.ea434 = np.ones(11) * 19706.
+        self.ea620 = np.ones(11) * 34.
+        self.eb434 = np.ones(11) * 3073.
+        self.eb620 = np.ones(11) * 44327.
+        self.calt = np.ones(11) * 16.5
+        self.cala = np.ones(11) * 0.0459
+        self.calb = np.ones(11) * 0.6257
+        self.calc = np.ones(11) * -1.5406
 
         # expected outputs
-        therm = np.array([18.8526, 18.8765, 18.9245, 18.9485,
-                          18.9485, 18.9485, 18.8765, 19.0686,
-                          19.0686, 19.0446, 18.9725])
-        pco2 = np.array([fill_value, 294.1720, 311.3361, 319.0101,
-                         319.8925, 319.8950, 305.8104, 317.9661,
-                         284.3676, 280.2324, 280.0354
-                         ])
+        self.therm = np.array([18.8526, 18.8765, 18.9245, 18.9485,
+                               18.9485, 18.9485, 18.8765, 19.0686,
+                               19.0686, 19.0446, 18.9725])
+        self.pco2 = np.array([fill_value, 294.1720, 311.3361, 319.0101,
+                              319.8925, 319.8950, 305.8104, 317.9661,
+                              284.3676, 280.2324, 280.0354])
 
         # parse the data strings
-        mtype = np.zeros(11, dtype=np.int)
-        light = np.zeros((11, 14), dtype=np.int)
-        traw = np.zeros(11, dtype=np.int)
-        a434blnk = np.zeros(11, dtype=np.float)
-        a620blnk = np.zeros(11, dtype=np.float)
-        pco2out = np.zeros(11, dtype=np.float)
-        tout = np.zeros(11, dtype=np.float)
+        self.mtype = np.zeros(11, dtype=np.int)
+        self.light = np.zeros((11, 14), dtype=np.int)
+        self.traw = np.zeros(11, dtype=np.int)
         for i in range(11):
             # parse the raw strings into subelements, such as the driver would
             # provide.
             s = raw_strings[i]
-            mtype[i] = int((s[5:7]), 16)
-            traw[i] = int((s[75:79]), 16)
+            self.mtype[i] = int((s[5:7]), 16)
+            self.traw[i] = int((s[75:79]), 16)
             strt = 15
             step = 4
             for j in range(14):
-                light[i, j] = int((s[strt:strt+step]), 16)
+                self.light[i, j] = int((s[strt:strt+step]), 16)
                 strt += step
 
-            # compute the thermistor temperature in deg_C, blanks and pco2
-            tout[i] = co2func.pco2_thermistor(traw[i])
-            a434blnk[i] = co2func.pco2_abs434_blank(mtype[i], light[i], a434blnk[i])
-            a620blnk[i] = co2func.pco2_abs620_blank(mtype[i], light[i], a620blnk[i])
-            pco2out[i] = co2func.pco2_pco2wat(mtype[i], light[i], tout[i], ea434,
-                                              eb434, ea620, eb620, calt, cala,
-                                              calb, calc, a434blnk[i], a620blnk[i])
+            if self.mtype[i] == 5:
+                a434blnk = co2func.pco2_blank(self.light[i, 6])
+                a620blnk = co2func.pco2_blank(self.light[i, 7])
 
-        np.testing.assert_allclose(pco2out, pco2, rtol=1e-4, atol=1e-4)
-        np.testing.assert_allclose(tout, therm, rtol=1e-4, atol=1e-4)
+        self.a434blnk = np.ones(11) * a434blnk
+        self.a620blnk = np.ones(11) * a620blnk
 
-        # now test it as a multi-record block.
-        tout = co2func.pco2_thermistor(traw)
-        print traw
-        a434blnk = co2func.pco2_abs434_blank(mtype, light, a434blnk)
-        print a434blnk
-        a620blnk = co2func.pco2_abs620_blank(mtype, light, a620blnk)
-        print a620blnk
-        pco2out = co2func.pco2_pco2wat(mtype, light, tout, ea434,
-                                       eb434, ea620, eb620, calt, cala,
-                                       calb, calc, a434blnk, a620blnk)
+    def test_pco2_pco2wat(self):
+        """
+        Test pco2_pco2wat function.
 
-        np.testing.assert_allclose(pco2out, pco2, rtol=1e-4, atol=1e-4)
-        np.testing.assert_allclose(tout, therm, rtol=1e-4, atol=1e-4)
+        Values based on those described in DPS as available on Alfresco:
+
+        OOI (2012). Data Product Specification for Partial Pressure of CO2 in
+            Seawater. Document Control Number 1341-00490.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
+
+        Implemented by Christopher Wingard, April 2013
+        """
+
+        # compute the thermistor temperature in deg_C, derive blanks and then
+        # calculate pco2.
+
+        ### bulk case ###
+        tout = co2func.pco2_thermistor(self.traw)
+        pco2out = co2func.pco2_pco2wat(self.mtype, self.light, tout,
+                                       self.ea434, self.eb434, self.ea620, self.eb620,
+                                       self.calt, self.cala, self.calb, self.calc,
+                                       self.a434blnk, self.a620blnk)
+
+        np.testing.assert_allclose(pco2out, self.pco2, rtol=1e-4, atol=1e-4)
+        np.testing.assert_allclose(tout, self.therm, rtol=1e-4, atol=1e-4)
+
+        ### single record case ###
+        indx = 0
+        for mtype in self.mtype:
+            tout = co2func.pco2_thermistor(self.traw[indx])
+            pco2out = co2func.pco2_pco2wat(mtype, self.light[indx, :], tout,
+                                           self.ea434[indx], self.eb434[indx],
+                                           self.ea620[indx], self.eb620[indx],
+                                           self.calt[indx], self.cala[indx],
+                                           self.calb[indx], self.calc[indx],
+                                           self.a434blnk[indx], self.a620blnk[indx])
+
+            np.testing.assert_allclose(pco2out, self.pco2[indx], rtol=1e-4, atol=1e-4)
+            np.testing.assert_allclose(tout, self.therm[indx], rtol=1e-4, atol=1e-4)
+
+            indx += 1
 
     def test_pco2_co2flux(self):
         """
