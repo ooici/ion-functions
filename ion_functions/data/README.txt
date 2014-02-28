@@ -29,11 +29,13 @@ Conductivity, Temperature, Depth (CTD)
        
 Dissolved Oxygen (DO)
 
-     * do2_functions.py -- calculates L1 & L2 DOCONCS data products.
-       This module includes:
+     * do2_functions.py -- calculates L1 & L2 DOCONCS and L2 DOCONCF data
+       products.  This module includes:
      
        do2_SVU  -- calculates DOCONCS_L1 from DOSTAs
        do2_salinity_correction -- calculates DOCONCS_L2 from DOSTAs
+       do2_dofst_volt -- calculates DOCONCF_L2 from a DOFST-As (SBE 43)
+       do2_dofst_frequency -- calculates DOCONCF_L2 from a DOFST-Ks (SBE 43F)
      
 Optical Properties (OPT)
 
@@ -126,16 +128,17 @@ Water Velocity (VEL)
        adcp_earth_northward
        adcp_beam2ins
        adcp_ins2earth
-       adcp_magvar
      
      * vel_functions.py -- Covers calculation of the L1 VEL3D Eastward
-       and Northward component data products from the VEL3D-B and VEL3D-CD
-       instruments.  This module includes
+       and Northward component data products from the VEL3D-B, VEL3D-CD,
+       VEL3D-K, and VELPT instruments.  This module includes
      
        nobska_mag_corr_east -- calculates VELPTTU-VLE_L1 from VEL3D-Bs (Nobska)
        nobska_mag_corr_north -- calculates VELPTTU-VLN_L1 from VEL3D-Bs (Nobska)
-       nortek_mag_corr_east -- calculates VELPTTU-VLE_L1 from VEL3D-CDs (Nortek)
-       nortek_mag_corr_north -- calculates VELPTTU-VLN_L1 from VEL3D-CDs (Nortek)
+       nobska_scale_up_vel -- calculates VELPTTU-VLU_L0 from VEL3D-Bs (Nobska)
+       nortek_mag_corr_east -- calculates VELPTTU-VLE_L1 from VEL3D-CDKs & VELPTs (Nortek)
+       nortek_mag_corr_north -- calculates VELPTTU-VLN_L1 from VEL3D-CDKs & VELPTs (Nortek)
+       nortek_up_vel -- passes through VELPTTU-VLU_L1 from VEL3D-CDKs & VELPTs (Nortek)
        
 Meteorology (MET)
 

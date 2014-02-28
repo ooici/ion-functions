@@ -138,23 +138,25 @@ def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
 
 
 def do2_dofst_volt(voltage_counts, Voffset, Soc, A, B, C, E, P, T, SP, lat, lon):
-    """do2_dofst_frequency  A Wrapper function for dofst_calc.
+    """do2_dofst_volt
 
-    Takes voltage counts measured from an SBE 43F Oxygen sensor (Oattached
-    to a SBE 52-MP profiling CTD, and converts the counts to a voltage
-    and converts the voltage to dissolved oxygen in units of
+    Takes voltage counts measured from a DOFST-A (SBE 43) Oxygen sensor
+    attached to a CTDPF-A (SBE 16+ V2) CTD, and converts the counts to a
+    voltage and then voltage to dissolved oxygen in units of
     micromoles/kg for the OOI level 2 data product DOCONCF L2 (fast
     response oxygen) in combination with salinity, temperature, and
-    pressure from the CTD
+    pressure from the CTD.
+
+    A Wrapper function for "dofst_calc".
 
     Usage:
-        DO = dostf_calculation(volt_counts,Voffset,Soc,A,B,C,E,P,T,SP,lat,lon)
+        DO = do2_dofst_volt(volt_counts,Voffset,Soc,A,B,C,E,P,T,SP,lat,lon)
 
             where
 
         DO = corrected dissolved oxygen [micro-mole/kg].
         volt_counts = Oxygen sensor voltage [V].
-        offset = Voltage offset [V].
+        Voffset = Voltage offset [V].
         Soc = Oxygen signal slope
         A = Residual temperature correction factor A
         B = Residual temperature correction factor B
@@ -191,22 +193,24 @@ def do2_dofst_volt(voltage_counts, Voffset, Soc, A, B, C, E, P, T, SP, lat, lon)
 
 
 def do2_dofst_frequency(frequency, Foffset, Soc, A, B, C, E, P, T, SP, lat, lon):
-    """do2_dofst_frequency  A Wrapper function for dofst_calc.
+    """do2_dofst_frequency
 
-    Takes a frequency measured from an SBE 43F Oxygen
-    sensor connected to a SBE 52-MP profiling CTD, and converts the
+    Takes a frequency measured from a DOFST-K (SBE 43F) Oxygen sensor
+    connected to a CTDPF-CKL (SBE 52-MP) profiling CTD, and converts the
     frequency to dissolved oxygen in units of micromoles/kg for the OOI
     level 2 data product DOCONCF L2 (fast response oxygen) in
-    combination with salinity, temperature, and pressure from the CTD
+    combination with salinity, temperature, and pressure from the CTD.
+
+    A Wrapper function for "dofst_calc".
 
     Usage:
-        DO = dostf_calculation(frequency,Foffset,Soc,A,B,C,E,P,T,SP,lat,lon)
+        DO = do2_dofst_frequency(frequency,Foffset,Soc,A,B,C,E,P,T,SP,lat,lon)
 
             where
 
         DO = corrected dissolved oxygen [micro-mole/kg].
         frequency = Oxygen sensor frequency [Hz].
-        offset = Frequency offset [Hz].
+        Foffset = Frequency offset [Hz].
         Soc = Oxygen signal slope
         A = Residual temperature correction factor A
         B = Residual temperature correction factor B
@@ -239,16 +243,17 @@ def do2_dofst_frequency(frequency, Foffset, Soc, A, B, C, E, P, T, SP, lat, lon)
     return do
 
 
+# DOFST main sub-function
 def dofst_calc(do_raw, offset, Soc, A, B, C, E, P, T, SP, lat, lon):
     """
     Description:
 
         Salinity and pressure corrected dissolved oxygen concentration.
-        OOI L2 data product DOCONCS.
+        OOI L2 data product DOCONCF.
 
     Usage:
 
-        DO = dostf_calculation(do_raw,Soc,A,B,C,E,P,T,SP,lat,lon)
+        DO = dostf_calculation(do_raw,offset,Soc,A,B,C,E,P,T,SP,lat,lon)
 
             where
 
@@ -296,7 +301,7 @@ def dofst_calc(do_raw, offset, Soc, A, B, C, E, P, T, SP, lat, lon):
     pot_rho_t = gsw.pot_rho_t_exact(SA, T, P, 0)
 
     # Oxygen saturation value after Garcia and Gordon (1992)
-    #   empirical polynomial coefficients
+    #   empirical polynomial coefficients (not calibration coeffs)
     A0 = 2.00907
     A1 = 3.22014
     A2 = 4.0501
