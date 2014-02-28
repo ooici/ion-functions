@@ -78,7 +78,7 @@ def pco2_abs620_ratio(light):
             1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
     """
     light = np.atleast_2d(light)
-    a620ratio = light[7]
+    a620ratio = light[:, 7]
     return a620ratio
 
 
