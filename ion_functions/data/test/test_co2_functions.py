@@ -200,7 +200,6 @@ class Testpco2FunctionsUnit(BaseUnitTestCase):
 
         # compute the flux given the inputs
         out = co2func.pco2_co2flux(pco2w, pco2a, u10, t, s)
-        print out, flux
 
         # and compare the results
         self.assertTrue(np.allclose(out, flux, rtol=1e-9, atol=1e-9))

@@ -7,6 +7,8 @@
 """
 
 import numpy as np
+import numexpr as ne
+import scipy as sp
 from ion_functions.utils import fill_value
 
 
@@ -113,8 +115,8 @@ def pco2_blank(raw_blank):
             OOI >> Controlled >> 1000 System Level >>
             1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
     """
-    #blank = -1. * np.log10(raw_blank / 16384.)
-    blank = -1. * np.log10(raw_blank)
+    #blank = -1. * sp.log10(raw_blank / 16384.)
+    blank = -1. * sp.log10(raw_blank)
 
     return blank
 
@@ -149,11 +151,9 @@ def pco2_thermistor(traw):
             1341-00490_Data_Product_SPEC_PCO2WAT_OOI.pdf)
     """
     # convert raw thermistor readings from counts to degrees Centigrade
-    Rt = np.log((traw / (4096. - traw)) * 17400.)
-    InvT = 0.0010183 + 0.000241 * Rt + 0.00000015 * Rt**3
-    TempK = 1 / InvT
-    therm = TempK - 273.15
-
+    Rt = ne.evaluate('log((traw / (4096. - traw)) * 17400.)')
+    InvT = ne.evaluate('0.0010183 + 0.000241 * Rt + 0.00000015 * Rt**3')
+    therm = ne.evaluate('(1 / InvT) - 273.15')
     return therm
 
 
@@ -222,7 +222,7 @@ def pco2_pco2wat(mtype, light, therm, ea434, eb434, ea620, eb620,
 
     # index through the measurements
     indx = 0
-    pco2 = np.ones(mtype.shape[0]) * fill_value
+    pco2 = np.empty(mtype.shape[0])
     for m in mtype:
         if m == 4:
             pco2[indx] = pco2_calc_pco2(light[indx, :], therm[indx], ea434[indx],
@@ -249,7 +249,8 @@ def pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
 
     Implemented by:
 
-        2013-04-20: Christopher Wingard. Initial code.
+        20??-??-??: J. Newton (Sunburst Sensors, LLC). Original Matlab code.
+        2013-04-20: Christopher Wingard. Initial python code.
         2014-02-19: Christopher Wingard. Updated comments.
 
     Usage:
@@ -300,20 +301,20 @@ def pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
     Ratio620 = light[7]     # 620nm Ratio
 
     # calculate absorbance ratio, correcting for blanks
-    A434 = -1. * np.lib.scimath.log10(Ratio434 / a434blank)  # 434 absorbance
-    A620 = -1. * np.lib.scimath.log10(Ratio620 / a620blank)  # 620 absorbance
+    A434 = -1. * sp.log10(Ratio434 / a434blank)  # 434 absorbance
+    A620 = -1. * sp.log10(Ratio620 / a620blank)  # 620 absorbance
     Ratio = A620 / A434      # Absorbance ratio
 
     # calculate pCO2
     V1 = Ratio - e1
     V2 = e2 - e3 * Ratio
-    RCO21 = -1. * np.lib.scimath.log10(V1 / V2)
+    RCO21 = -1. * sp.log10(V1 / V2)
     RCO22 = (therm - calt) * 0.007 + RCO21
     Tcoeff = 0.0075778 - 0.0012389 * RCO22 - 0.00048757 * RCO22**2
     Tcor_RCO2 = RCO21 + Tcoeff * (therm - calt)
     pco2 = 10.**((-1. * calb + (calb**2 - (4. * cala * (calc - Tcor_RCO2)))**0.5) / (2. * cala))
 
-    return np.real(pco2)
+    return sp.real(pco2)
 
 
 def pco2_co2flux(pco2w, pco2a, u10, t, s):
@@ -360,7 +361,7 @@ def pco2_co2flux(pco2w, pco2a, u10, t, s):
     Sc = 2073.1 - (125.62 * t) + (3.6276 * t**2) - (0.043219 * t**3)
 
     # Compute gas transfer velocity (after Sweeney et al., 2007, Fig. 3 and Table 1)
-    k = 0.27 * u10**2 * np.sqrt(660.0 / Sc)
+    k = 0.27 * u10**2 * sp.sqrt(660.0 / Sc)
 
     # convert cm h-1 to m s-1
     k = k / (100.0 * 3600.0)
@@ -372,12 +373,13 @@ def pco2_co2flux(pco2w, pco2a, u10, t, s):
     # Note that there are two versions, one for units per volume and
     # one per mass. Here, the volume version is used.
     # mol atm-1 m-3
-    K0 = 1000 * np.exp(-58.0931 + (90.5069 * (100/T)) + (22.2940 * np.log(T/100)) +
-                       s * (0.027766 - (0.025888 * (T/100)) + (0.0050578 * (T/100)**2)))
+    T100 = T / 100
+    K0 = 1000 * sp.exp(-58.0931 + (90.5069 * (100/T)) + (22.2940 * sp.log(T100)) +
+                       s * (0.027766 - (0.025888 * T100) + (0.0050578 * T100**2)))
 
     # mol atm-1 kg-1
-    #K0 = np.exp(-60.2409 + (93.4517 * (100/T)) + (23.3585 * np.log(T/100)) +
-    #            s * (0.023517 - (0.023656 * (T/100)) + (0.0047036 * (T/100)**2)))
+    #K0 = sp.exp(-60.2409 + (93.4517 * (100/T)) + (23.3585 * np.log(T100)) +
+    #            s * (0.023517 - (0.023656 * T100) + (0.0047036 * T100**2)))
 
     # Compute flux (after Wanninkhof, 1992, eqn. A2)
     flux = k * K0 * (pco2w - pco2a)

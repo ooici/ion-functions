@@ -1,8 +1,7 @@
 #!/usr/bin/env python
-from ion_functions.data.perf.test_performance import PerformanceTestCase
-from ion_functions.data.co2_functions import pco2_thermistor, pco2_abs434_blank, pco2_abs620_blank, pco2_pco2wat, pco2_co2flux
+from ion_functions.data.perf.test_performance import PerformanceTestCase, a_deca
+from ion_functions.data.co2_functions import pco2_thermistor, pco2_blank, pco2_pco2wat, pco2_co2flux
 import numpy as np
-from ion_functions.utils import fill_value
 
 
 class TestCO2Performance(PerformanceTestCase):
@@ -18,16 +17,6 @@ class TestCO2Performance(PerformanceTestCase):
         self.cala = 0.0459
         self.calb = 0.6257
         self.calc = -1.5406
-        self.a434blnk = fill_value
-        self.a620blnk = fill_value
-
-        # expected outputs
-        self.therm = np.array([18.8526, 18.8765, 18.9245, 18.9485,
-                               18.9485, 18.9485, 18.8765, 19.0686,
-                               19.0686, 19.0446, 18.9725])
-        self.pco2 = np.array([fill_value, 294.1720, 311.3361, 319.0101,
-                              319.8925, 319.8950, 305.8104, 317.9661,
-                              284.3676, 280.2324, 280.0354])
 
         self.light = np.zeros(14, dtype=np.int)
         self.mtype = int(s[5:7], 16)
@@ -37,6 +26,11 @@ class TestCO2Performance(PerformanceTestCase):
         for j in range(14):
             self.light[j] = int(s[strt:strt+step], 16)
             strt += step
+
+        self.a434braw = self.light[6]
+        self.a434blnk = pco2_blank(self.a434braw)
+        self.a620braw = self.light[7]
+        self.a620blnk = pco2_blank(self.a620braw)
 
         ### test data for the PCO2A CO2FLUX calculations
         self.flux_data = np.array([
@@ -96,36 +90,57 @@ class TestCO2Performance(PerformanceTestCase):
             [440, 390, 20, 20, 35, 4.960e-07]
         ])
 
+    def test_pco2_blanks(self):
+        stats = []
+
+        # create 10000 data points
+        data = np.ones(a_deca, dtype='int16')
+        braw = data * self.a434braw
+        self.profile(stats, pco2_blank, braw)
+        braw = data * self.a620braw
+        self.profile(stats, pco2_blank, braw)
+
     def test_pco2_thermistor(self):
         stats = []
 
-        sample_data = np.empty(3600 * 24 * 365, dtype='int32')
-        sample_data.fill(self.traw)
-        self.profile(stats, pco2_thermistor, sample_data)
+        # create 10000 data points
+        data = np.ones(a_deca, dtype='int16')
+        traw = data * self.traw
+        self.profile(stats, pco2_thermistor, traw)
 
     def test_pco2_calc_pco2(self):
         stats = []
 
-        light = self.light
-        mtype = self.mtype
-        traw = np.empty(3600 * 24 * 365, dtype=np.int)
-        tout = pco2_thermistor(traw)
-        a434blnk = pco2_abs434_blank(mtype, light, self.a434blnk)
-        a620blnk = pco2_abs620_blank(mtype, light, self.a620blnk)
+        # create 10000 data points
+        data = np.ones(a_deca, dtype='int16')
+        mtype = data * self.mtype
+        traw = data * self.traw
+        ea434 = data * self.ea434
+        eb434 = data * self.eb434
+        ea620 = data * self.ea620
+        eb620 = data * self.eb620
+        calt = data * self.calt
+        cala = data * self.cala
+        calb = data * self.calb
+        calc = data * self.calc
+        a434blnk = data * self.a434blnk
+        a620blnk = data * self.a620blnk
+        light = np.ones((a_deca, 14)) * self.light
 
-        self.profile(stats, pco2_pco2wat, mtype, light, tout, self.ea434, self.eb434,
-                     self.ea620, self.eb620, self.calt, self.cala, self.calb,
-                     self.calc, a434blnk, a620blnk)
+        tout = pco2_thermistor(traw)
+
+        self.profile(stats, pco2_pco2wat, mtype, light, tout, ea434, eb434,
+                     ea620, eb620, calt, cala, calb, calc, a434blnk, a620blnk)
 
     def test_pco2_co2flux(self):
         stats = []
 
-        # generate a very large dataset (~62 years worth of data, sampled
-        # hourly).
-        pco2w = np.repeat(self.flux_data[:, 0], 10000)
-        pco2a = np.repeat(self.flux_data[:, 1], 10000)
-        u10 = np.repeat(self.flux_data[:, 2], 10000)
-        t = np.repeat(self.flux_data[:, 3], 10000)
-        s = np.repeat(self.flux_data[:, 4], 10000)
+        # generate 10000 data points from input array
+        nPts = np.round(a_deca / self.flux_data.shape[0])
+        pco2w = np.repeat(self.flux_data[:, 0], nPts)
+        pco2a = np.repeat(self.flux_data[:, 1], nPts)
+        u10 = np.repeat(self.flux_data[:, 2], nPts)
+        t = np.repeat(self.flux_data[:, 3], nPts)
+        s = np.repeat(self.flux_data[:, 4], nPts)
 
         self.profile(stats, pco2_co2flux, pco2w, pco2a, u10, t, s)
