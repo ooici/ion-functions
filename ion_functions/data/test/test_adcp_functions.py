@@ -78,11 +78,10 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
                         arrays can be processed (in other words, vectorized the
                         code).
         """
-        beam2ins = np.vectorize(af.adcp_beam2ins)
         ins2earth = np.vectorize(af.adcp_ins2earth)
 
         # single record case
-        u, v, w, e = beam2ins(self.b1, self.b2, self.b3, self.b4)
+        u, v, w, e = af.adcp_beam2ins(self.b1, self.b2, self.b3, self.b4)
         got_uu, got_vv, got_ww = ins2earth(u, v, w, self.heading,
                                            self.pitch, self.roll, self.orient)
 
@@ -106,7 +105,7 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         vv = np.tile(self.vv, (24, 1))
         ww = np.tile(self.ww, (24, 1))
 
-        u, v, w, e = beam2ins(b1, b2, b3, b4)
+        u, v, w, e = af.adcp_beam2ins(b1, b2, b3, b4)
         h = heading.reshape(heading.shape[0], 1)
         p = pitch.reshape(pitch.shape[0], 1)
         r = roll.reshape(roll.shape[0], 1)
@@ -134,11 +133,10 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
 
         Implemented by Christopher Wingard, 2014-02-06
         """
-        beam2ins = np.vectorize(af.adcp_beam2ins)
         ins2earth = np.vectorize(af.adcp_ins2earth)
 
         # single record case
-        u, v, w, e = beam2ins(self.b1, self.b2, self.b3, self.b4)
+        u, v, w, e = af.adcp_beam2ins(self.b1, self.b2, self.b3, self.b4)
         uu, vv, ww = ins2earth(u, v, w, self.heading,
                                self.pitch, self.roll, self.orient)
         got_uu_cor = af.adcp_earth_eastward(uu, vv, self.depth, self.lat, self.lon, self.ntp)
@@ -167,12 +165,12 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         vv_cor = np.tile(self.vv_cor, (24, 1))
 
         # compute the results for multiple records
-        u, v, w, e = beam2ins(b1, b2, b3, b4)
-        h = heading.reshape(heading.shape[0], 1)
-        p = pitch.reshape(pitch.shape[0], 1)
-        r = roll.reshape(roll.shape[0], 1)
-        vf = orient.reshape(orient.shape[0], 1)
-        uu, vv, ww = ins2earth(u, v, w, h, p, r, vf)
+        u, v, w, e = af.adcp_beam2ins(b1, b2, b3, b4)
+        #h = heading.reshape(heading.shape[0], 1)
+        #p = pitch.reshape(pitch.shape[0], 1)
+        #r = roll.reshape(roll.shape[0], 1)
+        #vf = orient.reshape(orient.shape[0], 1)
+        uu, vv, ww = ins2earth(u, v, w, heading, pitch, roll, orient)
         got_uu_cor = af.adcp_earth_eastward(uu, vv, depth, lat, lon, ntp)
         got_vv_cor = af.adcp_earth_northward(uu, vv, depth, lat, lon, ntp)
 

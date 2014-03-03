@@ -7,9 +7,8 @@
 """
 
 import numpy as np
-import numexpr as ne
 
-from ion_functions.data.generic_functions import magnetic_declination, magnetic_correction
+from ion_functions.data.generic_functions import wmm_declination, magnetic_correction
 from ion_functions.utils import isscalar
 
 
@@ -50,7 +49,7 @@ def adcp_backscatter(raw, sfactor):
     if isscalar(sfactor) is False:
         sfactor = sfactor.reshape(sfactor.shape[0], 1)
 
-    dB = ne.evaluate("raw * sfactor")
+    dB = raw * sfactor
     return dB
 
 
@@ -92,36 +91,37 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
         z = instrument's pressure sensor reading (depth) [dm]
         dt = sample date and time value [seconds since 1900-01-01]
     """
-    # Test shapes of inputs to determine if we are dealing with one record or
-    # several records. Reshape scalars input as size m arrays to size m x 1
-    # arrays.
-    if isscalar(h) is False:
-        h = h.reshape(h.shape[0], 1)
-        p = p.reshape(p.shape[0], 1)
-        r = r.reshape(r.shape[0], 1)
-        vf = vf.reshape(vf.shape[0], 1)
+    # force shapes of inputs to arrays
+    b1 = np.atleast_2d(b1)
+    b2 = np.atleast_2d(b2)
+    b3 = np.atleast_2d(b3)
+    b4 = np.atleast_2d(b4)
+    h = np.atleast_1d(h)
+    p = np.atleast_1d(p)
+    r = np.atleast_1d(r)
+    vf = np.atleast_1d(vf)
+    z = np.atleast_1d(z) / 10.  # scale decimeter depth input to meters
+    lat = np.atleast_1d(lat)
+    lon = np.atleast_1d(lon)
+    dt = np.atleast_1d(dt)
 
     # compute the beam to instrument transform
-    beam2ins = np.vectorize(adcp_beam2ins)
-    u, v, w, e = beam2ins(b1, b2, b3, b4)
+    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
 
-    # compute the instrument to earth beam transform
+    # define the vectorized function for the instrument to earth transform
     ins2earth = np.vectorize(adcp_ins2earth)
+    # compute the instrument to earth beam transform
     uu, vv, ww = ins2earth(u, v, w, h, p, r, vf)
 
-    # scale decimeter depth input to meters
-    zm = ne.evaluate('z / 10.')
-
-    # calculate the magnetic declination using the WWM2010 model
-    theta = magnetic_declination(lat, lon, dt, zm)
-    if isscalar(theta) is False:
-        theta = theta.reshape(theta.shape[0], 1)
-
-    magvar = np.vectorize(magnetic_correction)
-    uu_cor, vv_cor = magvar(theta, uu, vv)
+    # iterate through arrays for processing multiple records
+    uu_cor = np.empty((b1.shape))
+    for indx in range(b1.shape[0]):
+        # calculate the magnetic declination using the WWM2010 model
+        theta = wmm_declination(lat[indx], lon[indx], dt[indx], z[indx])
+        uu_cor[indx, :], vcor = magnetic_correction(theta, uu[indx, :], vv[indx, :])
 
     # scale eastward velocity to m/s
-    uu_cor = ne.evaluate('uu_cor / 1000.')  # mm/s -> m/s
+    uu_cor = uu_cor / 1000.  # mm/s -> m/s
 
     # return the Eastward Velocity Profile
     return uu_cor
@@ -165,38 +165,39 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
         z = instrument's pressure sensor reading (depth) [dm]
         dt = sample date and time value [seconds since 1900-01-01]
     """
-    # Test shapes of inputs to determine if we are dealing with one record or
-    # several records. Reshape scalars input as size m arrays to size m x 1
-    # arrays.
-    if isscalar(h) is False:
-        h = h.reshape(h.shape[0], 1)
-        p = p.reshape(p.shape[0], 1)
-        r = r.reshape(r.shape[0], 1)
-        vf = vf.reshape(vf.shape[0], 1)
+    # force shapes of inputs to arrays
+    b1 = np.atleast_2d(b1)
+    b2 = np.atleast_2d(b2)
+    b3 = np.atleast_2d(b3)
+    b4 = np.atleast_2d(b4)
+    h = np.atleast_1d(h)
+    p = np.atleast_1d(p)
+    r = np.atleast_1d(r)
+    vf = np.atleast_1d(vf)
+    z = np.atleast_1d(z) / 10.  # scale decimeter depth input to meters
+    lat = np.atleast_1d(lat)
+    lon = np.atleast_1d(lon)
+    dt = np.atleast_1d(dt)
 
     # compute the beam to instrument transform
-    beam2ins = np.vectorize(adcp_beam2ins)
-    u, v, w, e = beam2ins(b1, b2, b3, b4)
+    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
 
-    # compute the instrument to earth beam transform
+    # define the vectorized function for the instrument to earth transform
     ins2earth = np.vectorize(adcp_ins2earth)
+    # compute the instrument to earth beam transform
     uu, vv, ww = ins2earth(u, v, w, h, p, r, vf)
 
-    # scale decimeter depth input to meters
-    zm = ne.evaluate('z / 10.')
+    # iterate through arrays for processing multiple records
+    vv_cor = np.empty((b1.shape))
+    for indx in range(b1.shape[0]):
+        # calculate the magnetic declination using the WWM2010 model
+        theta = wmm_declination(lat[indx], lon[indx], dt[indx], z[indx])
+        ucor, vv_cor[indx, :] = magnetic_correction(theta, uu[indx, :], vv[indx, :])
 
-    # calculate the magnetic declination using the WWM2010 model
-    theta = magnetic_declination(lat, lon, dt, zm)
-    if isscalar(theta) is False:
-        theta = theta.reshape(theta.shape[0], 1)
+    # scale eastward velocity to m/s
+    vv_cor = vv_cor / 1000.  # mm/s -> m/s
 
-    magvar = np.vectorize(magnetic_correction)
-    uu_cor, vv_cor = magvar(theta, uu, vv)
-
-    # scale northward velocity to m/s
-    vv_cor = ne.evaluate('vv_cor / 1000.')  # mm/s -> m/s
-
-    # return the Northward Velocity Profile
+    # return the Eastward Velocity Profile
     return vv_cor
 
 
@@ -205,27 +206,30 @@ def adcp_beam_vertical(b1, b2, b3, b4, h, p, r, vf):
     Wrapper function to compute the Upward Velocity Profile (VELPROF-VLU)
     from the beam coordinate transformed data.
     """
-    # Test shapes of inputs to determine if we are dealing with one record or
-    # several records. Reshape scalars input as size m arrays to size m x 1
-    # arrays.
-    if isscalar(h) is False:
-        h = h.reshape(h.shape[0], 1)
-        p = p.reshape(p.shape[0], 1)
-        r = r.reshape(r.shape[0], 1)
-        vf = vf.reshape(vf.shape[0], 1)
+    # force shapes of inputs to arrays
+    b1 = np.atleast_2d(b1)
+    b2 = np.atleast_2d(b2)
+    b3 = np.atleast_2d(b3)
+    b4 = np.atleast_2d(b4)
+    h = np.atleast_1d(h)
+    p = np.atleast_1d(p)
+    r = np.atleast_1d(r)
+    vf = np.atleast_1d(vf)
 
     # compute the beam to instrument transform
-    beam2ins = np.vectorize(adcp_beam2ins)
-    u, v, w, e = beam2ins(b1, b2, b3, b4)
+    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
 
-    # compute the instrument to earth beam transform
-    ins2earth = np.vectorize(adcp_ins2earth)
-    uu, vv, ww = ins2earth(u, v, w, h, p, r, vf)
+    # iterate through arrays for processing multiple records
+    ww = np.empty((b1.shape))
+    for indx in range(b1.shape[0]):
+        # compute the instrument to earth beam transform
+        uu, vv, ww[indx, :] = adcp_ins2earth(u[indx, :], v[indx, :], w[indx, :],
+                                             h[indx], p[indx], r[indx], vf[indx])
 
-    # scale vertical velocity to m/s
-    ww = ne.evaluate('ww / 1000.')  # mm/s -> m/s
+    # scale eastward velocity to m/s
+    ww = ww / 1000.  # mm/s -> m/s
 
-    # return the Upward Velocity Profile
+    # return the Eastward Velocity Profile
     return ww
 
 
@@ -234,12 +238,17 @@ def adcp_beam_error(b1, b2, b3, b4):
     Wrapper function to compute the Error Velocity (VELPROF-ERR) from the beam
     coordinate transformed data.
     """
+    # force input arrays to 2d shape
+    b1 = np.atleast_2d(b1)
+    b2 = np.atleast_2d(b2)
+    b3 = np.atleast_2d(b3)
+    b4 = np.atleast_2d(b4)
+
     # compute the beam to instrument transform
-    beam2ins = np.vectorize(adcp_beam2ins)
-    u, v, w, e = beam2ins(b1, b2, b3, b4)
+    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
 
     # scale error velocity to m/s
-    e = ne.evaluate('e/1000.')  # mm/s
+    e = e / 1000.   # mm/s
 
     # return the Error Velocity Profile
     return e
@@ -250,30 +259,25 @@ def adcp_earth_eastward(u, v, z, lat, lon, dt):
     Wrapper function to compute the Eastward Velocity Profile (VELPROF-VLE)
     from the Earth coordinate transformed data.
     """
-    # Test shapes of inputs to determine if we are dealing with one record or
-    # several records. Reshape scalars input as size m arrays to size m x 1
-    # arrays.
-    if isscalar(z) is False:
-        z = z.reshape(z.shape[0], 1)
-        lat = lat.reshape(lat.shape[0], 1)
-        lon = lon.reshape(lon.shape[0], 1)
-        dt = dt.reshape(dt.shape[0], 1)
+    # force shapes of inputs to arrays
+    u = np.atleast_2d(u)
+    v = np.atleast_2d(v)
+    z = np.atleast_1d(z) / 10.  # scale decimeter depth input to meters
+    lat = np.atleast_1d(lat)
+    lon = np.atleast_1d(lon)
+    dt = np.atleast_1d(dt)
 
-    # scale decimeter depth input to meters
-    zm = ne.evaluate('z / 10.')
+    # iterate through arrays for processing multiple records
+    uu_cor = np.empty(u.shape)
+    for indx in range(u.shape[0]):
+        # calculate the magnetic declination using the WWM2010 model
+        theta = wmm_declination(lat[indx], lon[indx], dt[indx], z[indx])
+        uu_cor[indx, :], vcor = magnetic_correction(theta, u[indx, :], v[indx, :])
 
-    # calculate the magnetic declination using the WWM2010 model
-    theta = magnetic_declination(lat, lon, dt, zm)
-    if isscalar(theta) is False:
-        theta = theta.reshape(theta.shape[0], 1)
+    # scale eastward velocity to m/s
+    uu_cor = uu_cor / 1000.  # mm/s -> m/s
 
-    magvar = np.vectorize(magnetic_correction)
-    uu_cor, vv_cor = magvar(theta, u, v)
-
-    # scale eastward velocity from [mm s-1] to [m s-1]
-    uu_cor = ne.evaluate('uu_cor / 1000.')
-
-    # return the Eastward Velocity Profile (VELPROF-VLE_L1)
+    # return the Eastward Velocity Profile
     return uu_cor
 
 
@@ -282,30 +286,25 @@ def adcp_earth_northward(u, v, z, lat, lon, dt):
     Wrapper function to compute the Northward Velocity Profile (VELPROF-VLN)
     from the Earth coordinate transformed data.
     """
-    # Test shapes of inputs to determine if we are dealing with one record or
-    # several records. Reshape scalars input as size m arrays to size m x 1
-    # arrays.
-    if isscalar(z) is False:
-        z = z.reshape(z.shape[0], 1)
-        lat = lat.reshape(lat.shape[0], 1)
-        lon = lon.reshape(lon.shape[0], 1)
-        dt = dt.reshape(dt.shape[0], 1)
+    # force shapes of inputs to arrays
+    u = np.atleast_2d(u)
+    v = np.atleast_2d(v)
+    z = np.atleast_1d(z) / 10.  # scale decimeter depth input to meters
+    lat = np.atleast_1d(lat)
+    lon = np.atleast_1d(lon)
+    dt = np.atleast_1d(dt)
 
-    # scale decimeter depth input to meters
-    zm = ne.evaluate('z / 10.')
+    # iterate through arrays for processing multiple records
+    vv_cor = np.empty(u.shape)
+    for indx in range(u.shape[0]):
+        # calculate the magnetic declination using the WWM2010 model
+        theta = wmm_declination(lat[indx], lon[indx], dt[indx], z[indx])
+        u, vv_cor[indx, :] = magnetic_correction(theta, u[indx, :], v[indx, :])
 
-    # calculate the magnetic declination using the WWM2010 model
-    theta = magnetic_declination(lat, lon, dt, zm)
-    if isscalar(theta) is False:
-        theta = theta.reshape(theta.shape[0], 1)
+    # scale eastward velocity to m/s
+    vv_cor = vv_cor / 1000.  # mm/s -> m/s
 
-    magvar = np.vectorize(magnetic_correction)
-    uu_cor, vv_cor = magvar(theta, u, v)
-
-    # scale northward velocity from [mm s-1] to [m s-1]
-    vv_cor = ne.evaluate('vv_cor / 1000.')
-
-    # return the Northward Velocity Profile (VELPROF-VLN_L1)
+    # return the Eastward Velocity Profile
     return vv_cor
 
 
@@ -347,17 +346,28 @@ def adcp_beam2ins(b1, b2, b3, b4):
             >> Controlled >> 1000 System Level >>
             1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
     """
-    pi = np.pi
-    theta = ne.evaluate('20.0 / 180.0 * pi')
-    a = ne.evaluate('1.0 / (2.0 * sin(theta))')
-    b = ne.evaluate('1.0 / (4.0 * cos(theta))')
-    c = 1.0
-    d = ne.evaluate('a / sqrt(2.0)')
+    #pi = np.pi
+    #theta = ne.evaluate('20.0 / 180.0 * pi')
+    #a = ne.evaluate('1.0 / (2.0 * sin(theta))')
+    #b = ne.evaluate('1.0 / (4.0 * cos(theta))')
+    ##c = 1.0
+    #d = ne.evaluate('a / sqrt(2.0)')
+    #
+    #u = ne.evaluate('a * (b1 - b2)')
+    #v = ne.evaluate('a * (b4 - b3)')
+    #w = ne.evaluate('b * (b1 + b2 + b3 + b4)')
+    #e = ne.evaluate('d * (b1 + b2 - b3 - b4)')
 
-    u = ne.evaluate('c * a * (b1 - b2)')
-    v = ne.evaluate('c * a * (b4 - b3)')
-    w = ne.evaluate('b * (b1 + b2 + b3 + b4)')
-    e = ne.evaluate('d * (b1 + b2 - b3 - b4)')
+    theta = 20.0 / 180.0 * np.pi
+    a = 1.0 / (2.0 * np.sin(theta))
+    b = 1.0 / (4.0 * np.cos(theta))
+    # c = 1.0   # not used in subsequent calculations (1 * N = N)
+    d = a / np.sqrt(2.0)
+
+    u = a * (b1 - b2)
+    v = a * (b4 - b3)
+    w = b * (b1 + b2 + b3 + b4)
+    e = d * (b1 + b2 - b3 - b4)
 
     return (u, v, w, e)
 
@@ -402,10 +412,18 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
             >> Controlled >> 1000 System Level >>
             1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
     """
-    if vertical == 1:
-        R = ne.evaluate('roll + 180.0')
-    else:
-        R = roll
+    # insure we are dealing with array inputs and determine the number of bins
+    # for output arrays
+    u = np.atleast_1d(u)
+    v = np.atleast_1d(v)
+    w = np.atleast_1d(w)
+
+    # determine number of velocity bins
+    nBins = u.shape[0]
+
+    # if the unit is orient looking up, add 180 degrees
+    mask = (vertical == 1)
+    R = roll + (180.0 * mask)
 
     Rrad = np.radians(R)
     Hrad = np.radians(heading)
@@ -428,18 +446,13 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
         [-np.sin(Rrad), 0.0, np.cos(Rrad)]])
     M = M1 * M2 * M3
 
-    # insure we are dealing with array inputs and determine the number of bins
-    # for output arrays
-    u = np.atleast_1d(u)
-    v = np.atleast_1d(v)
-    w = np.atleast_1d(w)
-    nbins = len(u)
-    uu = np.zeros(nbins)
-    vv = np.zeros(nbins)
-    ww = np.zeros(nbins)
+    # pre-allocate the output arrays
+    uu = np.empty(nBins)
+    vv = np.empty(nBins)
+    ww = np.empty(nBins)
 
-    # apply the Earth transform
-    for i in range(nbins):
+    # apply the Earth transform for each velocity bin
+    for i in range(nBins):
         inst = np.array([u[i], v[i], w[i]]).reshape(3, 1)
         vel = np.dot(M, inst).reshape(3)
         uu[i] = np.array(vel)[0][0]
