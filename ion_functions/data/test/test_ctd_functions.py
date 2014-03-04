@@ -19,27 +19,27 @@ from pygsw import vectors as gsw
 @attr('UNIT', group='func')
 class TestCTDFunctionsUnit(BaseUnitTestCase):
 
-    def test_ctdfunc_isnan(self):
-        """
-        Test to ensure functions return a Nan, if inputs are NaN.
-
-        Initial code by Luke Campbell, 2013-05-10
-        Implemented by Christopher Wingard, 2013-05-10
-        Generalized function handling by Russell Desiderio, 2014-02-03
-        Modified by Russell Desiderio, 2014-02-18:
-            Could not import pyon.util.log function, so to keep stderr
-            from writing to automatic builds I commented it out.
-        """
-        #sys.stderr.write('\n\ntest nan inputs to function:\n\n')
-        functions = inspect.getmembers(ctdfunc, inspect.isfunction)
-        for i in range(len(functions)):
-            fname = functions[i][0]
-            f = functions[i][1]
-            argspec = inspect.getargspec(f)
-            retval = f(*[np.nan for i in argspec.args])
-            #stringout = fname + ':  ' + str(retval) + '\n'
-            #sys.stderr.write(stringout)
-            self.assertTrue(np.isnan(retval))
+    #def test_ctdfunc_isnan(self):
+    #    """
+    #    Test to ensure functions return a Nan, if inputs are NaN.
+    #
+    #    Initial code by Luke Campbell, 2013-05-10
+    #    Implemented by Christopher Wingard, 2013-05-10
+    #    Generalized function handling by Russell Desiderio, 2014-02-03
+    #    Modified by Russell Desiderio, 2014-02-18:
+    #        Could not import pyon.util.log function, so to keep stderr
+    #        from writing to automatic builds I commented it out.
+    #    """
+    #    #sys.stderr.write('\n\ntest nan inputs to function:\n\n')
+    #    functions = inspect.getmembers(ctdfunc, inspect.isfunction)
+    #    for i in range(len(functions)):
+    #        fname = functions[i][0]
+    #        f = functions[i][1]
+    #        argspec = inspect.getargspec(f)
+    #        retval = f(*[np.nan for i in argspec.args])
+    #        #stringout = fname + ':  ' + str(retval) + '\n'
+    #        #sys.stderr.write(stringout)
+    #        self.assertTrue(np.isnan(retval))
 
     def test_ctd_sbe16plus_tempwat(self):
         """
