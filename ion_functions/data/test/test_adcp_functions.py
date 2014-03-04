@@ -78,11 +78,10 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
                         arrays can be processed (in other words, vectorized the
                         code).
         """
-        beam2ins = np.vectorize(af.adcp_beam2ins)
         ins2earth = np.vectorize(af.adcp_ins2earth)
 
         # single record case
-        u, v, w, e = beam2ins(self.b1, self.b2, self.b3, self.b4)
+        u, v, w, e = af.adcp_beam2ins(self.b1, self.b2, self.b3, self.b4)
         got_uu, got_vv, got_ww = ins2earth(u, v, w, self.heading,
                                            self.pitch, self.roll, self.orient)
 
@@ -106,7 +105,7 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         vv = np.tile(self.vv, (24, 1))
         ww = np.tile(self.ww, (24, 1))
 
-        u, v, w, e = beam2ins(b1, b2, b3, b4)
+        u, v, w, e = af.adcp_beam2ins(b1, b2, b3, b4)
         h = heading.reshape(heading.shape[0], 1)
         p = pitch.reshape(pitch.shape[0], 1)
         r = roll.reshape(roll.shape[0], 1)
@@ -134,19 +133,18 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
 
         Implemented by Christopher Wingard, 2014-02-06
         """
-        beam2ins = np.vectorize(af.adcp_beam2ins)
         ins2earth = np.vectorize(af.adcp_ins2earth)
 
         # single record case
-        u, v, w, e = beam2ins(self.b1, self.b2, self.b3, self.b4)
+        u, v, w, e = af.adcp_beam2ins(self.b1, self.b2, self.b3, self.b4)
         uu, vv, ww = ins2earth(u, v, w, self.heading,
                                self.pitch, self.roll, self.orient)
         got_uu_cor = af.adcp_earth_eastward(uu, vv, self.depth, self.lat, self.lon, self.ntp)
         got_vv_cor = af.adcp_earth_northward(uu, vv, self.depth, self.lat, self.lon, self.ntp)
 
         # test the magnetic variation correction
-        np.testing.assert_array_almost_equal(got_uu_cor, self.uu_cor, 4)
-        np.testing.assert_array_almost_equal(got_vv_cor, self.vv_cor, 4)
+        np.testing.assert_array_almost_equal(got_uu_cor, self.uu_cor.reshape(1, 10), 4)
+        np.testing.assert_array_almost_equal(got_vv_cor, self.vv_cor.reshape(1, 10), 4)
 
         # reset the test inputs for multiple records
         b1 = np.tile(self.b1, (24, 1))
@@ -167,12 +165,13 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         vv_cor = np.tile(self.vv_cor, (24, 1))
 
         # compute the results for multiple records
-        u, v, w, e = beam2ins(b1, b2, b3, b4)
+        u, v, w, e = af.adcp_beam2ins(b1, b2, b3, b4)
         h = heading.reshape(heading.shape[0], 1)
         p = pitch.reshape(pitch.shape[0], 1)
         r = roll.reshape(roll.shape[0], 1)
         vf = orient.reshape(orient.shape[0], 1)
         uu, vv, ww = ins2earth(u, v, w, h, p, r, vf)
+
         got_uu_cor = af.adcp_earth_eastward(uu, vv, depth, lat, lon, ntp)
         got_vv_cor = af.adcp_earth_northward(uu, vv, depth, lat, lon, ntp)
 
@@ -182,6 +181,18 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
 
     def test_adcp_echo(self):
         """
+        Tests echo intensity scaling function for ADCPs in order to convert
+        from echo intensity in counts to dB.
+
+        Values were not defined in DPS, were created using test values above:
+
+        OOI (2012). Data Product Specification for Velocity Profile and Echo
+            Intensity. Document Control Number 1341-00750.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00750_Data_Product_SPEC_VELPROF_OOI.pdf)
+
+        Implemented by Christopher Wingard, 2014-02-06
         """
         # the single record case
         got = af.adcp_backscatter(self.echo, self.sfactor)

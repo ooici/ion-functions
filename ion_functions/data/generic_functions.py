@@ -203,9 +203,9 @@ def wmm_declination(lat, lon, ntp_timestamp, z=0.0, zflag=-1):
 
     # set the depth to negative for below sealevel (if needed) and convert from
     # meters to kilometers.
-    z = ne.evaluate('z / 1000.')  # m -> km
+    z = z / 1000.  # m -> km
     if z > 0 & zflag == -1:   # check that depth is a positive number first
-        z = ne.evaluate('zflag * z')    # convert z to indicate depth
+        z = zflag * z    # convert z to indicate depth
 
     # calculate the magnetic declination
     mag_dec = wmm.declination(lat, lon, z, dates)
