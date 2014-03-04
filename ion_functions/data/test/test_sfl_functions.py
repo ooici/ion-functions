@@ -115,3 +115,32 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         
         # How'd we do?
         np.testing.assert_allclose(Clout, Cl, rtol=0, atol=0)
+
+
+    def test_sfl_SFLPRES_L1(self):
+                """
+        Test the sfl_SFLPRES_L1 function.
+
+        Value based on that described in DPS as available on Alfresco:
+        
+        OOI (2013). Data Product Specification for Seafloor Pressure from Sea-Bird SBE 26PLUS.
+        Document Control Number 1341-00230. https://alfresco.oceanobservatories.org/
+        (See: Company Home >> OOI >> Controlled >> 1000 System Level >> 1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
+            
+        Implemented by Craig Risien, February 2014
+        """
+
+    # test inputs
+    pressure_output = np.array([14.868])
+        
+    # expected outputs
+    pressure_expected = np.array([10.2511])
+        
+    # compute chla and cdom values
+    pressure_calc = np.zeros(1)
+    for i in range(0,1):
+        pressure_calc[i] = sflfunc.sfl_SFLPRES_L1(pressure_output[i])
+               
+    # compare calculated results to expected
+    np.testing.assert_allclose(pressure_calc, pressure_expected, rtol=0.0001, atol=0.0001)
+    
