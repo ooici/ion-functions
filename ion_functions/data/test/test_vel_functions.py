@@ -13,6 +13,7 @@ import numpy as np
 import pdb
 from ion_functions.data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north
 from ion_functions.data.vel_functions import nortek_mag_corr_east, nortek_mag_corr_north
+from ion_functions.data.vel_functions import vel3dk_mag_corr_east, vel3dk_mag_corr_north
 from ion_functions.data.vel_functions import valid_lat, valid_lon
 from ion_functions.data.vel_functions import vel_mag_correction
 from exceptions import ValueError
@@ -36,6 +37,10 @@ VU_NOBSKA = np.array([-1.1, -0.6, -1.4, -2, -1.7, -2, 1.3, -1.6, -1.1, -4.5])
 VE_NORTEK = VE_NOBSKA / 100.
 VN_NORTEK = VN_NOBSKA / 100.
 VU_NORTEK = VU_NOBSKA / 100.
+VE_VEL3DK = (np.round(VE_NORTEK * 10**4)).astype(np.int32)
+VN_VEL3DK = (np.round(VN_NORTEK * 10**4)).astype(np.int32)
+VU_VEL3DK = (np.round(VU_NORTEK * 10**4)).astype(np.int32)
+VSCALE = -4
 
 # expected output velocities in m/s
 VE_EXPECTED = np.array([
@@ -117,6 +122,36 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
 
         np.testing.assert_array_almost_equal(ve_cor, VE_EXPECTED)
         np.testing.assert_array_almost_equal(vn_cor, VN_EXPECTED)
+
+    def test_vel3dk(self):
+        """
+        Tests functions vel3dk_mag_corr_east and vel3dk_mag_corr_north
+        from the ion_functions.data.vel_functions module using test data
+        from the VELPTMN DPS.
+
+        Implemented by:
+
+        2013-04-17: Stuart Pearce. Initial code.
+        2013-04-24: Stuart Pearce. Changed to be general for all velocity
+                    instruments.
+        2014-02-05: Christopher Wingard. Edited to use magnetic corrections in
+                    the generic_functions module.
+
+        References:
+
+            OOI (2012). Data Product Specification for Mean Point Water
+                Velocity. Document Control Number 1341-00790.
+                https://alfresco.oceanobservatories.org/ (See: Company Home
+                >> OOI >> Controlled >> 1000 System Level >>
+                1341-00790_Data_Product_SPEC_VELPTMN_OOI.pdf)
+        """
+        ve_cor = vel3dk_mag_corr_east(
+            VE_VEL3DK, VN_VEL3DK, LAT, LON, TS, DEPTH, VSCALE)
+        vn_cor = vel3dk_mag_corr_north(
+            VE_VEL3DK, VN_VEL3DK, LAT, LON, TS, DEPTH, VSCALE)
+
+        np.testing.assert_array_almost_equal(ve_cor, VE_EXPECTED, decimal=6)
+        np.testing.assert_array_almost_equal(vn_cor, VN_EXPECTED, decimal=6)
 
     def test_zero_case(self, ):
         """
