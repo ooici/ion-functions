@@ -20,9 +20,9 @@ from exceptions import ValueError
 
 # these test data definitions are used in the test methods
 # for both the Nobska and Nortek instruments
-LAT = 14.6846
-LON = -51.044
-DEPTH = 6  # meters
+LAT = 14.6846 * np.ones(10)
+LON = -51.044 * np.ones(10)
+DEPTH = 6 * np.ones(10)  # meters
 
 # timestamp in seconds since 1900-01-01
 TS = np.array([
