@@ -14,6 +14,7 @@ import pdb
 from ion_functions.data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north
 from ion_functions.data.vel_functions import nortek_mag_corr_east, nortek_mag_corr_north
 from ion_functions.data.vel_functions import vel3dk_mag_corr_east, vel3dk_mag_corr_north
+from ion_functions.data.vel_functions import vel3dk_scale_up_vel
 from ion_functions.data.vel_functions import valid_lat, valid_lon
 from ion_functions.data.vel_functions import vel_mag_correction
 from exceptions import ValueError
@@ -152,6 +153,27 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
 
         np.testing.assert_array_almost_equal(ve_cor, VE_EXPECTED, decimal=6)
         np.testing.assert_array_almost_equal(vn_cor, VN_EXPECTED, decimal=6)
+
+    def test_vel3dk_up(self):
+        """
+        Tests functions vel3dk_scale_up_vel from the
+        ion_functions.data.vel_functions module using test data from the
+        VELPTMN DPS.
+
+        Implemented by:
+
+        2014-03-06: Stuart Pearce. Initial code.
+
+        References:
+
+            VEL3D-K IDD (2014) (No DPS as of 2014-03-03)
+                https://confluence.oceanobservatories.org/display/
+                instruments/VEL3D-K__stc_imodem+-+Telemetered
+        """
+        vu_expected = np.array([1.2345, 1.5432])
+        vu_scaled = vel3dk_scale_up_vel(np.array([12345, 15432]), -4)
+
+        np.testing.assert_array_almost_equal(vu_scaled, vu_expected)
 
     def test_zero_case(self, ):
         """
