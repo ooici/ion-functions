@@ -229,7 +229,7 @@ def nortek_mag_corr_north(u, v, lat, lon, timestamp, z=0.0):
 
     Given a velocity vector with components u & v in the magnetic East
     and magnetic North directions respectively, this function calculates
-    the magnetic declination for the location, depth, and time of the
+    the magnetic declination for the location, depth, and time of thel
     vector from the World Magnetic Model (WMM) and transforms the vector
     to a true Earth reference frame.
 
@@ -300,6 +300,185 @@ def nortek_up_vel(w):
             1341-00781_Data_Product_SPEC_VELPTTU_Nobska_OOI.pdf)
     """
     return w
+
+
+def vel3dk_mag_corr_east(u, v, lat, lon, timestamp, z, Vscale):
+    """
+    Corrects the eastward velocity from VEL3D-K (Nortek Aquadopp II)
+    instruments for magnetic declination to produce the L1 VELPTTU-VLE
+    OOI data product.
+
+    Takes a velocity in integer counts from a VEL3D-K (Aquadopp II on a McLane
+    Profiler(MMP)) with the provided Vscale parameter from an MMP
+    A#####.DEC binary data file.
+
+    Given a velocity vector with components u & v in the magnetic East
+    and magnetic North directions respectively, this function calculates
+    the magnetic declination for the location, depth, and time of the
+    vector from the World Magnetic Model (WMM) and transforms the vector
+    to a true Earth reference frame.
+
+    This function is a wrapper around the function "vel_mag_correction".
+
+    Usage:
+        u_cor = nortek_mag_corr_east(u, v, lat, lon, ntp_timestamp, z, Vscale)
+
+            where
+
+        u_cor = floating point eastward velocity, in true Earth frame,
+            with the correction for magnetic declination applied. [m/s]
+
+        u = uncorrected eastward velocity in magnetic Earth
+            frame.  Integer scaled by 10^Vscale. [scaled integer distance/s]
+        v = uncorrected northward velocity in magnetic Earth
+            frame.  Integer scaled by 10^Vscale. [scaled integer distance/s]
+        lat = latitude of the instrument [decimal degrees].  East is
+            positive, West negative.
+        lon = longitude of the instrument [decimal degrees]. North
+            is positive, South negative.
+        ntp_timestamp = NTP time stamp from a data particle
+            [secs since 1900-01-01].
+        z = depth of instrument relative to sealevel [meters].
+            Positive values only. Default value is 0.
+        Vscale = velocity scaling exponent factor.
+
+    References:
+
+        VEL3D-K IDD (2014) (No DPS as of 2014-03-03)
+        https://confluence.oceanobservatories.org/display/instruments/
+        VEL3D-K__stc_imodem+-+Telemetered
+
+        OOI (2012). Data Product Specification for Turbulent Point Water
+            Velocity. Document Control Number 1341-00780.
+            https://alfresco.oceanobservatories.org/ (See: Company Home
+            >> OOI >> Controlled >> 1000 System Level >>
+            1341-00780_Data_Product_SPEC_VELPTTU_Nortek_OOI.pdf)
+    """
+    # convert from scaled, integer distance/s (as received from the
+    # binary data file) to floating point m/s using the Vscale parameter
+    # from the MMP binary data file A#####.DEC
+    u = u * 10**Vscale
+    v = v * 10**Vscale
+
+   # check for valid latitudes & longitudes
+    if not valid_lat(lat) or not valid_lon(lon):
+        raise ValueError('Latitudes or Longitudes are not within the valid range!')
+
+    # correct for magnetic declination
+    u_cor = vel_mag_correction(u, v, lat, lon, timestamp, z)[0]
+
+    # return true compass referenced East velocity in m/s
+    return u_cor
+
+
+def vel3dk_mag_corr_north(u, v, lat, lon, timestamp, z, Vscale):
+    """
+    Corrects the eastward velocity from VEL3D-K (Nortek Aquadopp II)
+    instruments for magnetic declination to produce the L1 VELPTTU-VLE
+    OOI data product.
+
+    Takes a velocity in integer counts from a VEL3D-K (Aquadopp II on a McLane
+    Profiler(MMP)) with the provided Vscale parameter from an MMP
+    A#####.DEC binary data file.
+
+    Given a velocity vector with components u & v in the magnetic East
+    and magnetic North directions respectively, this function calculates
+    the magnetic declination for the location, depth, and time of the
+    vector from the World Magnetic Model (WMM) and transforms the vector
+    to a true Earth reference frame.
+
+    This function is a wrapper around the function "vel_mag_correction".
+
+    Usage:
+        u_cor = nortek_mag_corr_east(u, v, lat, lon, ntp_timestamp, z, Vscale)
+
+            where
+
+        u_cor = floating point eastward velocity, in true Earth frame,
+            with the correction for magnetic declination applied. [m/s]
+
+        u = uncorrected eastward velocity in magnetic Earth
+            frame.  Integer scaled by 10^Vscale. [scaled integer distance/s]
+        v = uncorrected northward velocity in magnetic Earth
+            frame.  Integer scaled by 10^Vscale. [scaled integer distance/s]
+        lat = latitude of the instrument [decimal degrees].  East is
+            positive, West negative.
+        lon = longitude of the instrument [decimal degrees]. North
+            is positive, South negative.
+        ntp_timestamp = NTP time stamp from a data particle
+            [secs since 1900-01-01].
+        z = depth of instrument relative to sealevel [meters].
+            Positive values only. Default value is 0.
+        Vscale = velocity scaling exponent factor.
+
+    References:
+
+        VEL3D-K IDD (2014) (No DPS as of 2014-03-03)
+        https://confluence.oceanobservatories.org/display/instruments/
+        VEL3D-K__stc_imodem+-+Telemetered
+
+        OOI (2012). Data Product Specification for Turbulent Point Water
+            Velocity. Document Control Number 1341-00780.
+            https://alfresco.oceanobservatories.org/ (See: Company Home
+            >> OOI >> Controlled >> 1000 System Level >>
+            1341-00780_Data_Product_SPEC_VELPTTU_Nortek_OOI.pdf)
+    """
+    # convert from scaled, integer distance/s (as received from the
+    # binary data file) to floating point m/s using the Vscale parameter
+    # from the MMP binary data file A#####.DEC
+    u = u * 10**Vscale
+    v = v * 10**Vscale
+
+   # check for valid latitudes & longitudes
+    if not valid_lat(lat) or not valid_lon(lon):
+        raise ValueError('Latitudes or Longitudes are not within the valid range!')
+
+    # correct for magnetic declination
+    v_cor = vel_mag_correction(u, v, lat, lon, timestamp, z)[1]
+
+    # return true compass referenced East velocity in m/s
+    return v_cor
+
+
+def vel3dk_scale_up_vel(w, Vscale):
+    """
+    Takes an integer vertical velocity in generic distance per second
+    units from a VEL3D-K (Aquadopp II on a McLane Profiler(MMP)) with
+    the provided Vscale parameter from an MMP A#####.DEC binary data
+    file to scale the velocity to a floating point in m/s.
+
+    Usage:
+        w_mps = vel3dk_scale_up_vel(w, Vscale)
+
+            where
+
+        w_mps = floating point vertical velocity. [m/s]
+
+        w = integer vertical velocity. Integer scaled by 10^Vscale.
+            [scaled integer distance/s]
+        Vscale = velocity scaling exponent factor.
+
+    References:
+
+        VEL3D-K IDD (2014) (No DPS as of 2014-03-03)
+        https://confluence.oceanobservatories.org/display/instruments/
+        VEL3D-K__stc_imodem+-+Telemetered
+    """
+    # convert from scaled, integer distance/s (as received from the
+    # binary data file) to floating point m/s using the Vscale parameter
+    # from the MMP binary data file A#####.DEC
+    u = u * 10**Vscale
+    v = v * 10**Vscale
+
+   # check for valid latitudes & longitudes
+    if not valid_lat(lat) or not valid_lon(lon):
+        raise ValueError('Latitudes or Longitudes are not within the valid range!')
+
+    # correct for magnetic declination
+    v_cor = vel_mag_correction(u, v, lat, lon, timestamp, z)[1]
+
+    # return true compass referenced East velocity in m/s
+    return v_cor
 
 
 ##### Sub functions #####
