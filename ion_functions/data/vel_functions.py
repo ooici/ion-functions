@@ -467,18 +467,10 @@ def vel3dk_scale_up_vel(w, Vscale):
     # convert from scaled, integer distance/s (as received from the
     # binary data file) to floating point m/s using the Vscale parameter
     # from the MMP binary data file A#####.DEC
-    u = u * 10**Vscale
-    v = v * 10**Vscale
+    w_mps = w * 10**Vscale
 
-   # check for valid latitudes & longitudes
-    if not valid_lat(lat) or not valid_lon(lon):
-        raise ValueError('Latitudes or Longitudes are not within the valid range!')
-
-    # correct for magnetic declination
-    v_cor = vel_mag_correction(u, v, lat, lon, timestamp, z)[1]
-
-    # return true compass referenced East velocity in m/s
-    return v_cor
+    # return vertical velocity in m/s
+    return w_mps
 
 
 ##### Sub functions #####
