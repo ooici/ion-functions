@@ -147,4 +147,48 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
         
     return Cl
 
+import numexpr as ne
 
+
+def sfl_sflpres_l1(p_psia):
+    """
+    Description:
+
+        The OOI Level 1 Seafloor Pressure core data products, SFLPRES
+        and sub-parameters SFLPRES-RTIME, SFLPRES-TIDE, and SFLPRES-WAVE,
+        are created from the Sea-Bird Electronics SBE 26plus member of
+        the Pressure SF (PRESF) family of instruments by either a)
+        polling, in real-time, for L0 ASCII text format data output and
+        converting from psia to decibar units or b) converting, after
+        instrument recovery, L0 hexadecimal pressure data into decimal
+        format and the resulting tide and wave pressure data in psia to
+        decibar units.
+
+    Implemented by:
+
+        2014-01-31: Craig Risien. Initial Code
+
+    Usage:
+
+        sflpres_l1 = sfl_sflpres_l1(p_psia):
+
+        Scaling: To convert from psia to dbar, use the Sea-Bird-specified
+        conversion: p_dbar = 0.689475728 *(p_psia)
+
+            where
+
+        p_dbar = pressure (sflpres_L1) [dbar]
+        p_psia = pressure (sflpres_L0) [psi].
+
+    References:
+
+        OOI (2013). Data Product Specification for Seafloor Pressure from
+        Sea-Bird SBE 26PLUS. Document Control Number 1341-00230.
+        https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+        >> Controlled >> 1000 System Level >>
+        1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
+    """
+
+    sflpres_l1 = ne.evaluate('p_psia * 0.689475728')
+
+    return sflpres_l1
