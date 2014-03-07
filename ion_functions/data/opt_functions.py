@@ -497,9 +497,11 @@ def opt_par_satlantic(counts_output, a0, a1, Im):
     """
     Description:
 
-        The OOI Level 1 Photosynthetically Active Radiation (PAR) (OPTPARW) core data product is the
-        spectral range (wavelength) of solar radiation from 400 to 700 nanometers that photosynthetic
-        organisms are able to use in the process of photosynthesis.
+        The OOI Level 1 Photosynthetically Active Radiation (PAR)
+        (OPTPARW) core data product is the spectral range
+        (wavelength) of solar radiation from 400 to 700 nanometers
+        that photosynthetic organisms are able to use in the process
+        of photosynthesis.
 
     Implemented by:
 
@@ -509,7 +511,8 @@ def opt_par_satlantic(counts_output, a0, a1, Im):
 
         OPTPARW_L1 = opt_par_satlantic(counts_output, a0, a1, Im):
 
-        Calculates the L1 OPTPARW from the Satlantic instrument on the RSN Shallow Profiler:
+        Calculates the L1 OPTPARW from the Satlantic instrument on the
+        RSN Shallow Profiler:
         PAR (umol photons m^-2 s^-1) = Im * a1 (counts_output - a0)
 
             where
@@ -521,9 +524,10 @@ def opt_par_satlantic(counts_output, a0, a1, Im):
 
     References:
 
-        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY ACTIVE RADIATION (PAR)
-        FROM SATLANTIC INSTRUMENT ON RSN SHALLOW PROFILER
-        Document Control Number 1341-00720. https://alfresco.oceanobservatories.org/
+        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY
+        ACTIVE RADIATION (PAR) FROM SATLANTIC INSTRUMENT ON RSN SHALLOW
+        PROFILER Document Control Number 1341-00720.
+        https://alfresco.oceanobservatories.org/
         (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
         1341-00720_Data_Product_SPEC_OPTPARW_Satl_OOI.pdf)
     """
@@ -533,12 +537,13 @@ def opt_par_satlantic(counts_output, a0, a1, Im):
     return OPTPARW_L1
 
 
-def opt_par_biospherical(volts_output, dark_offset, scale_wet):
+def opt_par_biospherical_mobile(output, dark_offset, scale_wet):
     """
     Description:
 
-        The OOI Level 1 Photosynthetically Active Radiation (PAR) (OPTPARW) core data product is the
-        spectral range (wavelength) of solar radiation from 400 to 700 nanometers that photosynthetic
+        The OOI Level 1 Photosynthetically Active Radiation (PAR)
+        (OPTPARW) core data product is the spectral range (wavelength)
+        of solar radiation from 400 to 700 nanometers that photosynthetic
         organisms are able to use in the process of photosynthesis.
 
     Implemented by:
@@ -547,26 +552,80 @@ def opt_par_biospherical(volts_output, dark_offset, scale_wet):
 
     Usage:
 
-        OPTPARW_L1 = opt_par_biospherical(volts_output, dark_offset, scale_wet):
+        OPTPARW_L1 = opt_par_biospherical_mobile(output, dark_offset, scale_wet):
 
-        Calculate the L1 OPTPARW from the Biospherical QSP-2100 series of scalar instruments.
-        PAR (umol photons m^-2 s^-1) = (volts_output - dark_offset) / scale_wet
+        Calculate the L1 OPTPARW from the Biospherical QSP-2100 series of scalar
+        instruments.
 
-            where
+        where
 
-        volts_output is the OPTPARW L0 output [volts]
+        OPTPARW_L1 is Level 1 Photosynthetically Active Radiation [umol photons m^-2 s^-1]
+        output is the OPTPARW L0 output [volts]
         dark offset is the dark reading [volts]
         scale_wet is the wet calibration scale factor [volts per umol photons / m^2 s^1]
 
     References:
 
-        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY ACTIVE RADIATION (PAR)
-        FROM SATLANTIC INSTRUMENT ON RSN SHALLOW PROFILER
-        Document Control Number 1341-00721. https://alfresco.oceanobservatories.org/
+        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY
+        ACTIVE RADIATION (PAR) FROM BIOSPHERICAL INSTRUMENT QSP 2100
+        ON CGSN MOBILE ASSETS Document Control Number 1341-00721.
+        https://alfresco.oceanobservatories.org/
         (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
         1341-00721_Data_Product_SPEC_OPTPARW_Bios_OOI.pdf)
     """
 
-    OPTPARW_L1 = ne.evaluate('(volts_output - dark_offset) / scale_wet')
+    OPTPARW_L1 = ne.evaluate('(output - dark_offset) / scale_wet')
+
+    return OPTPARW_L1
+
+
+def opt_par_biospherical_wfp(output, dark_offset, scale_wet):
+    """
+    Description:
+
+        The OOI Level 1 Photosynthetically Active Radiation (PAR)
+        (OPTPARW) core data product is the spectral range (wavelength)
+        of solar radiation from 400 to 700 nanometers that photosynthetic
+        organisms are able to use in the process of photosynthesis.
+
+    Implemented by:
+
+        2014-03-07: Craig Risien. Initial Code
+
+    Usage:
+
+        OPTPARW_L1 = opt_par_biospherical_wfp(output, dark_offset, scale_wet):
+
+        Calculate the L1 OPTPARW from the Biospherical QSP-2200 series of scalar
+        instruments.
+
+        where
+
+        OPTPARW_L1 is Level 1 Photosynthetically Active Radiation [umol photons m^-2 s^-1]
+        output is the OPTPARW L0 output [millivolts (mV)]
+        dark offset is the dark reading [millivolts (mV)]
+        scale_wet is the wet calibration scale factor [volts / (quanta / cm^2 s^1)]
+
+    References:
+
+        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY
+        ACTIVE RADIATION (PAR) FROM BIOSPHERICAL INSTRUMENT QSP 2200
+        ON CGSN PROFILERS Document Control Number 1341-00721.
+        https://alfresco.oceanobservatories.org/
+        (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+        1341-00721_Data_Product_SPEC_OPTPARW_Bios_OOI.pdf)
+    """
+
+    #Convert output from mvolts to volts
+    output_volts = output / 1000.
+
+    #Convert dark_offset from mvolts to volts
+    dark_offset_volts = dark_offset / 1000.
+
+    #Convert scale_wet from Volts/(quanta/cm^2.s^1) to Volts/(umol photons/m^2.s^1)
+    #1uE/sec/m^2 PAR= 1umole/sec/m^2 PAR = 6.02*10**13 quanta/sec/cm^2 PAR
+    scale_wet_converted = scale_wet * (6.02 * 10**13)
+
+    OPTPARW_L1 = ne.evaluate('(output_volts - dark_offset_volts) / scale_wet_converted')
 
     return OPTPARW_L1
