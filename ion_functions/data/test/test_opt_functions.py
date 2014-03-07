@@ -287,9 +287,10 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
 
         Values based on that described in DPS as available on Alfresco:
 
-        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY ACTIVE RADIATION (PAR)
-        FROM SATLANTIC INSTRUMENT ON RSN SHALLOW PROFILER
-        Document Control Number 1341-00720. https://alfresco.oceanobservatories.org/
+        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY
+        ACTIVE RADIATION (PAR) FROM SATLANTIC INSTRUMENT ON RSN SHALLOW
+        PROFILER Document Control Number 1341-00720.
+        https://alfresco.oceanobservatories.org/
         (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
         1341-00720_Data_Product_SPEC_OPTPARW_Satl_OOI.pdf)
 
@@ -320,15 +321,16 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
     # compare calculated results to expected
     np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
 
-    def test_opt_par_biospherical(self):
+    def opt_par_biospherical_mobile(self):
                 """
-        Test the opt_par_biospherical function.
+        Test the opt_par_biospherical_mobile function.
 
         Values based on that described in DPS as available on Alfresco:
 
-        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY ACTIVE RADIATION (PAR)
-        FROM SATLANTIC INSTRUMENT ON RSN SHALLOW PROFILER
-        Document Control Number 1341-00721. https://alfresco.oceanobservatories.org/
+        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY
+        ACTIVE RADIATION (PAR) FROM BIOSPHERICAL INSTRUMENT QSP 2100
+        ON CGSN MOBILE ASSETS Document Control Number 1341-00721.
+        https://alfresco.oceanobservatories.org/
         (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
         1341-00721_Data_Product_SPEC_OPTPARW_Bios_OOI.pdf)
 
@@ -347,8 +349,41 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
     # compute par values
     par_calc = np.zeros(9)
     for i in range(0, 9):
-        par_calc[i] = optfunc.opt_par_biospherical(par_volts[i], offset, scale)
+        par_calc[i] = optfunc.opt_par_biospherical_mobile(par_volts[i], offset, scale)
 
     # compare calculated results to expected
     np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
 
+    def opt_par_biospherical_wfp(self):
+                """
+        Test the opt_par_biospherical_wfp function.
+
+        Values based on that described in DPS as available on Alfresco:
+
+        OOI (2012). Data Product Specification for PHOTOSYNTHETICALLY
+        ACTIVE RADIATION (PAR) FROM BIOSPHERICAL INSTRUMENT QSP 2200
+        ON CGSN PROFILERS Document Control Number 1341-00721.
+        https://alfresco.oceanobservatories.org/
+        (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+        1341-00721_Data_Product_SPEC_OPTPARW_Bios_OOI.pdf)
+
+        Implemented by Craig Risien, March 2014
+        """
+
+    # test inputs
+    #offset units = mvolts
+    offset = 10.1
+    scale = 5.897e-04 / (6.02 * 10**13)
+
+    par_mvolts = np.array([1016.793, 599.800, 452.400, 305.000, 187.000, 178.900, 69.100, 39.600, 10.100])
+
+    # expected outputs
+    par_expected = np.array([1707.13, 1000.00, 750.00, 500.00, 300.00, 286.25, 100.00, 50.00, 0.00])
+
+    # compute par values
+    par_calc = np.zeros(9)
+    for i in range(0, 9):
+        par_calc[i] = optfunc.opt_par_biospherical_wfp(par_mvolts[i], offset, scale)
+
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
