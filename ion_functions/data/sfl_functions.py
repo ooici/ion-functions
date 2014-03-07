@@ -143,8 +143,8 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
             S = np.interp(C[i], Ccurve[0,:], Scurve, left=np.nan, right=np.nan)
             Cl[i] = np.round(S * 1000.)
         else:
-            Cl[i] = np.nan
-        
+            Cl[i] = fill_value
+    
     return Cl
 
 import numexpr as ne
