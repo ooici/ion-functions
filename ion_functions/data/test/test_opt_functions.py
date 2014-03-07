@@ -231,9 +231,8 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         """
 
         # test inputs:
-        # traw, T, and PS must be scalar.
-        # a_off and c_off must have same dimensions as wlngth.
         tbins = np.array([14.5036, 15.5200, 16.4706, 17.4833, 18.4831, 19.5196, 20.5565])
+        # nrows of tarr = length(wlngth); ncols of tarr = length(tbins)
         tarr = np.array([
             [0.0, -0.004929, -0.004611, 0.0, 0.0, 0.0, 0.0],
             [0.0, -0.004611, -0.004418, 0.0, 0.0, 0.0, 0.0],
@@ -243,6 +242,7 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
             [0.0, -0.003422, -0.002442, 0.0, 0.0, 0.0, 0.0]
         ])
 
+        # a_off and c_off must have same dimensions as wlngth.
         wlngth = np.array([500., 550., 600., 650., 700., 715.])
         c_sig = np.array([150., 225., 200., 350., 450., 495.])
         c_ref = np.array([550., 540., 530., 520., 510., 500.])
@@ -250,6 +250,8 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         a_sig = np.array([250., 300., 210., 430., 470., 495.])
         a_ref = np.array([450., 460., 470., 480., 490., 500.])
         a_off = np.array([0.35, 0.30, 0.25, 0.20, 0.15, 0.10])
+
+        # traw, T, and PS must be scalar (before vectorization).
         traw = 48355.0
         Tcal = 20.0
         T = 12.0
@@ -259,9 +261,11 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         ref_wave = 695  # nearest wavelength (700nm) should become reference wavelength
 
         # expected outputs
-        cpd_ts = np.array([6.553646, 4.807949, 5.161655, 2.788220, 1.666362, 1.184530])
-        apd_ts_s_ref715 = np.array([1.999989, 1.501766, 3.177048, 0.249944, 0.086438, 0.000000])
-        apd_ts_s_ref700 = np.array([1.750859, 1.320885, 3.068470, 0.111075, 0.000000, -0.064806])
+        cpd_ts = np.array([6.553646, 4.807949, 5.161655, 2.788220, 1.666362, 1.184530], ndmin=2)
+        apd_ts_s_ref715 = np.array([1.999989, 1.501766, 3.177048, 0.249944, 0.086438, 0.000000],
+                                   ndmin=2)
+        apd_ts_s_ref700 = np.array([1.750859, 1.320885, 3.068470, 0.111075, 0.000000, -0.064806],
+                                   ndmin=2)
 
         # beam attenuation (beam c) wrapper test
         c_ts = np.zeros(6)
@@ -279,6 +283,187 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         a_ts_s700 = np.zeros(6)
         a_ts_s700 = optfunc.opt_optical_absorption(a_ref, a_sig, traw, wlngth, a_off, Tcal,
                                                    tbins, tarr, cpd_ts, wlngth, T, PS, ref_wave)
+        np.testing.assert_allclose(a_ts_s700, apd_ts_s_ref700, rtol=1e-6, atol=1e-6)
+
+    def test_opt_functions_OPTAA_a_and_c_wavelength_sets(self):
+        """
+        Test the OPTAA wrapper functions in the opt_functions.py module.
+            Test a-c dataset with different wavelength values for the absorption versus
+            beam c optical channels. Included to test that the c optical values are correctly
+            interpolated onto the abs wavelengths in the scatter correction algorithm.
+
+        OOI (2013). Data Product Specification for Optical Beam Attenuation
+            Coefficient. Document Control Number 1341-00690.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00690_Data_Product_SPEC_OPTATTN_OOI.pdf)
+
+        OOI (2013). Data Product Specification for Optical Absorption
+            Coefficient. Document Control Number 1341-00700.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00700_Data_Product_SPEC_OPTABSN_OOI.pdf)
+
+        OOI (2014). OPTAA Unit Test. 1341-00700_OPTABSN Artifact.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00700_OPTABSN >>
+            OPTAA_unit_test.xlsx)
+
+        Implemented by Russell Desiderio, 26-Feb-2014. Additional unit test data
+            constructed as documented in the OPTAA Unit Test document artifact
+            reference above.
+        """
+
+        # test inputs:
+        tbins = np.array([14.5036, 15.5200, 16.4706, 17.4833, 18.4831, 19.5196, 20.5565])
+        # nrows of tarr = length(wlngth); ncols of tarr = length(tbins)
+        tarr = np.array([
+            [0.0, -0.004929, -0.004611, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004611, -0.004418, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004418, -0.004355, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004355, -0.004131, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004131, -0.003422, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.003422, -0.002442, 0.0, 0.0, 0.0, 0.0]
+        ])
+
+        # a_off and c_off must have same dimensions as wlngth.
+        cwlngth = np.array([510., 540., 580., 630., 670., 710.])
+        awlngth = np.array([500., 550., 600., 650., 700., 715.])
+        c_sig = np.array([150., 225., 200., 350., 450., 495.])
+        c_ref = np.array([550., 540., 530., 520., 510., 500.])
+        c_off = np.array([1.35, 1.30, 1.25, 1.20, 1.15, 1.10])
+        a_sig = np.array([250., 300., 210., 430., 470., 495.])
+        a_ref = np.array([450., 460., 470., 480., 490., 500.])
+        a_off = np.array([0.35, 0.30, 0.25, 0.20, 0.15, 0.10])
+
+        # traw, T, and PS must be scalar (before vectorization).
+        traw = 48355.0
+        Tcal = 20.0
+        T = 12.0
+        PS = 35.0
+
+        # also test case of user selected reference wavelength for abs scatter correction
+        ref_wave = 695  # nearest abs wavelength (700nm) should become reference wavelength
+
+        # expected outputs
+        cpd_ts = np.array([6.553771, 4.807914, 5.156010, 2.788715, 1.655607, 1.171965], ndmin=2)
+        apd_ts_s_ref715 = np.array([1.990992, 1.479089, 3.350109, 0.350108, 0.152712, 0.000000],
+                                   ndmin=2)
+        apd_ts_s_ref700 = np.array([1.379858, 1.021574, 3.235057, 0.099367, 0.000000, -0.156972],
+                                   ndmin=2)
+
+        # beam attenuation (beam c) wrapper test
+        c_ts = np.zeros(6)
+        c_ts = optfunc.opt_beam_attenuation(c_ref, c_sig, traw, cwlngth, c_off, Tcal,
+                                            tbins, tarr, T, PS)
+        np.testing.assert_allclose(c_ts, cpd_ts, rtol=1e-6, atol=1e-6)
+
+        # absorption wrapper test
+        # case: default reference wavelength for scatter correction
+        a_ts_sdef = np.zeros(6)
+        a_ts_sdef = optfunc.opt_optical_absorption(a_ref, a_sig, traw, awlngth, a_off, Tcal,
+                                                   tbins, tarr, cpd_ts, cwlngth, T, PS)
+        np.testing.assert_allclose(a_ts_sdef, apd_ts_s_ref715, rtol=1e-6, atol=1e-6)
+        # case: user selected reference wavelength for scatter correction
+        a_ts_s700 = np.zeros(6)
+        a_ts_s700 = optfunc.opt_optical_absorption(a_ref, a_sig, traw, awlngth, a_off, Tcal,
+                                                   tbins, tarr, cpd_ts, cwlngth, T, PS, ref_wave)
+        np.testing.assert_allclose(a_ts_s700, apd_ts_s_ref700, rtol=1e-6, atol=1e-6)
+
+    def test_opt_functions_OPTAA_vectorization(self):
+        """
+        Test the OPTAA wrapper functions in the opt_functions.py module. Implement vectorization.
+
+        OOI (2013). Data Product Specification for Optical Beam Attenuation
+            Coefficient. Document Control Number 1341-00690.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00690_Data_Product_SPEC_OPTATTN_OOI.pdf)
+
+        OOI (2013). Data Product Specification for Optical Absorption
+            Coefficient. Document Control Number 1341-00700.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00700_Data_Product_SPEC_OPTABSN_OOI.pdf)
+
+        OOI (2014). OPTAA Unit Test. 1341-00700_OPTABSN Artifact.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00700_OPTABSN >>
+            OPTAA_unit_test.xlsx)
+
+        Implemented by Russell Desiderio, 05-Mar-2014. Additional unit test data
+            constructed as documented in the OPTAA Unit Test document artifact
+            reference above.
+        """
+        # test inputs:
+        # replicate the inputs to represent 3 data packets
+        npackets = 3
+        # tbins will become a 2D array.
+        tbins = np.array([14.5036, 15.5200, 16.4706, 17.4833, 18.4831, 19.5196, 20.5565])
+        tbins = np.tile(tbins, (npackets, 1))
+        # nrows of tarr = length(nwlngth); ncols of tarr = length(tbins)
+        tarr = np.array([
+            [0.0, -0.004929, -0.004611, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004611, -0.004418, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004418, -0.004355, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004355, -0.004131, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004131, -0.003422, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.003422, -0.002442, 0.0, 0.0, 0.0, 0.0]
+        ])
+        # tarr will become a 3D array
+        # dimensions will be (npackets, nwavelengths, ntempbins)
+        tarr = np.tile(tarr, (npackets, 1, 1))
+        ###
+        # note that "tarr = np.tile(tarr, (1, 1, npackets))" results in the
+        # array tarr.shape = (1,6,7*npackets)
+        ###
+        # a_off and c_off must have same dimensions as wlngth.
+        cwlngth = np.array([510., 540., 580., 630., 670., 710.])
+        awlngth = np.array([500., 550., 600., 650., 700., 715.])
+        c_sig = np.array([150., 225., 200., 350., 450., 495.])
+        c_ref = np.array([550., 540., 530., 520., 510., 500.])
+        c_off = np.array([1.35, 1.30, 1.25, 1.20, 1.15, 1.10])
+        a_sig = np.array([250., 300., 210., 430., 470., 495.])
+        a_ref = np.array([450., 460., 470., 480., 490., 500.])
+        a_off = np.array([0.35, 0.30, 0.25, 0.20, 0.15, 0.10])
+        # make all of the previous vectors 2-D
+        for str in ['cwlngth', 'awlngth', 'c_sig', 'c_ref', 'c_off', 'a_sig', 'a_ref', 'a_off']:
+            exec(str + ' = np.tile(' + str + ', (npackets,1))')
+        # traw, Tcal, T, and PS will now be vectors, so:
+        traw = np.array([48355])
+        Tcal = np.array([20.0])
+        T = np.array([12.0])
+        PS = np.array([35.0])
+        for str in ['traw', 'Tcal', 'T', 'PS']:
+            exec(str + ' = np.tile(' + str + ', (npackets,1))')
+
+        # also test case of user selected reference wavelength for abs scatter correction
+        ref_wave = 695  # nearest abs wavelength (700nm) should become reference wavelength
+
+        # expected outputs
+        cpd_ts = np.array([6.553771, 4.807914, 5.156010, 2.788715, 1.655607, 1.171965])
+        apd_ts_s_ref715 = np.array([1.990992, 1.479089, 3.350109, 0.350108, 0.152712, 0.000000])
+        apd_ts_s_ref700 = np.array([1.379858, 1.021574, 3.235057, 0.099367, 0.000000, -0.156972])
+        for str in ['cpd_ts', 'apd_ts_s_ref715', 'apd_ts_s_ref700']:
+            exec(str + ' = np.tile(' + str + ', (npackets,1))')
+
+        # beam attenuation (beam c)  test
+        c_ts = optfunc.opt_beam_attenuation(c_ref, c_sig, traw, cwlngth, c_off, Tcal,
+                                            tbins, tarr, T, PS)
+        np.testing.assert_allclose(c_ts, cpd_ts, rtol=1e-6, atol=1e-6)
+
+        # absorption test
+        # case: default reference wavelength for scatter correction
+        a_ts_sdef = np.zeros(6)
+        a_ts_sdef = optfunc.opt_optical_absorption(a_ref, a_sig, traw, awlngth, a_off, Tcal,
+                                                   tbins, tarr, cpd_ts, cwlngth, T, PS)
+        np.testing.assert_allclose(a_ts_sdef, apd_ts_s_ref715, rtol=1e-6, atol=1e-6)
+
+        # case: user selected reference wavelength for scatter correction
+        a_ts_s700 = np.zeros(6)
+        a_ts_s700 = optfunc.opt_optical_absorption(a_ref, a_sig, traw, awlngth, a_off, Tcal,
+                                                   tbins, tarr, cpd_ts, cwlngth, T, PS, ref_wave)
+
         np.testing.assert_allclose(a_ts_s700, apd_ts_s_ref700, rtol=1e-6, atol=1e-6)
 
     def test_opt_par_satlantic(self):

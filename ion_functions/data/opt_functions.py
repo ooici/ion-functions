@@ -10,51 +10,222 @@ import numpy as np
 import numexpr as ne
 
 
-# wrapper functions to calculate the beam attenuation (OPTATTN_L2) and optical
-# absorption (OPTABSN_L2) from the WET Labs, Inc. ACS (OPTAA).
+# wrapper function to calculate the beam attenuation coefficients (OPTATTN_L2)
+#   from the WET Labs, Inc. ACS (OPTAA).
 def opt_beam_attenuation(cref, csig, traw, cwl, coff, tcal, tbins, tc_arr,
                          T, PS):
 
     """
-    Wrapper function to calculate the L2 beam attenuation coefficients OPTATTN
-    from the WET Labs, Inc. ACS instrument.
+    Description:
+
+        Wrapper function to calculate the L2 beam attenuation coefficients OPTATTN
+        from the WET Labs, Inc. ACS instrument.
+
+    Implemented by:
+
+        2013-04-25: Christopher Wingard. Initial implementation.
+        2014-03-06: Russell Desiderio. Reset dimensions of arguments and implemented
+                    for loop to handle vectorized input.
+        2014-03-07: Russell Desiderio. Added Usage documentation.
+
+    Usage:
+
+        cpd_ts = opt_beam_attenaution(cref, csig, traw, cwl, coff, tcal, tbins,
+                                      tc_arr, T, PS)
+
+            where
+
+        cpd_ts = beam attenuation coefficients corrected for temperature and salinity
+            (OPTATTN_L2) [m-1]
+        cref = raw reference light measurements (OPTCREF_L0) [counts]
+        csig = raw signal light transmission measurements (OPTCSIG_L0) [counts]
+        traw = raw internal instrument temperature (OPTTEMP_L0) [counts]
+        cwl = wavelengths at which the beam attenuation measurements were made [nm].
+        coff = pure water offsets for the beam attenuation channels from ACS device
+            (calibration) file [m-1].
+        tcal = factory calibration reference (pure water) temperature [deg_C].
+            supplied by the instrument manufacturer (WETLabs).
+        tbins = instrument specific internal temperature calibration bin values from
+            ACS device (calibration) file [deg_C].
+        tc_arr = instrument, wavelength, and channel ('c') specific internal
+            temperature calibration correction coefficients from ACS device
+            (calibration) file [m-1].
+        T  = TEMPWAT(L1): In situ temperature from co-located CTD [deg_C]
+        PS = PRACSAL(L2): In situ practical salinity from co-located CTD [unitless]
+
+    References:
+
+        OOI (2013). Data Product Specification for Optical Beam Attenuation
+            Coefficient. Document Control Number 1341-00690.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00690_Data_Product_SPEC_OPTATTN_OOI.pdf)
+
+        OOI (2013). Data Product Specification for Optical Absorption
+            Coefficient. Document Control Number 1341-00700.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00700_Data_Product_SPEC_OPTABSN_OOI.pdf)
+
+        OOI (2014). OPTAA Unit Test. 1341-00700_OPTABSN Artifact.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00700_OPTABSN >>
+            OPTAA_unit_test.xlsx)
+
+    Notes:
+
+        Variables in the argument list, regardless of the number of dimensions, are assumed
+        to be vectorized to contain multiple data packets such that the first dimension
+        iterates over data packet number.
     """
-    # calculate the internal instrument temperature [deg_C]
-    tintrn = opt_internal_temp(traw)
+    # reset shapes of input arguments
+    #    using np.array([], ndmin=#) seems faster than using np.atleast_#d
+    cref = np.array(cref, ndmin=2)
+    csig = np.array(csig, ndmin=2)
+    traw = np.array(traw, ndmin=1)
+    cwl = np.array(cwl, ndmin=2)
+    coff = np.array(coff, ndmin=2)
+    tcal = np.array(tcal, ndmin=1)
+    tbins = np.array(tbins, ndmin=2)
+    T = np.array(T, ndmin=1)
+    PS = np.array(PS, ndmin=1)
+    # note, np.atleast_3d appends the extra dimension;
+    # np.array using ndmin prepends the extra dimension.
+    tc_arr = np.array(tc_arr, ndmin=3)
 
-    # calculate the uncorrected beam attenuation coefficient [m^-1]
-    cpd, deltaT = opt_pd_calc(cref, csig, coff, tintrn, tbins, tc_arr)
+    # size up inputs
+    npackets = cwl.shape[0]
+    nwavelengths = cwl.shape[1]
+    # initialize output array
+    cpd_ts = np.zeros([npackets, nwavelengths])
 
-    # correct the beam attenuation coefficient for temperature and salinity.
-    cpd_ts = opt_tempsal_corr('c', cpd, cwl, tcal, T, PS)
+    for ii in range(npackets):
+
+        # calculate the internal instrument temperature [deg_C]
+        tintrn = opt_internal_temp(traw[ii])
+
+        # calculate the uncorrected beam attenuation coefficient [m^-1]
+        cpd, _ = opt_pd_calc(cref[ii, :], csig[ii, :], coff[ii, :], tintrn,
+                             tbins[ii, :], tc_arr[ii, :, :])
+
+        # correct the beam attenuation coefficient for temperature and salinity.
+        cpd_ts_row = opt_tempsal_corr('c', cpd, cwl[ii, :], tcal[ii], T[ii], PS[ii])
+        cpd_ts[ii, :] = cpd_ts_row
 
     # return the temperature and salinity corrected beam attenuation
     # coefficient OPTATTN_L2 [m^-1]
     return cpd_ts
 
 
+# wrapper function to calculate the optical absorption coefficients (OPTABSN_L2)
+#   from the WET Labs, Inc. ACS (OPTAA).
 def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
                            cpd_ts, cwl, T, PS, rwlngth=715.):
     """
     Wrapper function to calculate the L2 optical absorption coefficient OPTABSN
     from the WET Labs, Inc. ACS instrument.
 
-    2014-02-19: Russell Desiderio. Added rwlngth to argument lists, so that
-                a non-default scatter correction wavelength could be passed
-                to function opt_scatter_corr.
+        2013-04-25: Christopher Wingard. Initial implementation.
+        2014-02-19: Russell Desiderio. Added rwlngth to argument lists, so that
+                    a non-default scatter correction wavelength could be passed
+                    to function opt_scatter_corr.
+        2014-03-06: Russell Desiderio. Reset dimensions of arguments and implemented
+                    for loop to handle vectorized input.
+        2014-03-07: Russell Desiderio. Added Usage documentation.
 
+    Usage:
+
+        apd_ts_s = opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins,
+                                      ta_arr, cpd_ts, cwl, T, PS[, rwlngth])
+
+            where
+
+        apd_ts_s = optical absorption coefficients corrected for temperature, salinity,
+            and measurement error due to scattering (OPTABSN_L2) [m-1]
+        aref = raw reference light measurements (OPTAREF_L0) [counts]
+        asig = raw signal light transmission measurements (OPTASIG_L0) [counts]
+        traw = raw internal instrument temperature (OPTTEMP_L0) [counts]
+        awl = wavelengths at which the absorption measurements were made [nm].
+        aoff = pure water offsets for the absorption channels from ACS device
+            (calibration) file [m-1].
+        tcal = factory calibration reference (pure water) temperature [deg_C].
+            supplied by the instrument manufacturer (WETLabs).
+        tbins = instrument specific internal temperature calibration bin values from
+            ACS device (calibration) file [deg_C].
+        ta_arr = instrument, wavelength, and channel ('a') specific internal
+            temperature calibration correction coefficients from ACS device
+            (calibration) file [m-1].
+        cpd_ts = beam attenuation coefficient corrected for temperature and
+            salinity effects (OPTATTN_L2) [m-1], from function opt_beam_attenuation.
+        cwl = attenuation channel wavelengths [nm], from ACS device (calibration) file.
+        T  = TEMPWAT(L1): In situ temperature from co-located CTD [deg_C]
+        PS = PRACSAL(L2): In situ practical salinity from co-located CTD [unitless]
+        rwlngth = [optional] user selected scattering correction reference wavelength
+            (default = 715) [nm]
+
+    References:
+
+        OOI (2013). Data Product Specification for Optical Beam Attenuation
+            Coefficient. Document Control Number 1341-00690.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00690_Data_Product_SPEC_OPTATTN_OOI.pdf)
+
+        OOI (2013). Data Product Specification for Optical Absorption
+            Coefficient. Document Control Number 1341-00700.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00700_Data_Product_SPEC_OPTABSN_OOI.pdf)
+
+        OOI (2014). OPTAA Unit Test. 1341-00700_OPTABSN Artifact.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00700_OPTABSN >>
+            OPTAA_unit_test.xlsx)
+
+    Notes:
+
+        Variables in the argument list, regardless of the number of dimensions, are assumed
+        to be vectorized to contain multiple data packets such that the first dimension
+        iterates over data packet number.
     """
-    # calculate the internal instrument temperature [deg_C]
-    tintrn = opt_internal_temp(traw)
+    # reset shapes of input arguments
+    #    using np.array ndmin=# seems faster than using np.atleast_#d
+    aref = np.array(aref, ndmin=2)
+    asig = np.array(asig, ndmin=2)
+    traw = np.array(traw, ndmin=1)
+    awl = np.array(awl, ndmin=2)
+    aoff = np.array(aoff, ndmin=2)
+    tcal = np.array(tcal, ndmin=1)
+    tbins = np.array(tbins, ndmin=2)
+    # note, np.atleast_3d appends the extra dimension;
+    # np.array using ndmin prepends the extra dimension.
+    ta_arr = np.array(ta_arr, ndmin=3)
+    cpd_ts = np.array(cpd_ts, ndmin=2)
+    cwl = np.array(cwl, ndmin=2)
+    T = np.array(T, ndmin=1)
+    PS = np.array(PS, ndmin=1)
 
-    # calculate the uncorrected optical absorption coefficient [m^-1]
-    apd, deltaT = opt_pd_calc(aref, asig, aoff, tintrn, tbins, ta_arr)
+    # size up inputs
+    npackets = awl.shape[0]
+    nwavelengths = awl.shape[1]
+    # initialize output array
+    apd_ts_s = np.zeros([npackets, nwavelengths])
 
-    # correct the optical absorption coefficient for temperature and salinty.
-    apd_ts = opt_tempsal_corr('a', apd, awl, tcal, T, PS)
+    for ii in range(npackets):
 
-    # correct the optical absorption coefficient for scattering effects
-    apd_ts_s = opt_scatter_corr(apd_ts, awl, cpd_ts, cwl, rwlngth)
+        # calculate the internal instrument temperature [deg_C]
+        tintrn = opt_internal_temp(traw[ii])
+
+        # calculate the uncorrected optical absorption coefficient [m^-1]
+        apd, _ = opt_pd_calc(aref[ii, :], asig[ii, :], aoff[ii, :], tintrn,
+                             tbins[ii, :], ta_arr[ii, :, :])
+
+        # correct the optical absorption coefficient for temperature and salinty.
+        apd_ts = opt_tempsal_corr('a', apd, awl[ii, :], tcal[ii], T[ii], PS[ii])
+
+        # correct the optical absorption coefficient for scattering effects
+        apd_ts_s_row = opt_scatter_corr(apd_ts, awl[ii, :], cpd_ts[ii, :], cwl[ii, :], rwlngth)
+        apd_ts_s[ii, :] = apd_ts_s_row
 
     # return the temperature, salinity and scattering corrected optical
     # absorption coefficient OPTABSN_L2 [m^-1]
@@ -73,6 +244,7 @@ def opt_internal_temp(traw):
     Implemented by:
 
         2013-04-25: Christopher Wingard. Initial implementation.
+        2014-03-07: Russell Desiderio. Reduced calls to np.log.
 
     Usage:
 
@@ -108,7 +280,8 @@ def opt_internal_temp(traw):
     b = 0.000221631
     c = 0.000000125741
 
-    degC = (1. / (a + b * np.log(res) + c * np.log(res)**3)) - 273.15
+    log_res = np.log(res)
+    degC = (1. / (a + b * log_res + c * log_res**3)) - 273.15
     return degC
 
 
@@ -248,8 +421,8 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
 
         pd_ts = temperature and salinity corrected data [m-1]
                 case 'c': OPTATTN_L2
-                case 'a': intermediate absorption product:
-                          needs to have the scattering correction applied.
+                case 'a': intermediate absorption product: will also
+                          need to have the scattering correction applied.
         channel = which measurement channel is this? 'c' or 'a'
                 'c' denotes beam attenuation [m-1]
                 'a' denotes absorption [m-1]
@@ -258,7 +431,7 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
         wlngth = wavelengths at which measurements were made [nm].
                 from ACS device (calibration) file. use 'c' wavelengths or
                 'a' wavelengths as appropriate.
-        tcal = factory calibration reference (external) temperature [deg_C].
+        tcal = factory calibration reference (pure water) temperature [deg_C].
                 supplied by the instrument manufacturer (WETLabs).
         T  = TEMPWAT(L1): In situ temperature from co-located CTD [deg_C]
         PS = PRACSAL(L2): In situ practical salinity from co-located CTD [unitless]
@@ -341,7 +514,8 @@ def opt_scatter_corr(apd_ts, awlngth, cpd_ts, cwlngth, rwlngth=715.):
         cpd_ts = beam attenuation coefficient corrected for temperature and
             salinity effects (OPTATTN_L2) [m-1], from function opt_tempsal_corr.
         cwlngth = attenuation channel wavelengths [nm], from ACS device (calibration) file.
-        rwlngth = user selected scattering reference wavelength (default = 715) [nm]
+        rwlngth = user selected scattering correction reference wavelength
+            (default = 715) [nm]
 
     References:
 
@@ -408,6 +582,8 @@ def opt_scatter_corr(apd_ts, awlngth, cpd_ts, cwlngth, rwlngth=715.):
 # The next 2 functions are not used in calculating optical absorption and beam attenuation
 # coefficients from the OPTAA family of instruments. However, some of these instruments
 # may be outfitted with an auxiliary pressure sensor and/or external temperature sensor.
+#
+# opt_pressure is not used in the calculation of the final OPTAA data products.
 def opt_pressure(praw, offset, sfactor):
     """
     Description:
@@ -448,6 +624,7 @@ def opt_pressure(praw, offset, sfactor):
     return depth
 
 
+# opt_external_temp is not used in the calculation of the final OPTAA data products.
 def opt_external_temp(traw):
     """
     Description:
