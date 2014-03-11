@@ -7,6 +7,8 @@
 """
 
 import numpy as np
+import numexpr as ne
+
 from ion_functions.utils import fill_value
 
 
@@ -22,6 +24,7 @@ def sfl_trhph_vfltemp(V_s, V_c, a, b, c, d, e):
 
         2013-05-01: Christopher Wingard. Initial Code
         2014-02-27: Russell Desiderio. Added documentation.
+                    Implemented old-style polynomial calculation.
 
     Usage:
 
@@ -49,7 +52,7 @@ def sfl_trhph_vfltemp(V_s, V_c, a, b, c, d, e):
             TRHPH. Document Control Number 1341-00150.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
-            1341-00150_Data_Product_SPEC_TRHPHTE_OOI.pdf)
+            1341-00150_Data_Product_Spec_TRHPHTE_OOI.pdf)
     """
     # raw thermistor temperature
     T_s = 27.50133 - 17.2658 * V_s + 15.83424 / V_s
@@ -61,7 +64,11 @@ def sfl_trhph_vfltemp(V_s, V_c, a, b, c, d, e):
     T_u = T_s + T_c
 
     # correction based on laboratory calibration
-    T_lc = a * T_u**4 + b * T_u**3 + c * T_u**2 + d * T_u + e 
+    #Tu_sq = T_u * T_u
+    #T_lc = a * Tu_sq*Tu_sq + b * T_u*Tu_sq + c * Tu_sq + d * T_u + e
+
+    # polynomial calculation optimization - this appears to be a little faster
+    T_lc = e + T_u * (d + T_u * (c + T_u * (b + T_u * a)))
 
     # final, corrected temperature at sensor tip
     T = T_u + T_lc
@@ -73,10 +80,10 @@ def sfl_trhph_vfl_thermistor_temp(V_s):
     """
     Description:
 
-        Intermediate data product (not a core data product) requested by the authors
-        of the TRHPHTE DPS. It is the intstrument's raw thermistor temperature, useful
-        as an important instrument diagnostic. It is the same variable as T_s in the
-        function sfl_trhph_vfltemp.
+        Calculates T_S, which is an intermediate data product (not a core data product)
+        requested by the authors of the TRHPHTE DPS. It is the instrument's thermistor
+        temperature, useful as an important instrument diagnostic. It is the same variable
+        as T_s in the function sfl_trhph_vfltemp.
 
     Implemented by:
 
@@ -97,9 +104,9 @@ def sfl_trhph_vfl_thermistor_temp(V_s):
             TRHPH. Document Control Number 1341-00150.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
-            1341-00150_Data_Product_SPEC_TRHPHTE_OOI.pdf)
+            1341-00150_Data_Product_Spec_TRHPHTE_OOI.pdf)
     """
-    # raw thermistor temperature
+    # thermistor temperature
     T_s = 27.50133 - 17.2658 * V_s + 15.83424 / V_s
 
     return T_s
@@ -110,7 +117,7 @@ def sfl_trhph_vflorp(V, offset, gain):
     Description:
 
         OOI Level 1 Vent Fluid Oxidation-Reduction Potential (ORP) from TRHPH
-        (TRHPHEH) data product, which is calculated using data from the Resistivity-
+        (TRHPHEH_l1) data product, which is calculated using data from the Resistivity-
         Temperature Probe (TRHPH) instrument.
 
     Implemented by:
@@ -130,37 +137,24 @@ def sfl_trhph_vflorp(V, offset, gain):
 
     References:
 
-        OOI (2012). Data Product Specification for Vent Fluid Temperature from
-            TRHPH. Document Control Number 1341-00150.
+        OOI (2012). Data Product Specification for Vent Fluid Oxidation-
+            Reduction Potential (ORP). Document Control Number 1341-00170.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
-            1341-00150_Data_Product_SPEC_TRHPHTE_OOI.pdf)
+            1341-00170_Data_Product_Spec_TRHPHEH_OOI.pdf)
     """
     # convert sensor voltage V from volts to mV;
-    # subtract offset;
-    # undo gain multiplier.
-    ORP = (V * 1000.0 - offset)/gain
+    # subtract offset; undo gain multiplier.
+    ORP = np.round((V * 1000.0 - offset)/gain)
 
     return ORP
-
-
-def sfl_trhph_chlorconc(V_R1, V_R2, V_R3, T):
-    """
-    Wrapper function to vectorize the vent fluid chloride calculation defined
-    below in sfl_trhph_chloride.
-    """
-
-    sfunc = np.vectorize(sfl_trhph_chloride)
-    Cl = sfunc(V_R1, V_R2, V_R3, T)
-
-    return Cl
 
 
 def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
     """
     Description:
 
-        OOI Level 1 Vent Fluid Chloride Concentration from TRHPH (TRHPHCC) data
+        OOI Level 2 Vent Fluid Chloride Concentration TRHPHCC data
         product, which is calculated using data from the Temperature
         Resistivity Probe (TRHPH) instrument.
 
@@ -169,6 +163,10 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
         2013-05-01: Christopher Wingard. Initial Code
         2014-02-28: Russell Desiderio. Modified code to better handle nans and fill_values.
                                        Added more documentation to algorithm.
+        2014-03-10: Russell Desiderio. Removed unnecessary np.vectorized wrapper function.
+                                       Improved speed by removing a temperature conditional
+                                           statement from inside the for loop and incorporating
+                                           it into the range of the for loop.
 
     Usage:
 
@@ -176,7 +174,7 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
 
             where
 
-        Cl = Vent fluid chloride concentration from TRHPH [mmol kg-1]
+        Cl = Vent fluid chloride concentration from TRHPH (TRHPHCC_L2) [mmol kg-1]
         V_R1 = Resistivity voltage 1 (TRHPHR1_L0) [volts]
         V_R2 = Resistivity voltage 1 (TRHPHR2_L0) [volts]
         V_R3 = Resistivity voltage 1 (TRHPHR3_L0) [volts]
@@ -184,11 +182,11 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
 
     References:
 
-        OOI (2012). Data Product Specification for Vent Fluid Temperature from
-            TRHPH. Document Control Number 1341-00150.
+        OOI (2012). Data Product Specification for Vent Fluid Chloride
+        Concentration. Document Control Number 1341-00160.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
-            1341-00150_Data_Product_SPEC_TRHPHTE_OOI.pdf)
+            1341-00160_Data_Product_Spec_TRHPHCC_OOI.pdf)
     """
     from scipy.interpolate import RectBivariateSpline
 
@@ -197,47 +195,44 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
     # arrays from Larson_2007surface.mat
     from ion_functions.data.sfl_functions_surface import tdat, sdat, cdat
 
-    # select the optimal L0 Resistivity voltage
-    V_R = V_R1 * 5.              # Option 1, default (V_R1 * 5)
+    # select the optimal L0 Resistivity voltage.
+    V_R = V_R3 / 5.0
 
-    vflag = np.where(V_R2 < 0.75)         # Option 2
-    V_R[vflag] = V_R3[vflag] / 5.
-
-    vflag = np.where((V_R2 >= 0.75) & (V_R2 < 3.90))    # Option 3
+    vflag = np.where((V_R2 >= 0.75) & (V_R2 < 3.90))
     V_R[vflag] = V_R2[vflag]
+
+    vflag = np.where(V_R2 >= 3.90)
+    V_R[vflag] = V_R1[vflag] * 5.0
 
     # convert resistivity to conductivity
     C = 1. / V_R
 
-    # initialize product array Cl [mmol/kg] as nan values
-    Cl = np.zeros(len(C)) * np.nan
-    # set up chloride [S, mol/kg] range
+    # initialize product array Cl [mmol/kg] values to nans
+    Cl = np.zeros(len(C)) + np.nan
+    # set up chloride ['S' in units of mol/kg] range
     Scurve = np.linspace(np.min(sdat), np.max(sdat), 100,
                          endpoint='True')
     # create bivariate spline for interpolation
     f = RectBivariateSpline(tdat, sdat, cdat.T, kx=1, ky=1, s=0)
-    for i in range(len(Cl)):
-        # constant T vector
-        Tcurve = np.zeros(len(Scurve)) + T[i]
-        # find conductivity curve Ccurve at constant T as a f(chloride)
+
+    # Note that when T is out-of-range, the interpolation np.interp does not
+    # always give nan values for Cl as is required. Since Cl has been initialized
+    # to nan values, iterate only over good T values, which also improves speed.
+    for ii in np.where(np.logical_and(T >= min(tdat), T <= max(tdat)))[0]:
+        # form constant T vector (Tcurve) for a given T value
+        Tcurve = np.zeros(len(Scurve)) + T[ii]
+        # find conductivity curve Ccurve as f(T=constant, chloride).
         Ccurve = f(Tcurve, Scurve)
-        # even when T is out-of-range, the procedure will give finite values for S.
-        # therefore, this case must be specifically handled in the conditional.
-        if (np.all(np.isfinite(Ccurve)) and
-           (T[i] >= min(tdat) and T[i] <= max(tdat))):
-            # now interpolate measured conductivity C into (Ccurve,Scurve)
-            S = np.interp(C[i], Ccurve[0, :], Scurve, left=np.nan, right=np.nan)
-            Cl[i] = np.round(S * 1000.)  # change units
-        # the following statement handles the two cases:
-        # (1) the conditional was executed, resulting in a nan value.
-        # (2) the conditional was not executed, therefore the initialized value is nan.
-        if np.isnan(Cl[i]):
-            Cl[i] = fill_value
+        # now interpolate measured conductivity C into (Ccurve,Scurve) to get Cl.
+        # this conditional statement is in the DPS and therefore retained.
+        if (np.all(np.isfinite(Ccurve))):
+            Cl[ii] = np.interp(C[ii], Ccurve[0, :], Scurve, left=np.nan, right=np.nan)
+
+    # change units to mmol/kg; round to required # of sigfigs as specified in the DPS
+    Cl = np.round(Cl * 1000.)
+    Cl[np.isnan(Cl)] = fill_value
 
     return Cl
-
-
-import numexpr as ne
 
 
 def sfl_sflpres_l1(p_psia):
