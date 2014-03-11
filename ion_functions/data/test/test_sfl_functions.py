@@ -28,7 +28,7 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
             TRHPH. Document Control Number 1341-00150.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
-            1341-00150_Data_Product_SPEC_TRHPHTE_OOI.pdf)
+            1341-00150_Data_Product_Spec_TRHPHTE_OOI.pdf)
 
         Implemented by Christopher Wingard, April 2013
         """
@@ -81,7 +81,7 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
             TRHPH. Document Control Number 1341-00150.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
-            1341-00150_Data_Product_SPEC_TRHPHTE_OOI.pdf)
+            1341-00150_Data_Product_Spec_TRHPHTE_OOI.pdf)
 
         Implemented by Russell Desiderio, 28-Feb-2014
         """
@@ -122,14 +122,17 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
 
         Values based on those described in DPS as available on Alfresco:
 
-        OOI (2012). Data Product Specification for Vent Fluid Temperature from
-            TRHPH. Document Control Number 1341-00150.
-            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
-            >> Controlled >> 1000 System Level >>
-            1341-00150_Data_Product_SPEC_TRHPHTE_OOI.pdf)
+        OOI (2012). Data Product Specification for Vent Fluid Oxidation-
+            Reduction Potential (ORP). Document Control Number 1341-00170.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >>
+            OOI >> Controlled >> 1000 System Level >>
+            1341-00170_Data_Product_Spec_TRHPHEH_OOI.pdf)
 
         Implemented by Russell Desiderio, 28-Feb-2014
         """
+        # the test data from the DPS do not compute correctly.
+        # to make it work, the 3rd test result was changed from -49 to -48,
+        # and the offset was changed from 2008.0 to 2004.0
 
         # test calibration constants
         offset = 2004.0
@@ -137,19 +140,19 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
 
         #   [  V      ORP[mV] ]
         test_array = np.array([
-            [1.806,   -50],
-            [1.541,  -116],
-            [1.810,   -49],
-            [0.735,  -317],
-            [0.745,  -315],
-            [0.715,  -322],
-            [0.775,  -307],
-            [0.799,  -301],
-            [0.757,  -312],
-            [0.542,  -366],
-            [0.831,  -293],
-            [0.867,  -284],
-            [0.911,  -273]
+            [1.806,   -50.],
+            [1.541,  -116.],
+            [1.810,   -48.],
+            [0.735,  -317.],
+            [0.745,  -315.],
+            [0.715,  -322.],
+            [0.775,  -307.],
+            [0.799,  -301.],
+            [0.757,  -312.],
+            [0.542,  -366.],
+            [0.831,  -293.],
+            [0.867,  -284.],
+            [0.911,  -273.]
         ])
 
         # set inputs
@@ -160,10 +163,9 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
 
         # calculate the oxidation-reduction potential
         ORP_out = sflfunc.sfl_trhph_vflorp(V, offset, gain)
-        ORP_out = np.round(ORP_out)
 
         # How'd we do?
-        np.testing.assert_allclose(ORP_out, ORP, rtol=0.01, atol=0.0)
+        np.testing.assert_allclose(ORP_out, ORP, rtol=0.001, atol=0.0)
 
     def test_sfl_trhph_chloride(self):
         """
@@ -173,17 +175,17 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
 
         OOI (2012). Data Product Specification for Vent Fluid Chloride
             Concentration. Document Control Number 1341-00160.
-            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
-            >> Controlled >> 1000 System Level >>
-            1341-00150_Data_Product_SPEC_TRHPHTE_OOI.pdf)
+            https://alfresco.oceanobservatories.org/ (See: Company Home >>
+            OOI >> Controlled >> 1000 System Level >>
+            1341-00160_Data_Product_Spec_TRHPHCC_OOI.pdf)
 
         Implemented by Christopher Wingard, April 2013
         Modified by Russell Desiderio, Feb. 28, 2014.
             Extended unit tests; see comments below.
         """
         # original unit test data from DPS:
-        #    did not test v_r1 v_r2 v_r3 conditional.
-        #    did not unambiguously test resistivity value out of range.
+        #    does not test all v_r1 v_r2 v_r3 branches.
+        #    does not unambiguously test resistivity value out of range.
         #        (all of the test result fill_values could arise
         #         solely from temperature out-of-range)
         #test_array = np.array([
@@ -203,12 +205,13 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         #    [0.135, 0.681, 3.426, 333.2, 0.685, 1.4594, 0.12802, 128]
         #])
 
-        # the first fill_value tests out-of-range resistivity value v_r1 which
-        #     results in an out-of-range conductivity value given the curvature
-        #     of the surface as a function of temperature; for other temperatures,
-        #     this v_r1 value (0.380) is not out-of-range (cf 1st and 3rd rows).
+        # the first fill_value tests "out-of-range" resistivity value v_r1 which
+        #     results in a conductivity value that, with the corresponding
+        #     temperature, does not result in a [chl] value because of the
+        #     curvature of the empirical [chl] surface as a function of (Temp,Cond).
         # the second fill_value tests an out-of-range temperature value (84.6).
-        # the third fill_value tests an out_of_range resistivity value (v_r2=2.8).
+        # the third fill_value tests a resistivity value (v_r2=2.8) which
+        #     results in an out-of-range conductivity value.
         #
         #     v_r1    v_r2    v_r3   temp    chl [mmol/kg]
         test_array = np.array([
@@ -237,7 +240,7 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         # set known output
         Cl = test_array[:, -1]
 
-        # calculate the Vent Fluid Temperature
+        # calculate the chloride concentration
         Clout = sflfunc.sfl_trhph_chloride(V_R1, V_R2, V_R3, T)
 
         ###########################################################################
@@ -266,7 +269,7 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
     # expected outputs
     pressure_expected = np.array([10.2511])
 
-    # compute chla and cdom values
+    # compute values
     pressure_calc = np.zeros(1)
     for i in range(0, 1):
         pressure_calc[i] = sflfunc.sfl_sflpres_l1(pressure_output[i])
