@@ -2,7 +2,7 @@
 
 """
 @package ion_functions.test.prs_functions
-@file ion_functions, est/prs_functions.py
+@file ion_functions/test/test_prs_functions.py
 @author Christopher Wingard
 @brief Unit tests for prs_functions module
 """
@@ -19,6 +19,7 @@ from ion_functions.utils import fill_value
 class TestPRSFunctionsUnit(BaseUnitTestCase):
 
     # setup up a list with the test data used by the three test functions
+    #      xtilt ,  ytilt , scmp, sernum , ccmp, tmag, angle, tdir
     lily = [
         [-150.000, 110.000, 0.15, 'N9651', 183, 186.0, -36.3, 129],
         [-140.000, 100.000, 71.99, 'N9651', 170, 172.0, -35.5, 116],
@@ -49,7 +50,13 @@ class TestPRSFunctionsUnit(BaseUnitTestCase):
         [130.000, 150.000, 144.21, 'N9655', 98, 198.5, 49.1, 139],
         [140.000, 140.000, 215.53, 'N9655', 337, 198.0, 45.0, 22],
         [150.000, 130.000, 288.12, 'N9655', 222, 198.5, 40.9, 271],
-        [160.000, 120.000, 359.76, 'N9655', 173, 200.0, 36.9, 226]
+        [160.000, 120.000, 359.76, 'N9655', 173, 200.0, 36.9, 226],
+        [-10.000, -120.000, 0.15, 'N9651', 183, 120.4, 85.2, 8],
+        [-60.000, -220.000, 71.99, 'N9651', 170, 228.0, 74.7, 5],
+        [-110.000, -5.000, 144.21, 'N9651', 92, 110.1, 2.6, 359],
+        [-160.000, -150.000, 215.53, 'N9651', 317, 219.3, 43.2, 184],
+        [-240.000, -260.000, 288.12, 'N9651', 204, 353.8, 47.3, 67],
+        [-310.000, -10.000, 359.76, 'N9651', 183, 310.2, 1.8, 91]
     ]
 
     def test_prs_bottilt_ccmp(self):
