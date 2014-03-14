@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from ion_functions.data.perf.test_performance import PerformanceTestCase, a_deca
-from ion_functions.data.opt_functions import opt_beam_attenuation, opt_optical_absorption
+from ion_functions.data import opt_functions as optfunc
 import numpy as np
 
 
@@ -53,6 +53,10 @@ class TestOPTAAPerformance(PerformanceTestCase):
         self.cpd_ts = np.tile([6.553771, 4.807914, 5.156010, 2.788715, 1.655607, 1.171965],
                              (1, wvl_tile))
 
+        # test data for ocr-507 (spectir = downwelling irradiance)
+        #                          counts       offset          scale         mrsn
+        self.ocr_507 = np.array([2400000000, 2147789959.1, 2.07241106309E-07, 1.354])
+
     def test_opt_beam_attenuation(self):
         stats = []
         # create 10000 data packets
@@ -70,7 +74,7 @@ class TestOPTAAPerformance(PerformanceTestCase):
         # variables unique to beam attenuation: 2D -> 3D
         tc_arr = np.tile(self.tc_arr, (a_deca, 1, 1))
         # timing test
-        self.profile(stats, opt_beam_attenuation, c_ref, c_sig, traw, c_wvl, c_off, tcal,
+        self.profile(stats, optfunc.opt_beam_attenuation, c_ref, c_sig, traw, c_wvl, c_off, tcal,
                      tbins, tc_arr, T, PS)
 
     def test_opt_optical_absorption(self):
@@ -92,5 +96,15 @@ class TestOPTAAPerformance(PerformanceTestCase):
         cpd_ts = np.tile(self.cpd_ts, (a_deca, 1))
         c_wvl = np.tile(self.c_wvl, (a_deca, 1))
         # timing test
-        self.profile(stats, opt_optical_absorption, a_ref, a_sig, traw, a_wvl, a_off, tcal,
+        self.profile(stats, optfunc.opt_optical_absorption, a_ref, a_sig, traw, a_wvl, a_off, tcal,
                      tbins, ta_arr, cpd_ts, c_wvl, T, PS)
+
+    def test_opt_ocr507_irradiance(self):
+        stats = []
+        # create 10000 data packets
+        counts = np.repeat(self.ocr_507[0], a_deca)
+        offset = np.repeat(self.ocr_507[1], a_deca)
+        scale = np.repeat(self.ocr_507[2], a_deca)
+        immersion_factor = np.repeat(self.ocr_507[3], a_deca)
+        # timing test
+        self.profile(stats, optfunc.opt_ocr507_irradiance, counts, offset, scale, immersion_factor)

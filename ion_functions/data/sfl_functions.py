@@ -91,7 +91,7 @@ def sfl_trhph_vfl_thermistor_temp(V_s):
 
     Usage:
 
-        T_s = sfl_trhph_vfltemp(V_s)
+        T_s = sfl_trhph_vfl_thermistor_temp(V_s)
 
             where
 
@@ -117,7 +117,7 @@ def sfl_trhph_vflorp(V, offset, gain):
     Description:
 
         OOI Level 1 Vent Fluid Oxidation-Reduction Potential (ORP) from TRHPH
-        (TRHPHEH_l1) data product, which is calculated using data from the Resistivity-
+        (TRHPHEH_L1) data product, which is calculated using data from the Resistivity-
         Temperature Probe (TRHPH) instrument.
 
     Implemented by:
