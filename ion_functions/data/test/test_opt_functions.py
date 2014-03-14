@@ -572,3 +572,52 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
 
     # compare calculated results to expected
     np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
+
+    def test_opt_ocr507_irradiance(self):
+        """
+        Test opt_ocr507_irradiance function.
+
+        Values calculated using data product algorithm in the DPS in an excel spreadsheet
+        as available on Alfresco:
+
+        OOI (2014). Data Product Specification for Downwelling Spectral Irradiance.
+            Document Control Number 1341-00730. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00730__???.pdf)
+
+        OOI (2014). SPECTIR Unit Test. 1341-00730_SPECTIR Artifact.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00730_SPECTIR >>
+            SPKIR_SPECTIR_unit_test.xlsx)
+
+
+        Implemented by Russell Desiderio, March 14, 2014.
+        """
+#              counts         offset          scale        mrsn     Ed
+        test_array = np.array([
+            [2148370944, 2148377867.8, 2.09023117662E-07, 1.368, -0.002],
+            [2200000000, 2148218092.4, 2.06543624674E-07, 1.410, 15.080],
+            [2300000000, 2147607229.7, 2.12484770952E-07, 1.365, 44.200],
+            [2400000000, 2147789959.1, 2.07241106309E-07, 1.354, 70.771],
+            [2500000000, 2148047456.7, 1.99358530187E-07, 1.372, 96.266],
+            [2600000000, 2147335412.8, 2.06033896796E-07, 1.404, 130.943],
+            [2700000000, 2146998228.4, 2.14806273478E-07, 1.347, 160.008]
+        ])
+
+        # set inputs
+        counts = test_array[:, 0]
+        offset = test_array[:, 1]
+        scale = test_array[:, 2]
+        immersion_factor = test_array[:, 3]
+
+        # set known output
+        Ed = test_array[:, -1]
+
+        # calculate the downwelling irradiance
+        Ed_out = optfunc.opt_ocr507_irradiance(counts, offset, scale, immersion_factor)
+
+        ###########################################################################
+        # The (unfinished) DPS specifies a precision of 0.25 uW/cm^2/nm
+        np.testing.assert_allclose(Ed_out, Ed, rtol=0.01, atol=0.1)
+        ###########################################################################
+

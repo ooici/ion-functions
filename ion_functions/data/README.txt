@@ -40,7 +40,9 @@ Dissolved Oxygen (DO)
 Optical Properties (OPT)
 
      * opt_functions.py -- Covers calculation of the L2 OPTATTN and OPTABSN
-       data products. This module includes the following functions:
+       data products, as well as products from various radiance sensors.
+       
+       This module includes the following functions:
        
        opt_beam_attenuation -- wrapper function to calculate OPTATTN_L2 from
           functions below.
@@ -59,8 +61,10 @@ Optical Properties (OPT)
           nor OPTABSN; rather, TEMPWAT_L1 from a co-located CTD would be used.
        
      * opt_functions_tscor.py -- Provides an array of the published
-       wavelength-dependent temperature and salinity correction factors. Values
-       are provided by the vendor.
+       wavelength-dependent temperature and salinity correction factors for the OPTAA
+       data products. Values are provided by the vendor.
+       
+       opt_ocr507_irradiance -- computes the SPECTIR_L1 data product.
 
 Partial Pressure CO2 (CO2)
 
@@ -105,11 +109,12 @@ Seafloor Properties (SFL)
      * sfl_functions.py -- Covers calculation of L1 data products collected
        from the TRHPH instrument (TRHPHTE, TRHPHCC, TRHPHEH)
        
-       [TODO: Fill out with module names and descriptions]
-       sfl_trhph_vfltemp
-       sfl_trhph_chlorconc
-       sfl_trhph_chloride
-     
+       sfl_trhph_vfltemp -- computes the TRHPHTE_L1 data product
+       sfl_trhph_chloride -- computes the TRHPHCC_L2 data product
+       sfl_trhph_vflorp -- computes the TRHPHEH_L1 data product
+       sfl_trhph_vfl_thermistor_temp -- computes a diagnostic data product,
+           which, however, is not a core data product.
+         
      * sfl_functions_surface.py -- Recreates the 3 arrays of temperature
        (tdat), conductivty (sdat) and chloride (cdat) from the Larson et al
        2007 derived calibration surface provided to CI in a Matlab file
