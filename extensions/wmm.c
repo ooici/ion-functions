@@ -4,13 +4,21 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <time.h>
+#include <sys/time.h>
+#include <libgen.h>
 #include "wmm.h"
 #include "EGM9615.h"
+
+// Add support for internal caching of initialized models.  Alloc storate here,
+// and ignore external calls to free.
+#define WMM_MAX_NCACHED 20
+WMM_ModelCache wmm_mcache[WMM_MAX_NCACHED];
+
 
 static bool fexists(char *filename)
 {
     FILE *f;
-    if(f = fopen(filename,"r")) {
+    if( (f = fopen(filename,"r")) ) {
         fclose(f);
         return true;
     }
@@ -19,42 +27,130 @@ static bool fexists(char *filename)
 
 
 
-int wmm_initialize(char *filename, WMM_Model *model)
+int wmm_initialize(char *filename, WMM_Model **model)
 {
     int nMax = 0;
     int NumTerms;
+    char *bname;
+    static int firstPass = 1;
+    int cIdx, tIdx;       // cache indexs
+    struct timeval tv;
+    struct timezone tz;
+    time_t oldest;
 
+    // if we get here, we need to build a model, with storage pointed to by wwm_this
     if(!fexists(filename)) {
         wmm_errmsg = "File does not exist";
         return 1;
     }
 
-    if(!MAG_robustReadMagModels(filename, (MAGtype_MagneticModel *(*)[]) &model->MagneticModel, 1)) {
+
+    // index our cache by the basename of the config file, so that FOO1234.COF results in the
+    // same model, regardless of the directory it is loaded from
+    bname = basename(filename);
+
+    // on first access, init the cache fields
+    if ( firstPass == 1 ) {
+        for ( cIdx = 0; cIdx < WMM_MAX_NCACHED; cIdx++ ) {
+            wmm_mcache[cIdx].inited = 0;
+        }
+        firstPass = 0;
+    }
+   
+    // check to see if we have already built a model based upon the supplied .COF file
+    for ( cIdx = 0; cIdx < WMM_MAX_NCACHED; cIdx++ ) {
+        if (wmm_mcache[cIdx].inited == 1) {
+            if (strcmp(wmm_mcache[cIdx].filename, bname) == 0)  {
+                // found an entry associated with the same config file,
+                // return that model
+                *model = &wmm_mcache[cIdx].model;
+                // printf("Found existing cache entry %d\n",cIdx);
+                // update the last touched time for this cache site
+                gettimeofday(&tv,&tz);
+                wmm_mcache[cIdx].lastTouch = tv.tv_sec;
+                return 0;
+            }
+        }
+    }
+
+
+    // not already built, pick a slot
+    tIdx = -1;  // not found flag
+    for ( cIdx = 0; cIdx < WMM_MAX_NCACHED; cIdx++ ) {
+        if (wmm_mcache[cIdx].inited == 0) {
+            tIdx = cIdx;
+            break;
+        }
+    }
+
+    if ( tIdx == -1 ) {
+        // didn't find an empty slot, pick the oldest
+        oldest = wmm_mcache[0].lastTouch;
+        tIdx = 0;
+        for ( cIdx = 1; cIdx < WMM_MAX_NCACHED; cIdx++ ) {
+            if ( wmm_mcache[tIdx].lastTouch < oldest ) {
+                oldest = wmm_mcache[tIdx].lastTouch;
+                tIdx = cIdx;
+            }
+        }
+    }
+
+    
+    // printf("Building into cache entry %d\n",tIdx);
+
+    if (wmm_mcache[tIdx].inited == 1) {
+        // this slot was already used, free prealloc'd model memory to prevent memory leak
+        // when MAG_robustReadMagModels internally allocs memory
+        MAG_FreeMagneticModelMemory(wmm_mcache[tIdx].model.TimedMagneticModel);
+        MAG_FreeMagneticModelMemory(wmm_mcache[tIdx].model.MagneticModel);
+        wmm_mcache[tIdx].model.initialized = 0;
+    }
+   
+                 
+    if(!MAG_robustReadMagModels(filename, (MAGtype_MagneticModel *(*)[]) &wmm_mcache[tIdx].model.MagneticModel, 1)) {
         wmm_errmsg = "Failed to read and initialize WMM";
         return 1;
     }
 
-    if(nMax < model->MagneticModel->nMax)
-        nMax = model->MagneticModel->nMax;
+    if(nMax < wmm_mcache[tIdx].model.MagneticModel->nMax)
+        nMax = wmm_mcache[tIdx].model.MagneticModel->nMax;
 
     NumTerms = ((nMax + 1) * (nMax + 2)/2);
-    model->TimedMagneticModel = MAG_AllocateModelMemory(NumTerms);
-    if(model->MagneticModel == NULL || model->TimedMagneticModel == NULL)
+    wmm_mcache[tIdx].model.TimedMagneticModel = MAG_AllocateModelMemory(NumTerms);
+    if(wmm_mcache[tIdx].model.MagneticModel == NULL || wmm_mcache[tIdx].model.TimedMagneticModel == NULL)
     {
         wmm_errmsg = "Failed to allocate WMM models";
         return 1;
     }
-    model->initialized = 1;
+
+    // mark internal model as initialized
+    wmm_mcache[tIdx].model.initialized = 1;
+
+    // mark cache site as initialized
+    wmm_mcache[tIdx].inited = 1;
+
+    // remember the filename associated with this config
+    strcpy(wmm_mcache[tIdx].filename, bname);
+            
+    // update the last touched time for this cache site
+    gettimeofday(&tv,&tz);
+    wmm_mcache[tIdx].lastTouch = tv.tv_sec;
+
+    // and set the return pointer to out current entry
+    *model = &wmm_mcache[tIdx].model;
+
     return 0;
 }
 
 int wmm_free(WMM_Model *model)
 {
-    MAG_FreeMagneticModelMemory(model->TimedMagneticModel);
-    MAG_FreeMagneticModelMemory(model->MagneticModel);
-    model->initialized = 0;
+    // There is now a persistant cache of built models.  There will be at most WMM_MAX_NCACHE
+    // internal mallocs ( from the Geomagnatism MAG_robustReadMagModels and MAG_AllocateModelMemory
+    // calls ).  When replacing a cached model, these mallocs are freed above prior to realloc.
+    // The WMM_MAX_NCACHE mallocs held in the cache will be GC'd on program exit.
     return 0;
 }
+
 
 size_t wmm_velocity_correction(const velocity_profile *in, WMM_Model *model, velocity_profile *out)
 {
