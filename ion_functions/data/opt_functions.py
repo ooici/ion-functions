@@ -806,3 +806,45 @@ def opt_par_biospherical_wfp(output, dark_offset, scale_wet):
     OPTPARW_L1 = ne.evaluate('(output_volts - dark_offset_volts) / scale_wet_converted')
 
     return OPTPARW_L1
+
+
+def opt_ocr507_irradiance(counts, offset, scale, immersion_factor):
+    """
+    Description:
+
+        This function calculates the OOI Level 1 Data Product SPECTIR_L1, which is the
+        'vector' (cosine-weighted) downwelling irradiance (Ed) in units of uW/cm^2/nm.
+        This data product is produced by the Satlantic OCR-507 multispectral radiometer
+        in the SPKIR instrument class.
+
+    Implemented by:
+
+        2014-03-14: Russell Desiderio. Initial Code.
+            At this time the DPS for this data product is not finished. The OCR-507
+            has 7 wavelength channels, and each data packet coming out of the instrument
+            contains one record from each channel. It has not been determined whether
+            the raw input data to this function will be in arrays of 7 wavelengths or not.
+
+    Usage:
+
+        Ed = opt_ocr507_irradiance(counts, offset, scale, immersion_factor):
+
+        where
+
+        Ed = downwelling vector irradiance SPECTIR_L1 [uW/cm^2/nm].
+        counts = raw downwelling vector irradiance signal SPECTIR_L0 [counts].
+        offset = calibration coefficient supplied by the manufacturer.
+        scale = calibration coefficient supplied by the manufacturer.
+        immersion_factor = calibration coefficient supplied by the manufacturer.
+
+    References:
+
+        OOI (2014). Data Product Specification for Downwelling Spectral Irradiance.
+            Document Control Number 1341-00730. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00730__???.pdf)
+    """
+
+    # Apply cal coeffs to raw data
+    Ed = (counts - offset) * scale * immersion_factor
+    return Ed
