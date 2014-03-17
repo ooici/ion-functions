@@ -779,7 +779,7 @@ def opt_par_biospherical_wfp(output, dark_offset, scale_wet):
         where
 
         OPTPARW_L1 is Level 1 Photosynthetically Active Radiation [umol photons m^-2 s^-1]
-        output is the OPTPARW L0 output [millivolts (mV)]
+        output is the OPTPARW L0 output [volts (V)]
         dark offset is the dark reading [millivolts (mV)]
         scale_wet is the wet calibration scale factor [volts / (quanta / cm^2 s^1)]
 
@@ -793,9 +793,6 @@ def opt_par_biospherical_wfp(output, dark_offset, scale_wet):
         1341-00721_Data_Product_SPEC_OPTPARW_Bios_OOI.pdf)
     """
 
-    #Convert output from mvolts to volts
-    output_volts = output / 1000.
-
     #Convert dark_offset from mvolts to volts
     dark_offset_volts = dark_offset / 1000.
 
@@ -803,7 +800,7 @@ def opt_par_biospherical_wfp(output, dark_offset, scale_wet):
     #1uE/sec/m^2 PAR= 1umole/sec/m^2 PAR = 6.02*10**13 quanta/sec/cm^2 PAR
     scale_wet_converted = scale_wet * (6.02 * 10**13)
 
-    OPTPARW_L1 = ne.evaluate('(output_volts - dark_offset_volts) / scale_wet_converted')
+    OPTPARW_L1 = ne.evaluate('(output - dark_offset_volts) / scale_wet_converted')
 
     return OPTPARW_L1
 
