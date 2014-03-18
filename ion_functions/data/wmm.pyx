@@ -20,19 +20,27 @@ cdef extern from "wmm.h":
         double *z
         np.int64_t *timestamp
 
-    int wmm_initialize(char *filename, WMM_Model *model)
+    int wmm_initialize(char *filename, WMM_Model **model)
     int wmm_free(WMM_Model *model)
     double wmm_declination(WMM_Model *model, double lat, double lon, double z, int year, int month, int day)
     size_t wmm_velocity_correction(velocity_profile *in_vp, WMM_Model *model, velocity_profile *out_vp)
 
 cdef class WMM:
-    cdef WMM_Model model
+    # CSF change this to us a pointer to a WMM_Model.  wmm_initialize will
+    # either perform the same init as before, or, it we are reconfiging to 
+    # a previously seen config file, quietly return a pointer to an existing
+    # WMM_model
+
+    cdef WMM_Model *model
 
     def __cinit__(self, filename):
         cdef int retval
         cdef char *fname = filename
-        if not os.path.exists(filename):
-            raise OSError("File does not exist")
+        
+        # CSF: wmm_initialize already checks for file existance.  Don't check twice,
+        # and prefer checking in C
+        #if not os.path.exists(filename):
+        #    raise OSError("File does not exist")
 
         retval = wmm_initialize(fname, &self.model)
         if retval:
@@ -40,13 +48,13 @@ cdef class WMM:
 
     property initialized:
         def __get__(self):
-            if self.model.initialized == 1:
+            if self.model[0].initialized == 1:
                 return True
             return False
 
     def __dealloc__(self):
         cdef int retval
-        retval = wmm_free(&self.model)
+        retval = wmm_free(self.model)
 
         if retval:
             raise RuntimeError("Unable to free WMM Model")
@@ -61,7 +69,8 @@ cdef class WMM:
         if not isinstance(date, datetime.date):
             raise TypeError("date is not a datetime.date object")
 
-        cdef retval = wmm_declination(&self.model, lat, lon, z, <int> date.year, <int> date.month, <int> date.day)
+
+        cdef retval = wmm_declination(<WMM_Model *>self.model, <double>lat, <double>lon, <double>z, <int> date.year, <int> date.month, <int> date.day)
         return retval
 
     @cython.boundscheck(False)
@@ -120,7 +129,7 @@ cdef class WMM:
         out_vp.uu = &uu_cor[0]
         out_vp.vv = &vv_cor[0]
 
-        retval = wmm_velocity_correction(&in_vp, &self.model, &out_vp)
+        retval = wmm_velocity_correction(&in_vp, self.model, &out_vp)
         if retval != uu.shape[0]:
             raise RuntimeError("Failed to Process All Vector Elements")
         return uu_cor, vv_cor

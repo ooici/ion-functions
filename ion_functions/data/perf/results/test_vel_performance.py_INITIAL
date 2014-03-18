@@ -1,0 +1,279 @@
+........
+         19126132 function calls (19126012 primitive calls) in 261.620 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+      4/1    0.000    0.000  261.620  261.620 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/suite.py:175(__call__)
+      4/1    0.000    0.000  261.620  261.620 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/suite.py:196(run)
+        8    0.000    0.000  261.619   32.702 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/case.py:44(__call__)
+        8    0.000    0.000  261.619   32.702 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/case.py:115(run)
+        8    0.000    0.000  261.617   32.702 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/case.py:142(runTest)
+        8    0.000    0.000  261.617   32.702 /opt/python2.7/lib/python2.7/unittest/case.py:390(__call__)
+        8    0.000    0.000  261.617   32.702 /opt/python2.7/lib/python2.7/unittest/case.py:293(run)
+      141    0.301    0.002  261.555    1.855 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/lib/function_base.py:1846(__call__)
+      141    4.528    0.032  261.255    1.853 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/lib/function_base.py:1928(_vectorize_call)
+        8    0.016    0.002  258.592   32.324 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_performance.py:35(profile)
+       60    0.002    0.000  221.403    3.690 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/vel_functions.py:478(vel_mag_correction)
+       71    0.001    0.000  212.892    2.998 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/generic_functions.py:21(magnetic_declination)
+   710071  152.680    0.000  209.733    0.000 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/generic_functions.py:137(wmm_declination)
+   710071    4.649    0.000   49.070    0.000 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/generic_functions.py:120(set_wmm_model)
+   700070   36.681    0.000   46.986    0.000 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/generic_functions.py:61(magnetic_correction)
+   710071    1.713    0.000   44.420    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/pkg_resources.py:942(resource_filename)
+   710071    6.623    0.000   38.026    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/pkg_resources.py:240(get_provider)
+        1    0.000    0.000   37.257   37.257 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_vel_performance.py:42(test_nobska_corr_north)
+       10    0.000    0.000   37.255    3.726 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/vel_functions.py:86(nobska_mag_corr_north)
+        1    0.000    0.000   37.174   37.174 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_vel_performance.py:32(test_nobska_corr_east)
+       10    0.000    0.000   37.172    3.717 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/vel_functions.py:30(nobska_mag_corr_east)
+        1    0.000    0.000   37.164   37.164 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_vel_performance.py:52(test_nortek_corr_east)
+       10    0.000    0.000   37.162    3.716 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/vel_functions.py:167(nortek_mag_corr_east)
+        1    0.000    0.000   36.654   36.654 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_vel_performance.py:74(test_vel3dk_corr_east)
+       10    0.002    0.000   36.652    3.665 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/vel_functions.py:305(vel3dk_mag_corr_east)
+        1    0.000    0.000   36.646   36.646 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_vel_performance.py:63(test_nortek_corr_north)
+       10    0.000    0.000   36.643    3.664 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/vel_functions.py:223(nortek_mag_corr_north)
+        1    0.000    0.000   36.558   36.558 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_vel_performance.py:85(test_vel3dk_corr_north)
+       10    0.002    0.000   36.554    3.655 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/vel_functions.py:374(vel3dk_mag_corr_north)
+        1    0.000    0.000   30.216   30.216 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_vel_performance.py:96(test_magnetic_declination)
+   710071    2.061    0.000   28.541    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/pkg_resources.py:1497(__init__)
+   710071   10.183    0.000   20.440    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/pkg_resources.py:1501(_setup_prefix)
+  1400140    6.679    0.000   10.304    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/core/shape_base.py:6(atleast_1d)
+  5680568   10.256    0.000   10.256    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/posixpath.py:80(split)
+        1    0.000    0.000    9.943    9.943 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_vel_performance.py:106(test_magnetic_correction)
+   710071    7.983    0.000    7.983    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/genericpath.py:15(exists)
+   710071    2.710    0.000    6.041    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/pkg_resources.py:1398(__init__)
+   710071    0.779    0.000    4.682    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/pkg_resources.py:1402(get_resource_filename)
+   710071    2.113    0.000    3.902    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/pkg_resources.py:1479(_fn)
+  1400388    3.626    0.000    3.626    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/core/numeric.py:322(asanyarray)
+   710071    3.330    0.000    3.330    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/posixpath.py:118(dirname)
+   710071    2.201    0.000    2.862    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/pkg_resources.py:2941(_find_adapter)
+   710071    1.789    0.000    1.789    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/posixpath.py:60(join)
+   710071    0.661    0.000    0.661    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/pkg_resources.py:2934(_get_mro)
+      141    0.006    0.000    0.049    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/lib/function_base.py:1875(_get_ufunc_and_otypes)
+       20    0.004    0.000    0.011    0.001 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:667(evaluate)
+       60    0.006    0.000    0.011    0.000 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/vel_functions.py:551(valid_lat)
+      240    0.001    0.000    0.009    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/core/fromnumeric.py:1563(any)
+       60    0.004    0.000    0.008    0.000 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/vel_functions.py:566(valid_lon)
+      240    0.007    0.000    0.007    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/core/_methods.py:24(_any)
+        4    0.005    0.001    0.005    0.001 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:219(stringToExpression)
+        2    0.000    0.000    0.005    0.002 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:637(getExprNames)
+        8    0.002    0.000    0.003    0.000 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_vel_performance.py:21(setUp)
+      804    0.002    0.000    0.002    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/core/numeric.py:252(asarray)
+      132    0.002    0.000    0.002    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/lib/function_base.py:1819(__init__)
+        2    0.000    0.000    0.002    0.001 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:534(NumExpr)
+        2    0.000    0.000    0.001    0.001 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:481(precompile)
+       56    0.001    0.000    0.001    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/core/numeric.py:120(ones)
+       59    0.000    0.000    0.001    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/plugins/manager.py:93(__call__)
+        8    0.000    0.000    0.001    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/lib/function_base.py:412(average)
+       59    0.000    0.000    0.001    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/plugins/manager.py:158(simple)
+        8    0.000    0.000    0.001    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/proxy.py:165(addSuccess)
+        8    0.000    0.000    0.001    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/case.py:66(beforeTest)
+        8    0.000    0.000    0.001    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/proxy.py:118(beforeTest)
+       80    0.001    0.000    0.001    0.000 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_performance.py:28(__exit__)
+       22    0.001    0.000    0.001    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:462(getContext)
+        8    0.001    0.000    0.001    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/core/_methods.py:42(_mean)
+      6/2    0.000    0.000    0.001    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:137(typeCompileAst)
+        8    0.000    0.000    0.001    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/plugins/logcapture.py:204(beforeTest)
+        8    0.000    0.000    0.001    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/plugins/logcapture.py:167(setupLoghandler)
+        1    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/encodings/__init__.py:71(search_function)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/runner.py:57(addSuccess)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/suite.py:321(tearDown)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/logging/__init__.py:1262(addHandler)
+       59    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/plugins/manager.py:240(__getattr__)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/suite.py:267(setUp)
+        4    0.000    0.000    0.000    0.000 <expr>:1(<module>)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:82(func)
+        8    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/case.py:56(afterTest)
+        8    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/proxy.py:112(afterTest)
+        5    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/suite.py:354(teardownContext)
+        9    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/plugins/manager.py:82(__init__)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/logging/__init__.py:210(_acquireLock)
+       87    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/logging/__init__.py:1110(debug)
+        8    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/proxy.py:170(startTest)
+        5    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/suite.py:299(setupContext)
+       80    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_performance.py:22(__init__)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:235(div_op)
+        8    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/proxy.py:178(stopTest)
+       12    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/proxy.py:49(__call__)
+       10    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/util.py:449(try_run)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/threading.py:121(acquire)
+       87    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/logging/__init__.py:1324(isEnabledFor)
+       32    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:102(allOf)
+        1    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/encodings/ascii.py:8(<module>)
+       20    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:616(getType)
+        8    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/site-packages/numpy/core/_methods.py:32(_count_reduce_items)
+       80    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/ion_functions/data/perf/test_performance.py:25(__enter__)
+        8    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:459(__init__)
+        8    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/plugins/logcapture.py:209(afterTest)
+   160/80    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:96(postorderWalk)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:259(getInputOrder)
+       36    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/plugins/manager.py:96(addPlugin)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/logging/__init__.py:219(_releaseLock)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:472(__init__)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/runner.py:50(startTest)
+     12/4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:108(expressionToAST)
+       23    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/suite.py:370(_get_wrapped_tests)
+       40    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/proxy.py:101(assertMyTest)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:343(optimizeTemporariesAllocation)
+        8    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:159(getKind)
+       87    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/logging/__init__.py:1310(getEffectiveLevel)
+        1    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/encodings/ascii.py:41(getregentry)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:417(compileThreeAddrForm)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:305(assignLeafRegisters)
+        8    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:121(bestConstantType)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:106(commonKind)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/threading.py:141(release)
+       16    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/runner.py:17(__getattr__)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:441(toString)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/result.py:59(startTest)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:322(collapseDuplicateSubtrees)
+        9    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/plugins/manager.py:108(makeCall)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:434(quadrupleToString)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/logging/__init__.py:1104(setLevel)
+       18    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:59(__init__)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/result.py:79(stopTest)
+       16    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:361(__init__)
+       15    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/suite.py:92(_get_tests)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:438(__init__)
+     12/4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:119(sigPerms)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:286(getConstants)
+        8    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/plugins/logcapture.py:82(truncate)
+       12    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:102(isConstant)
+     18/6    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:80(__hash__)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/utils.py:127(__setitem__)
+       16    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/threading.py:63(_note)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/case.py:374(doCleanups)
+       10    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/util.py:163(isclass)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:405(convertASTtoThreeAddrForm)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:316(assignBranchRegisters)
+       12    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/proxy.py:77(__init__)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:77(get_optimization)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:529(<genexpr>)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:382(setRegisterNumbersForTemporaries)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/result.py:65(_setupStdout)
+        6    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/suite.py:171(__hash__)
+        6    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:421(nToChr)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/logging/__init__.py:182(_checkLevel)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/plugins/errorclass.py:147(prepareTestResult)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/suite.py:77(__nonzero__)
+       11    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/nose-1.1.2-py2.7.egg/nose/proxy.py:29(fget)
+        6    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:189(__init__)
+        8    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:71(set_new_context)
+        1    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/encodings/__init__.py:49(normalize_encoding)
+      6/4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:350(<genexpr>)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/result.py:84(_restoreStdout)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/logging/__init__.py:1531(getLogger)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:255(isReduction)
+        1    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/codecs.py:77(__new__)
+        2    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:280(convertConstantToKind)
+        6    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:146(<genexpr>)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:375(setOrderedRegisterNumbers)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:67(get)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/case.py:233(tearDown)
+        1    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/encodings/ascii.py:24(IncrementalDecoder)
+        8    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/result.py:126(addSuccess)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:90(key)
+        6    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:93(typecode)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/necompiler.py:348(<genexpr>)
+        1    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/encodings/ascii.py:20(IncrementalEncoder)
+        4    0.000    0.000    0.000    0.000 /home/cfortin/Workspace/code/ion-functions/eggs/numexpr-2.1-py2.7-linux-x86_64.egg/numexpr/expressions.py:69(get_current_context)
+        1    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/case.py:241(tearDownClass)
+        1    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/encodings/ascii.py:13(Codec)
+        1    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/encodings/ascii.py:34(StreamConverter)
+        1    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/encodings/ascii.py:28(StreamWriter)
+        0    0.000             0.000          profile:0(profiler)
+        1    0.000    0.000    0.000    0.000 /opt/python2.7/lib/python2.7/unittest/case.py:237(setUpClass)
+        1    0.000    0.000    0.000    0.000 /home/cfortin/.virtualenvs/ooin27/lib/python2.7/encodings/ascii.py:31(StreamReader)
+
+
+----------------------------------------------------------------------
+Ran 8 tests in 261.620s
+
+OK
+Run 0: 0.704450845718
+Run 1: 0.702881097794
+Run 2: 0.702437877655
+Run 3: 0.702110052109
+Run 4: 0.685160160065
+Run 5: 0.685110092163
+Run 6: 0.684140920639
+Run 7: 0.685245990753
+Run 8: 0.684656858444
+Run 9: 0.685606002808
+Mean:  0.692179989815
+Run 0: 3.02167510986
+Run 1: 3.01722598076
+Run 2: 3.02107787132
+Run 3: 3.01814007759
+Run 4: 3.0239648819
+Run 5: 3.02210903168
+Run 6: 3.02006101608
+Run 7: 3.02802491188
+Run 8: 3.02311992645
+Run 9: 3.02046990395
+Mean:  3.02158687115
+Run 0: 3.72687506676
+Run 1: 3.71407389641
+Run 2: 3.712266922
+Run 3: 3.70903396606
+Run 4: 3.71472501755
+Run 5: 3.71958589554
+Run 6: 3.72563314438
+Run 7: 3.71732187271
+Run 8: 3.71713399887
+Run 9: 3.71647310257
+Mean:  3.71731228828
+Run 0: 3.71373486519
+Run 1: 3.72676706314
+Run 2: 3.72824001312
+Run 3: 3.72491979599
+Run 4: 3.72748589516
+Run 5: 3.72569608688
+Run 6: 3.72482419014
+Run 7: 3.72699093819
+Run 8: 3.7208969593
+Run 9: 3.73654603958
+Mean:  3.72561018467
+Run 0: 3.73143601418
+Run 1: 3.72748398781
+Run 2: 3.7303750515
+Run 3: 3.72952198982
+Run 4: 3.72893619537
+Run 5: 3.72888612747
+Run 6: 3.72838306427
+Run 7: 3.73182702065
+Run 8: 3.66328716278
+Run 9: 3.66345620155
+Mean:  3.71635928154
+Run 0: 3.66190195084
+Run 1: 3.6621491909
+Run 2: 3.66487812996
+Run 3: 3.66950798035
+Run 4: 3.66001915932
+Run 5: 3.66520500183
+Run 6: 3.6623749733
+Run 7: 3.66097807884
+Run 8: 3.67384791374
+Run 9: 3.66463303566
+Mean:  3.66454954147
+Run 0: 3.66908192635
+Run 1: 3.66210079193
+Run 2: 3.6674759388
+Run 3: 3.66011810303
+Run 4: 3.66053199768
+Run 5: 3.6619579792
+Run 6: 3.65937304497
+Run 7: 3.66715693474
+Run 8: 3.67623806
+Run 9: 3.6696870327
+Mean:  3.66537218094
+Run 0: 3.66580796242
+Run 1: 3.66214203835
+Run 2: 3.65173697472
+Run 3: 3.65791916847
+Run 4: 3.6533870697
+Run 5: 3.65631890297
+Run 6: 3.65401101112
+Run 7: 3.65514683723
+Run 8: 3.64755797386
+Run 9: 3.65288209915
+Mean:  3.6556910038
