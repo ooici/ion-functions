@@ -53,8 +53,20 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0.0, zflag=-1):
 
         2014-02-02: Christopher Wingard. Initial Code.
     """
-    decln = np.vectorize(wmm_declination)
-    mag_dec = decln(lat, lon, ntp_timestamp, z, zflag)
+
+    # CSF move WMM instantiation outside of the vectorize call, to prevent
+    # repeated build/teardown during the vectorize.  Need to then pass it as
+    # an arg 
+    # NOTE that this means that all the data being vectorized over are assumed
+    # to have the same appropriate model year.  If this is not the case, we 
+    # should add code to split and batch the vectorize call to like year sets
+
+    # determine which WMM model to use (only one currently is for 2010-2015).
+    wmm_model = set_wmm_model(2010)
+    wmm = WMM(wmm_model)
+    
+    decln = np.vectorize(wmm_declination_remod)
+    mag_dec = decln(lat, lon, ntp_timestamp, wmm, z, zflag)
     return mag_dec
 
 
@@ -105,9 +117,12 @@ def magnetic_correction(theta, u, v):
             1341-00760_Data_Product_SPEC_VELPROF_OOI.pdf)
     """
     theta_rad = np.radians(theta)
+    cosT = np.cos(theta_rad)
+    sinT = np.sin(theta_rad)
+
     M = np.array([
-        [np.cos(theta_rad), np.sin(theta_rad)],
-        [-np.sin(theta_rad), np.cos(theta_rad)]
+        [cosT, sinT],
+        [-1*sinT, cosT]
     ])
 
     u = np.atleast_1d(u)
@@ -200,6 +215,86 @@ def wmm_declination(lat, lon, ntp_timestamp, z=0.0, zflag=-1):
     # determine which WMM model to use (only one currently is for 2010-2015).
     wmm_model = set_wmm_model(2010)
     wmm = WMM(wmm_model)
+ 
+    # set the depth to negative for below sealevel (if needed) and convert from
+    # meters to kilometers.
+    z = z / 1000.  # m -> km
+    if z > 0 & zflag == -1:   # check that depth is a positive number first
+        z = zflag * z    # convert z to indicate depth
+
+    # calculate the magnetic declination
+    mag_dec = wmm.declination(lat, lon, z, dates)
+
+    return mag_dec
+
+
+def wmm_declination_remod(lat, lon, ntp_timestamp, wmm, z=0.0, zflag=-1):
+    """
+    This function is a direct copy of wmm_declination, with the added argument
+    of wmm, so that the model can be instantiated externally and reused when this
+    function is called in a vectorized fashion
+
+    Description:
+
+        Magnetic declination (a.k.a. magnetic variation) as a function
+        of location and date from the World Magnetic Model (WMM).
+
+        The magnetic declination correction is used to correct velocity vectors
+        in several OOI data product transformations.
+
+    Implemented by:
+
+        2013-03-20: Stuart Pearce. Initial code.
+        2013-06:    Luke Campbell. Implemented the WMM C code for speed
+                    over the Python geomag library.
+        2014-02-02: Christopher Wingard. Adjusted to allow for updates to the
+                    WMM coefficients table (WMM.COF), that are updated every 5
+                    years. Renamed to wmm_declination in order to keep
+                    magnetic_declination name preserved in other modules.
+
+    Usage:
+
+        mag_dec = wmm_declination(lat,lon,ntp_timestamp,z,zflag)
+
+            where
+
+        mag_dec = magnetic declination/variation value [degrees from N].
+            Positive values are eastward, negative westward of North.
+        lat = latitude of the instrument [decimal degrees].  East is
+            positive, West negative.
+        lon = longitude of the instrument [decimal degrees]. North
+            is positive, South negative.
+        ntp_timestamp = NTP time stamp from a data particle
+            [secs since 1900-01-01].
+        z = depth or height of instrument relative to sealevel [meters].
+            Positive values only. Default value is 0.
+        zflag = indicates whether to use z as a depth or height relative
+            to sealevel. -1=depth (i.e. -z) and 1=height (i.e. +z). -1
+            is the default
+
+    Example:
+
+        >>> lat = 45.0 # Location is deep water off of Oregon coast
+        >>> lon = -128
+        >>> z = -1000
+        >>> ntp_timestamp = 3574792037.958   # 2013-04-12 14:47:17
+
+        >>> mag_dec = wmm_declination(lat, lon, z,
+        >>>                               ntp_timestamp, -1)
+        >>> print mag_dec
+        16.465045980896086
+
+    References:
+
+        Maus, S., S. Macmillan, S. McLean, B. Hamilton, A. Thomson, M. Nair,
+            and C. Rollins, 2010, The US/UK World Magnetic Model for 2010-2015,
+            NOAA Technical Report NESDIS/NGDC.
+            http://www.ngdc.noaa.gov/geomag/WMM/DoDWMM.shtml
+    """
+    # convert ntp timestamp to unix timestamp and then a datetime object
+    unix_timestamp = ntp_timestamp - 2208988800.
+    dates = datetime.datetime.utcfromtimestamp(unix_timestamp).date()
+
 
     # set the depth to negative for below sealevel (if needed) and convert from
     # meters to kilometers.
