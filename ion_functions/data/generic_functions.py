@@ -56,15 +56,15 @@ def magnetic_declination(lat, lon, ntp_timestamp, z=0.0, zflag=-1):
 
     # CSF move WMM instantiation outside of the vectorize call, to prevent
     # repeated build/teardown during the vectorize.  Need to then pass it as
-    # an arg 
+    # an arg
     # NOTE that this means that all the data being vectorized over are assumed
-    # to have the same appropriate model year.  If this is not the case, we 
+    # to have the same appropriate model year.  If this is not the case, we
     # should add code to split and batch the vectorize call to like year sets
 
     # determine which WMM model to use (only one currently is for 2010-2015).
     wmm_model = set_wmm_model(2010)
     wmm = WMM(wmm_model)
-    
+
     decln = np.vectorize(wmm_declination_remod)
     mag_dec = decln(lat, lon, ntp_timestamp, wmm, z, zflag)
     return mag_dec
@@ -110,7 +110,7 @@ def magnetic_correction(theta, u, v):
             >> Controlled >> 1000 System Level >>
             1341-00750_Data_Product_SPEC_VELPROF_OOI.pdf)
 
-        OOI (2013). Data Product Specification for Turbulent Velocity Profile 
+        OOI (2013). Data Product Specification for Turbulent Velocity Profile
             and Echo Intensity. Document Control Number 1341-00760.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
@@ -215,7 +215,7 @@ def wmm_declination(lat, lon, ntp_timestamp, z=0.0, zflag=-1):
     # determine which WMM model to use (only one currently is for 2010-2015).
     wmm_model = set_wmm_model(2010)
     wmm = WMM(wmm_model)
- 
+
     # set the depth to negative for below sealevel (if needed) and convert from
     # meters to kilometers.
     z = z / 1000.  # m -> km
@@ -294,7 +294,6 @@ def wmm_declination_remod(lat, lon, ntp_timestamp, wmm, z=0.0, zflag=-1):
     # convert ntp timestamp to unix timestamp and then a datetime object
     unix_timestamp = ntp_timestamp - 2208988800.
     dates = datetime.datetime.utcfromtimestamp(unix_timestamp).date()
-
 
     # set the depth to negative for below sealevel (if needed) and convert from
     # meters to kilometers.
