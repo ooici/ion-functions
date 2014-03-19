@@ -78,17 +78,23 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
                         arrays can be processed (in other words, vectorized the
                         code).
         """
-        ins2earth = np.vectorize(af.adcp_ins2earth)
-
         # single record case
-        u, v, w, e = af.adcp_beam2ins(self.b1, self.b2, self.b3, self.b4)
-        got_uu, got_vv, got_ww = ins2earth(u, v, w, self.heading,
-                                           self.pitch, self.roll, self.orient)
+        got_uu_cor = af.adcp_beam_eastward(self.b1, self.b2, self.b3, self.b4,
+                                           self.heading, self.pitch, self.roll, self.orient,
+                                           self.lat, self.lon, self.depth, self.ntp)
+        got_vv_cor = af.adcp_beam_northward(self.b1, self.b2, self.b3, self.b4,
+                                            self.heading, self.pitch, self.roll, self.orient,
+                                            self.lat, self.lon, self.depth, self.ntp)
+        got_ww = af.adcp_beam_vertical(self.b1, self.b2, self.b3, self.b4,
+                                       self.heading, self.pitch, self.roll, self.orient)
+        #error = af.adcp_beam_vertical(self.b1, self.b2, self.b3, self.b4,
+        #                              self.heading, self.pitch, self.roll, self.orient,
+        #                              self.lat, self.lon, self.depth, self.ntp)
 
-        # test the beam to earth coordinate transforms
-        np.testing.assert_array_almost_equal(got_uu / 1000, self.uu, 4)
-        np.testing.assert_array_almost_equal(got_vv / 1000, self.vv, 4)
-        np.testing.assert_array_almost_equal(got_ww / 1000, self.ww, 4)
+        # test results
+        np.testing.assert_array_almost_equal(got_uu_cor, np.atleast_2d(self.uu_cor), 4)
+        np.testing.assert_array_almost_equal(got_vv_cor, np.atleast_2d(self.vv_cor), 4)
+        np.testing.assert_array_almost_equal(got_ww, np.atleast_2d(self.ww), 4)
 
         # reset the test inputs for multiple records
         b1 = np.tile(self.b1, (24, 1))
@@ -99,24 +105,33 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         pitch = np.ones(24) * self.pitch
         roll = np.ones(24) * self.roll
         orient = np.ones(24) * self.orient
+        lat = np.ones(24) * self.lat
+        lon = np.ones(24) * self.lon
+        depth = np.ones(24) * self.depth
+        ntp = np.ones(24) * self.ntp
 
-        # reset expected results for multiple records
-        uu = np.tile(self.uu, (24, 1))
-        vv = np.tile(self.vv, (24, 1))
+        # reset outputs for multiple records
+        uu_cor = np.tile(self.uu_cor, (24, 1))
+        vv_cor = np.tile(self.vv_cor, (24, 1))
         ww = np.tile(self.ww, (24, 1))
 
-        u, v, w, e = af.adcp_beam2ins(b1, b2, b3, b4)
-        h = heading.reshape(heading.shape[0], 1)
-        p = pitch.reshape(pitch.shape[0], 1)
-        r = roll.reshape(roll.shape[0], 1)
-        vf = orient.reshape(orient.shape[0], 1)
+        # multiple record case
+        got_uu_cor = af.adcp_beam_eastward(b1, b2, b3, b4,
+                                           heading, pitch, roll, orient,
+                                           lat, lon, depth, ntp)
+        got_vv_cor = af.adcp_beam_northward(b1, b2, b3, b4,
+                                            heading, pitch, roll, orient,
+                                            lat, lon, depth, ntp)
+        got_ww = af.adcp_beam_vertical(b1, b2, b3, b4,
+                                       heading, pitch, roll, orient)
+        #error = af.adcp_beam_vertical(b1, b2, b3, b4,
+        #                              heading, pitch, roll, orient,
+        #                              lat, lon, depth, ntp)
 
-        got_uu, got_vv, got_ww = ins2earth(u, v, w, h, p, r, vf)
-
-        # test the beam to earth coordinate transforms for multiple records
-        np.testing.assert_array_almost_equal(got_uu / 1000, uu, 4)
-        np.testing.assert_array_almost_equal(got_vv / 1000, vv, 4)
-        np.testing.assert_array_almost_equal(got_ww / 1000, ww, 4)
+        # test results
+        np.testing.assert_array_almost_equal(got_uu_cor, uu_cor, 4)
+        np.testing.assert_array_almost_equal(got_vv_cor, vv_cor, 4)
+        np.testing.assert_array_almost_equal(got_ww, ww, 4)
 
     def test_adcp_earth(self):
         """
@@ -133,28 +148,21 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
 
         Implemented by Christopher Wingard, 2014-02-06
         """
-        ins2earth = np.vectorize(af.adcp_ins2earth)
-
-        # single record case
+        # set the test data
         u, v, w, e = af.adcp_beam2ins(self.b1, self.b2, self.b3, self.b4)
-        uu, vv, ww = ins2earth(u, v, w, self.heading,
-                               self.pitch, self.roll, self.orient)
+        uu, vv, ww = af.adcp_ins2earth(u, v, w, self.heading,
+                                       self.pitch, self.roll, self.orient)
+
+        # test the magnetic variation correction
         got_uu_cor = af.adcp_earth_eastward(uu, vv, self.depth, self.lat, self.lon, self.ntp)
         got_vv_cor = af.adcp_earth_northward(uu, vv, self.depth, self.lat, self.lon, self.ntp)
 
-        # test the magnetic variation correction
-        np.testing.assert_array_almost_equal(got_uu_cor, self.uu_cor.reshape(1, 10), 4)
-        np.testing.assert_array_almost_equal(got_vv_cor, self.vv_cor.reshape(1, 10), 4)
+        np.testing.assert_array_almost_equal(got_uu_cor, np.atleast_2d(self.uu_cor), 4)
+        np.testing.assert_array_almost_equal(got_vv_cor, np.atleast_2d(self.vv_cor), 4)
 
         # reset the test inputs for multiple records
-        b1 = np.tile(self.b1, (24, 1))
-        b2 = np.tile(self.b2, (24, 1))
-        b3 = np.tile(self.b3, (24, 1))
-        b4 = np.tile(self.b4, (24, 1))
-        heading = np.ones(24) * self.heading
-        pitch = np.ones(24) * self.pitch
-        roll = np.ones(24) * self.roll
-        orient = np.ones(24) * self.orient
+        uu = np.tile(uu, (24, 1))
+        vv = np.tile(vv, (24, 1))
         depth = np.ones(24) * self.depth
         lat = np.ones(24) * self.lat
         lon = np.ones(24) * self.lon
@@ -165,13 +173,6 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         vv_cor = np.tile(self.vv_cor, (24, 1))
 
         # compute the results for multiple records
-        u, v, w, e = af.adcp_beam2ins(b1, b2, b3, b4)
-        h = heading.reshape(heading.shape[0], 1)
-        p = pitch.reshape(pitch.shape[0], 1)
-        r = roll.reshape(roll.shape[0], 1)
-        vf = orient.reshape(orient.shape[0], 1)
-        uu, vv, ww = ins2earth(u, v, w, h, p, r, vf)
-
         got_uu_cor = af.adcp_earth_eastward(uu, vv, depth, lat, lon, ntp)
         got_vv_cor = af.adcp_earth_northward(uu, vv, depth, lat, lon, ntp)
 
