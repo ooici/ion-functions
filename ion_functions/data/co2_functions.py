@@ -170,6 +170,8 @@ def pco2_pco2wat(mtype, light, therm, ea434, eb434, ea620, eb620,
 
         2013-04-20: Christopher Wingard. Initial code.
         2014-02-19: Christopher Wingard. Updated comments.
+        2014-03-19: Christopher Wingard. Optimized using feedback provided by
+                    Chris Fortin.
 
     Usage:
 
@@ -220,19 +222,13 @@ def pco2_pco2wat(mtype, light, therm, ea434, eb434, ea620, eb620,
     a434blank = np.atleast_1d(a434blank)
     a620blank = np.atleast_1d(a620blank)
 
-    # index through the measurements
-    indx = 0
-    pco2 = np.empty(mtype.shape[0])
-    for m in mtype:
-        if m == 4:
-            pco2[indx] = pco2_calc_pco2(light[indx, :], therm[indx], ea434[indx],
-                                        eb434[indx], ea620[indx], eb620[indx],
-                                        calt[indx], cala[indx], calb[indx],
-                                        calc[indx], a434blank[indx], a620blank[indx])
-        else:
-            pco2[indx] = fill_value
+    # calculate the pco2 value
+    pco2 = pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
+                          calt, cala, calb, calc, a434blank, a620blank)
 
-        indx += 1
+    # reset dark measurements to the fill value
+    m = np.where(mtype == 5)[0]
+    pco2[m] = fill_value
 
     return pco2
 
@@ -252,6 +248,7 @@ def pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
         20??-??-??: J. Newton (Sunburst Sensors, LLC). Original Matlab code.
         2013-04-20: Christopher Wingard. Initial python code.
         2014-02-19: Christopher Wingard. Updated comments.
+        2014-03-19: Christopher Wingard. Optimized.
 
     Usage:
 
@@ -297,8 +294,8 @@ def pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
     #S434 = light[3]   # 434nm Signal Signal LED intensity
     #R620 = light[4]   # 620nm Reference LED intensity
     #S620 = light[5]   # 434nm Signal Signal LED intensity
-    Ratio434 = light[6]     # 434nm Ratio
-    Ratio620 = light[7]     # 620nm Ratio
+    Ratio434 = light[:, 6]     # 434nm Ratio
+    Ratio620 = light[:, 7]     # 620nm Ratio
 
     # calculate absorbance ratio, correcting for blanks
     A434 = -1. * sp.log10(Ratio434 / a434blank)  # 434 absorbance
