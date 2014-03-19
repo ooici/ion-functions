@@ -5,54 +5,11 @@
 @author Christopher Wingard
 @brief Module containing CTD related data-calculations.
 """
-
 import numpy as np
-
-from ion_functions.data.generic_functions import wmm_declination, magnetic_correction
-from ion_functions.utils import isscalar
+from ion_functions.data.generic_functions import magnetic_declination, magnetic_correction
 
 
 # Wrapper functions to create 1:1 outputs for ParameterFunctions in Preload
-def adcp_backscatter(raw, sfactor):
-    """
-    Description:
-
-        Converts the echo intensity data from counts to dB using a facotry
-        specified scale factor (nominally 0.45 dB/count for the Workhorse
-        family of ADCPs and 0.61 dB/count for the ExplorerDVL family). As
-        defined in the Data Product Specification for Velocity Profile and Echo
-        Intensity - DCN 1341-00750.
-
-    Implemented by:
-
-        2014-04-21: Christopher Wingard. Initial code.
-
-    Usage:
-
-        dB = adcp_backscatter(raw, sfactor)
-
-            where
-
-        dB = Relative Echo Intensity (ECHOINT_L1) [dB]
-
-        raw = raw echo intensity (ECHOINT_L0) [count]
-        sfactor = factory supplied scale factor, instrument and beam specific [dB/count]
-
-    References:
-
-        OOI (2012). Data Product Specification for Velocity Profile and Echo
-            Intensity. Document Control Number 1341-00750.
-            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
-            >> Controlled >> 1000 System Level >>
-            1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
-    """
-    if isscalar(sfactor) is False:
-        sfactor = sfactor.reshape(sfactor.shape[0], 1)
-
-    dB = raw * sfactor
-    return dB
-
-
 def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     """
     Description:
@@ -108,6 +65,9 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     # compute the beam to instrument transform
     u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
 
+    # calculate the magnetic declination using the WWM2010 model
+    theta = magnetic_declination(lat, lon, dt, z)
+
     # iterate through arrays for processing multiple records
     uu_cor = np.empty((b1.shape))
     for indx in range(b1.shape[0]):
@@ -115,9 +75,8 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
         uu, vv, ww = adcp_ins2earth(u[indx, :], v[indx, :], w[indx, :],
                                     h[indx], p[indx], r[indx], vf[indx])
 
-        # calculate the magnetic declination using the WWM2010 model
-        theta = wmm_declination(lat[indx], lon[indx], dt[indx], z[indx])
-        uu_cor[indx, :], vcor = magnetic_correction(theta, uu, vv)
+        # apply the magnetic variation correction
+        uu_cor[indx, :], vcor = magnetic_correction(theta[indx], uu, vv)
 
     # scale eastward velocity to m/s
     uu_cor = uu_cor / 1000.  # mm/s -> m/s
@@ -181,6 +140,9 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     # compute the beam to instrument transform
     u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
 
+    # calculate the magnetic declination using the WWM2010 model
+    theta = magnetic_declination(lat, lon, dt, z)
+
     # iterate through arrays for processing multiple records
     vv_cor = np.empty((b1.shape))
     for indx in range(b1.shape[0]):
@@ -188,14 +150,13 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
         uu, vv, ww = adcp_ins2earth(u[indx, :], v[indx, :], w[indx, :],
                                     h[indx], p[indx], r[indx], vf[indx])
 
-        # calculate the magnetic declination using the WWM2010 model
-        theta = wmm_declination(lat[indx], lon[indx], dt[indx], z[indx])
-        ucor, vv_cor[indx, :] = magnetic_correction(theta, uu, vv)
+        # apply the magnetic variation correction
+        ucor, vv_cor[indx, :] = magnetic_correction(theta[indx], uu, vv)
 
-    # scale eastward velocity to m/s
+    # scale northward velocity to m/s
     vv_cor = vv_cor / 1000.  # mm/s -> m/s
 
-    # return the Eastward Velocity Profile
+    # return the Northward Velocity Profile
     return vv_cor
 
 
@@ -260,17 +221,19 @@ def adcp_earth_eastward(u, v, z, lat, lon, dt):
     # force shapes of inputs to arrays
     u = np.atleast_2d(u)
     v = np.atleast_2d(v)
-    z = np.atleast_1d(z).reshape(u.shape[0], 1) / 10.  # scale decimeter depth input to meters
-    lat = np.atleast_1d(lat).reshape(u.shape[0], 1)
-    lon = np.atleast_1d(lon).reshape(u.shape[0], 1)
-    dt = np.atleast_1d(dt).reshape(u.shape[0], 1)
+    z = np.atleast_1d(z) / 10.  # scale decimeter depth input to meters
+    lat = np.atleast_1d(lat)
+    lon = np.atleast_1d(lon)
+    dt = np.atleast_1d(dt)
+
+    # calculate the magnetic declination using the WWM2010 model
+    theta = magnetic_declination(lat, lon, dt, z)
 
     # iterate through arrays for processing multiple records
     uu_cor = np.empty(u.shape)
     for indx in range(u.shape[0]):
-        # calculate the magnetic declination using the WWM2010 model
-        theta = wmm_declination(lat[indx], lon[indx], dt[indx], z[indx])
-        uu_cor[indx, :], vcor = magnetic_correction(theta, u[indx, :], v[indx, :])
+        # apply the magnetic variation correction
+        uu_cor[indx, :], vcor = magnetic_correction(theta[indx], u[indx, :], v[indx, :])
 
     # scale eastward velocity to m/s
     uu_cor = uu_cor / 1000.  # mm/s -> m/s
@@ -287,26 +250,68 @@ def adcp_earth_northward(u, v, z, lat, lon, dt):
     # force shapes of inputs to arrays of the correct dimensions
     u = np.atleast_2d(u)
     v = np.atleast_2d(v)
-    z = np.atleast_1d(z).reshape(u.shape[0], 1) / 10.  # scale decimeter depth input to meters
-    lat = np.atleast_1d(lat).reshape(u.shape[0], 1)
-    lon = np.atleast_1d(lon).reshape(u.shape[0], 1)
-    dt = np.atleast_1d(dt).reshape(u.shape[0], 1)
+    z = np.atleast_1d(z) / 10.  # scale decimeter depth input to meters
+    lat = np.atleast_1d(lat)
+    lon = np.atleast_1d(lon)
+    dt = np.atleast_1d(dt)
+
+    # calculate the magnetic declination using the WWM2010 model
+    theta = magnetic_declination(lat, lon, dt, z)
 
     # iterate through arrays for processing multiple records
     vv_cor = np.empty(u.shape)
     for indx in range(u.shape[0]):
-        # calculate the magnetic declination using the WWM2010 model
-        theta = wmm_declination(lat[indx], lon[indx], dt[indx], z[indx])
-        ucor, vv_cor[indx, :] = magnetic_correction(theta, u[indx, :], v[indx, :])
+        # apply the magnetic variation correction
+        ucor, vv_cor[indx, :] = magnetic_correction(theta[indx], u[indx, :], v[indx, :])
 
-    # scale eastward velocity to m/s
+    # scale northward velocity to m/s
     vv_cor = vv_cor / 1000.  # mm/s -> m/s
 
-    # return the Eastward Velocity Profile
+    # return the Northward Velocity Profile
     return vv_cor
 
 
 ##### ADCP Beam to Earth Transforms and Magnetic Variation Corrections
+def adcp_backscatter(raw, sfactor):
+    """
+    Description:
+
+        Converts the echo intensity data from counts to dB using a facotry
+        specified scale factor (nominally 0.45 dB/count for the Workhorse
+        family of ADCPs and 0.61 dB/count for the ExplorerDVL family). As
+        defined in the Data Product Specification for Velocity Profile and Echo
+        Intensity - DCN 1341-00750.
+
+    Implemented by:
+
+        2014-04-21: Christopher Wingard. Initial code.
+
+    Usage:
+
+        dB = adcp_backscatter(raw, sfactor)
+
+            where
+
+        dB = Relative Echo Intensity (ECHOINT_L1) [dB]
+
+        raw = raw echo intensity (ECHOINT_L0) [count]
+        sfactor = factory supplied scale factor, instrument and beam specific [dB/count]
+
+    References:
+
+        OOI (2012). Data Product Specification for Velocity Profile and Echo
+            Intensity. Document Control Number 1341-00750.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
+    """
+    if np.isscalar(sfactor) is False:
+        sfactor = sfactor.reshape(sfactor.shape[0], 1)
+
+    dB = raw * sfactor
+    return dB
+
+
 def adcp_beam2ins(b1, b2, b3, b4):
     """
     Description:
@@ -344,18 +349,6 @@ def adcp_beam2ins(b1, b2, b3, b4):
             >> Controlled >> 1000 System Level >>
             1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
     """
-    #pi = np.pi
-    #theta = ne.evaluate('20.0 / 180.0 * pi')
-    #a = ne.evaluate('1.0 / (2.0 * sin(theta))')
-    #b = ne.evaluate('1.0 / (4.0 * cos(theta))')
-    ##c = 1.0
-    #d = ne.evaluate('a / sqrt(2.0)')
-    #
-    #u = ne.evaluate('a * (b1 - b2)')
-    #v = ne.evaluate('a * (b4 - b3)')
-    #w = ne.evaluate('b * (b1 + b2 + b3 + b4)')
-    #e = ne.evaluate('d * (b1 + b2 - b3 - b4)')
-
     theta = 20.0 / 180.0 * np.pi
     a = 1.0 / (2.0 * np.sin(theta))
     b = 1.0 / (4.0 * np.cos(theta))
@@ -416,10 +409,7 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
     v = np.atleast_1d(v)
     w = np.atleast_1d(w)
 
-    # determine number of velocity bins
-    nBins = u.shape[0]
-
-    # if the unit is orient looking up, add 180 degrees
+    # if the unit is oriented looking up, add 180 degrees
     mask = (vertical == 1)
     R = roll + (180.0 * mask)
 
@@ -444,17 +434,7 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
         [-np.sin(Rrad), 0.0, np.cos(Rrad)]])
     M = M1 * M2 * M3
 
-    # pre-allocate the output arrays
-    uu = np.empty(nBins)
-    vv = np.empty(nBins)
-    ww = np.empty(nBins)
-
-    # apply the Earth transform for each velocity bin
-    for i in range(nBins):
-        inst = np.array([u[i], v[i], w[i]]).reshape(3, 1)
-        vel = np.dot(M, inst).reshape(3)
-        uu[i] = np.array(vel)[0][0]
-        vv[i] = np.array(vel)[0][1]
-        ww[i] = np.array(vel)[0][2]
+    # apply the Earth transform for each instrument velocity bin
+    uu, vv, ww = np.array(np.dot(M, np.array([u, v, w])))
 
     return (uu, vv, ww)
