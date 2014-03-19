@@ -409,9 +409,6 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
     v = np.atleast_1d(v)
     w = np.atleast_1d(w)
 
-    # determine the number of velocity bins
-    nBins = u.shape[0]
-
     # if the unit is oriented looking up, add 180 degrees
     mask = (vertical == 1)
     R = roll + (180.0 * mask)
@@ -438,14 +435,6 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
     M = M1 * M2 * M3
 
     # apply the Earth transform for each instrument velocity bin
-    inst = np.array([u, v, w]).reshape(3, 1, nBins)
-    uu = np.empty(nBins)
-    vv = np.empty(nBins)
-    ww = np.empty(nBins)
-    for i in range(nBins):
-        earth = np.dot(M, inst[:, :, i])
-        uu[i] = earth[0, 0]
-        vv[i] = earth[1, 0]
-        ww[i] = earth[2, 0]
+    uu, vv, ww = np.array(np.dot(M, np.array([u, v, w])))
 
     return (uu, vv, ww)
