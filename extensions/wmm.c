@@ -35,7 +35,6 @@ int wmm_initialize(char *filename, WMM_Model **model)
     static int firstPass = 1;
     int cIdx, tIdx;       // cache indexs
     struct timeval tv;
-    struct timezone tz;
     time_t oldest;
 
     // if we get here, we need to build a model, with storage pointed to by wwm_this
@@ -66,7 +65,7 @@ int wmm_initialize(char *filename, WMM_Model **model)
                 *model = &wmm_mcache[cIdx].model;
                 // printf("Found existing cache entry %d\n",cIdx);
                 // update the last touched time for this cache site
-                gettimeofday(&tv,&tz);
+                gettimeofday(&tv,NULL);
                 wmm_mcache[cIdx].lastTouch = tv.tv_sec;
                 return 0;
             }
@@ -133,7 +132,7 @@ int wmm_initialize(char *filename, WMM_Model **model)
     strcpy(wmm_mcache[tIdx].filename, bname);
             
     // update the last touched time for this cache site
-    gettimeofday(&tv,&tz);
+    gettimeofday(&tv,NULL);
     wmm_mcache[tIdx].lastTouch = tv.tv_sec;
 
     // and set the return pointer to out current entry

@@ -71,9 +71,9 @@ char test_velocity_corr()
     double uu[10], vv[10], lat[10], lon[10], z[10];
     double uu_cor[10], vv_cor[10];
     int64_t timestamp[10];
-    WMM_Model wmm_model;
+    WMM_Model *wmm_model;
     printf("test_velocity_corr...");
-    if(wmm_initialize("ion_functions/data/WMM.COF", &wmm_model)) {
+    if(wmm_initialize("ion_functions/data/WMM2010.COF", &wmm_model)) {
         message = "Error initializing models";
         printf("\n%s\n", wmm_errmsg);
         return false;
@@ -99,7 +99,7 @@ char test_velocity_corr()
         timestamp[i] = 3319563600 - 2208988800;
         uu_cor[i] = vv_cor[i] = 0;
     }
-    if(wmm_velocity_correction(&in, &wmm_model, &out) != 10) {
+    if(wmm_velocity_correction(&in, wmm_model, &out) != 10) {
         message = "Incomplete processing";
         printf("\n");
         return false;
@@ -116,7 +116,7 @@ char test_velocity_corr()
             return false;
         }
     }
-    if(wmm_free(&wmm_model)) {
+    if(wmm_free(wmm_model)) {
         message = "Error freeing models";
         printf("\n%s\n", wmm_errmsg);
         return false;
@@ -134,8 +134,8 @@ char test_mag_decl()
     int mon = 1;
     int day = 1;
     double declination;
-    WMM_Model model;
-    char filename[] = "ion_functions/data/WMM.COF";
+    WMM_Model *model;
+    char filename[] = "ion_functions/data/WMM2010.COF";
 
     printf("test_mag_decl...");
     if(wmm_initialize(filename, &model)) {
@@ -144,14 +144,14 @@ char test_mag_decl()
         return false;
     }
 
-    declination = wmm_declination(&model, lat, lon, z, year, mon, day);
+    declination = wmm_declination(model, lat, lon, z, year, mon, day);
     if(fabs(declination - 26.184622) > 0.00001) {
         message = "Expected doesn't match received";
         printf("\n%f != 26.184622\n", declination);
         return false;
     }
 
-    if(wmm_free(&model)) {
+    if(wmm_free(model)) {
         message = "Error freeing models";
         printf("\n%s\n", wmm_errmsg);
         return false;
