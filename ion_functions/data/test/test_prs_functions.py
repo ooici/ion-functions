@@ -137,7 +137,12 @@ class TestPRSFunctionsUnit(BaseUnitTestCase):
             >> Controlled >> 1000 System Level >>
             1341-00060_Data_Product_SPEC_BOTTILT_OOI.pdf)
 
-        Implemented by Christopher Wingard, July 2013
+        Implemented by:
+
+            2013-07: Christopher Wingard. Initial code.
+            2014-03-20: Russell Desiderio. Added 3rd quadrant (xtilt, ytilt) test values
+                        to check atan2 implementation.
+
         """
         # set inputs
         xtilt = np.atleast_1d([row[0] for row in self.lily])
