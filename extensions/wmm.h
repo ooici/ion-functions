@@ -4,6 +4,7 @@
 
 #include "GeomagnetismHeader.h"
 #include <inttypes.h>
+#include <sys/time.h>
 
 
 static const char *wmm_errmsg;
