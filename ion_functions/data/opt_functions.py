@@ -9,6 +9,9 @@
 import numpy as np
 import numexpr as ne
 
+# load the temperature and salinity correction coefficients table
+from ion_functions.data.opt_functions_tscor import tscor
+
 
 # wrapper function to calculate the beam attenuation coefficients (OPTATTN_L2)
 #   from the WET Labs, Inc. ACS (OPTAA).
@@ -27,6 +30,8 @@ def opt_beam_attenuation(cref, csig, traw, cwl, coff, tcal, tbins, tc_arr,
         2014-03-06: Russell Desiderio. Reset dimensions of arguments and implemented
                     for loop to handle vectorized input.
         2014-03-07: Russell Desiderio. Added Usage documentation.
+        2014-03-21: Russell Desiderio. Added rounding wavelengths to tenths to make sure
+                    they will match tscor dictionary key values.
 
     Usage:
 
@@ -83,7 +88,7 @@ def opt_beam_attenuation(cref, csig, traw, cwl, coff, tcal, tbins, tc_arr,
     cref = np.array(cref, ndmin=2)
     csig = np.array(csig, ndmin=2)
     traw = np.array(traw, ndmin=1)
-    cwl = np.array(cwl, ndmin=2)
+    cwl = np.around(np.array(cwl, ndmin=2), decimals=1)
     coff = np.array(coff, ndmin=2)
     tcal = np.array(tcal, ndmin=1)
     tbins = np.array(tbins, ndmin=2)
@@ -132,6 +137,8 @@ def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
         2014-03-06: Russell Desiderio. Reset dimensions of arguments and implemented
                     for loop to handle vectorized input.
         2014-03-07: Russell Desiderio. Added Usage documentation.
+        2014-03-21: Russell Desiderio. Added rounding wavelengths to tenths to make sure
+                    they will match tscor dictionary key values.
 
     Usage:
 
@@ -193,7 +200,7 @@ def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
     aref = np.array(aref, ndmin=2)
     asig = np.array(asig, ndmin=2)
     traw = np.array(traw, ndmin=1)
-    awl = np.array(awl, ndmin=2)
+    awl = np.around(np.array(awl, ndmin=2), decimals=1)
     aoff = np.array(aoff, ndmin=2)
     tcal = np.array(tcal, ndmin=1)
     tbins = np.array(tbins, ndmin=2)
@@ -220,7 +227,7 @@ def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
         apd, _ = opt_pd_calc(aref[ii, :], asig[ii, :], aoff[ii, :], tintrn,
                              tbins[ii, :], ta_arr[ii, :, :])
 
-        # correct the optical absorption coefficient for temperature and salinty.
+        # correct the optical absorption coefficient for temperature and salinity.
         apd_ts = opt_tempsal_corr('a', apd, awl[ii, :], tcal[ii], T[ii], PS[ii])
 
         # correct the optical absorption coefficient for scattering effects
@@ -412,6 +419,8 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
         2014-02-19: Russell Desiderio. Expanded Usage documentation.
                     Deleted incorrect requirement that T, PS vector lengths
                         are the same as that of the number of wavelengths.
+        2014-03-21: Russell Desiderio. Added dictionary comprehension to vectorize
+                        correction calculation.
 
     Usage:
 
@@ -455,9 +464,6 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
             OPTAA_unit_test.xlsx)
             1341-00700_Data_Product_SPEC_OPTABSN_OOI.pdf)
     """
-    # load the temperature and salinity correction coefficients table
-    from ion_functions.data.opt_functions_tscor import tscor
-
     # Absorption/attenuation and the wavelength values are imported as 1D
     # arrays. They must be the same length.
     pd = np.atleast_1d(pd)
@@ -469,20 +475,15 @@ def opt_tempsal_corr(channel, pd, wlngth, tcal, T, PS):
     nValues = np.size(pd)
 
     # apply the temperature and salinity corrections for each wavelength
-    pd_ts = np.zeros(nValues)
-    for i in range(nValues):
-        # find the temperature and salinity correction coefficients
-        psi_t = tscor[wlngth[i]][0]
-        psi_sc = tscor[wlngth[i]][1]
-        psi_sa = tscor[wlngth[i]][2]
-
-        # apply based on optical channel
-        if channel == 'a':
-            pd_ts[i] = pd[i] - (psi_t * (T - tcal) + psi_sa * PS)
-        elif channel == 'c':
-            pd_ts[i] = pd[i] - (psi_t * (T - tcal) + psi_sc * PS)
-        else:
-            raise ValueError('Channel must be either "a" or "c"')
+    # use a dictionary comprehension to read in only those values required into a np array
+    np_tscor = np.array([tscor[ii] for ii in wlngth])
+    dT = T - tcal
+    if channel == 'a':
+        pd_ts = pd - dT * np_tscor[:, 0] - PS * np_tscor[:, 2]
+    elif channel == 'c':
+        pd_ts = pd - dT * np_tscor[:, 0] - PS * np_tscor[:, 1]
+    else:
+        raise ValueError('Channel must be either "a" or "c"')
 
     return pd_ts
 
