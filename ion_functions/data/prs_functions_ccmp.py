@@ -3,8 +3,7 @@
 @package ion_functions.data.prs_functions_ccmp
 @file ion_functions/data/prs_functions_ccmp.py
 @author Christopher Wingard
-@brief Module containing OPTAA related temperature and salinity correction
-    coefficients.
+@brief Module containing BOTTILT-CCMP correction coefficients.
 """
 
 # Returns the corrected compass direction based on the sensor compass direction
