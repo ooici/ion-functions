@@ -40,31 +40,34 @@ Dissolved Oxygen (DO)
 Optical Properties (OPT)
 
      * opt_functions.py -- Covers calculation of the L2 OPTATTN and OPTABSN
-       data products, as well as products from various radiance sensors.
+       data products, as well as products from various irradiance sensors.
        
        This module includes the following functions:
        
-       opt_beam_attenuation -- wrapper function to calculate OPTATTN_L2 from
-          functions below.
-       opt_optical_absorption -- wrapper function to calculate OPTABSN_L2 from
-          functions below.
-       opt_internal_temp -- Calculates internal instrument temperature.
-       opt_pd_calc -- Converts raw measurements to either beam attenuation or
-          optical absorbtion depending on input.
-       opt_tempsal_corr -- Applies temperature and salinity corrections.
-       opt_scatter_corr -- Applies proportional scatter correction to OPTABSN.
-
-       opt_pressure -- Calculates in situ pressure, if auxiliary sensor is installed.
-          this product is not used in the calculation of OPTATTN nor OPTABSN.
-       opt_external_temp -- Calculates external in situ temperature, if auxiliary sensor
-          is installed. Normally this product is not used in the calculation of OPTATTN
-          nor OPTABSN; rather, TEMPWAT_L1 from a co-located CTD would be used.
+        OPTAA core functions used to calculate primary data products OPTATTN and OPTABSN:
+            opt_beam_attenuation -- wrapper function to calculate OPTATTN_L2 from functions below.
+            opt_optical_absorption -- wrapper function to calculate OPTABSN_L2 from functions below.
+            opt_internal_temp -- Calculates internal instrument temperature.
+            opt_pd_calc -- Converts raw measurements to either beam attenuation or optical absorbtion
+                depending on input.
+            opt_tempsal_corr -- Applies temperature and salinity corrections.
+            opt_scatter_corr -- Applies proportional scatter correction to OPTABSN.
+        OPTAA auxiliary functions coded but not used to calculate primary data products:
+            opt_pressure -- Calculates in situ pressure, if auxiliary sensor is installed.
+                this product is not used in the calculation of OPTATTN nor OPTABSN.
+            opt_external_temp -- Calculates external in situ temperature, if auxiliary sensor
+                is installed. Normally this product is not used in the calculation of OPTATTN
+                nor OPTABSN; rather, TEMPWAT_L1 from a co-located CTD would be used.
+        * opt_functions_tscor.py -- Provides an array of the published
+            wavelength-dependent temperature and salinity correction factors for the OPTAA
+            data products. Values are provided by the vendor.
        
-     * opt_functions_tscor.py -- Provides an array of the published
-       wavelength-dependent temperature and salinity correction factors for the OPTAA
-       data products. Values are provided by the vendor.
+        OPT functions calculating the PAR OPTPARW_L1 data product:
+            opt_par_satlantic -- computes OPTPARW_L1 from data acquired from a Satlantic sensor. 
+            opt_par_biospherical_mobile -- computes OPTPARW_L1 from data acquired from a Biospherical QSP-2100.
+            opt_par_biospherical_wfp -- computes OPTPARW_L1 from data acquired from a Biospherical QSP-2200
        
-       opt_ocr507_irradiance -- computes the SPECTIR_L1 data product.
+        opt_ocr507_irradiance -- computes the downwelling spectral irradiance SPECTIR_L1 data product.
 
 Partial Pressure CO2 (CO2)
 

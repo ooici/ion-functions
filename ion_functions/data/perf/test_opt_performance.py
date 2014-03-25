@@ -54,8 +54,16 @@ class TestOPTAAPerformance(PerformanceTestCase):
                              (1, wvl_tile))
 
         # test data for ocr-507 (spectir = downwelling irradiance)
-        #                          counts       offset          scale         mrsn
-        self.ocr_507 = np.array([2400000000, 2147789959.1, 2.07241106309E-07, 1.354])
+        #     counts         offset          scale        mrsn
+        self.ocr_507 = np.transpose(np.array([
+            [2148370944, 2148377867.8, 2.09023117662E-07, 1.368],
+            [2200000000, 2148218092.4, 2.06543624674E-07, 1.410],
+            [2300000000, 2147607229.7, 2.12484770952E-07, 1.365],
+            [2400000000, 2147789959.1, 2.07241106309E-07, 1.354],
+            [2500000000, 2148047456.7, 1.99358530187E-07, 1.372],
+            [2600000000, 2147335412.8, 2.06033896796E-07, 1.404],
+            [2700000000, 2146998228.4, 2.14806273478E-07, 1.347]
+        ]))
 
     def test_opt_beam_attenuation(self):
         stats = []
@@ -102,9 +110,9 @@ class TestOPTAAPerformance(PerformanceTestCase):
     def test_opt_ocr507_irradiance(self):
         stats = []
         # create 10000 data packets
-        counts = np.repeat(self.ocr_507[0], a_deca)
-        offset = np.repeat(self.ocr_507[1], a_deca)
-        scale = np.repeat(self.ocr_507[2], a_deca)
-        immersion_factor = np.repeat(self.ocr_507[3], a_deca)
+        counts = np.tile(self.ocr_507[0, :], (a_deca, 1))
+        offset = np.tile(self.ocr_507[1, :], (a_deca, 1))
+        scale = np.tile(self.ocr_507[2, :], (a_deca, 1))
+        immersion_factor = np.tile(self.ocr_507[3, :], (a_deca, 1))
         # timing test
         self.profile(stats, optfunc.opt_ocr507_irradiance, counts, offset, scale, immersion_factor)
