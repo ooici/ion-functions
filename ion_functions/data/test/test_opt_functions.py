@@ -592,9 +592,11 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
 
 
         Implemented by Russell Desiderio, March 14, 2014.
+        Modified by Russell Desiderio, March 25, 2014. Transposed test array.
+                                                       Set known output to be 2D row vector.
         """
 #              counts         offset          scale        mrsn     Ed
-        test_array = np.array([
+        test_array = np.transpose(np.array([
             [2148370944, 2148377867.8, 2.09023117662E-07, 1.368, -0.002],
             [2200000000, 2148218092.4, 2.06543624674E-07, 1.410, 15.080],
             [2300000000, 2147607229.7, 2.12484770952E-07, 1.365, 44.200],
@@ -602,16 +604,16 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
             [2500000000, 2148047456.7, 1.99358530187E-07, 1.372, 96.266],
             [2600000000, 2147335412.8, 2.06033896796E-07, 1.404, 130.943],
             [2700000000, 2146998228.4, 2.14806273478E-07, 1.347, 160.008]
-        ])
+        ]))
 
         # set inputs
-        counts = test_array[:, 0]
-        offset = test_array[:, 1]
-        scale = test_array[:, 2]
-        immersion_factor = test_array[:, 3]
+        counts = test_array[0, :]
+        offset = test_array[1, :]
+        scale = test_array[2, :]
+        immersion_factor = test_array[3, :]
 
         # set known output
-        Ed = test_array[:, -1]
+        Ed = np.atleast_2d(test_array[-1, :])
 
         # calculate the downwelling irradiance
         Ed_out = optfunc.opt_ocr507_irradiance(counts, offset, scale, immersion_factor)
