@@ -822,6 +822,9 @@ def opt_ocr507_irradiance(counts, offset, scale, immersion_factor):
             has 7 wavelength channels, and each data packet coming out of the instrument
             contains one record from each channel. It has not been determined whether
             the raw input data to this function will be in arrays of 7 wavelengths or not.
+        2014-03-25: Russell Desiderio.
+            Changed code to require data input arguments to be arrays with 7 columns,
+            one for each wavelength channel.
 
     Usage:
 
@@ -842,6 +845,18 @@ def opt_ocr507_irradiance(counts, offset, scale, immersion_factor):
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00730__???.pdf)
     """
+    # condition input to be arrays: the type scalar does not have a shape attribute
+    counts = np.atleast_2d(counts)
+    offset = np.atleast_2d(offset)
+    scale = np.atleast_2d(scale)
+    immersion_factor = np.atleast_2d(immersion_factor)
+
+    # check to see that there are 7 columns (corresponding to 7 wavelength channels)
+    lFlag1 = counts.shape[1] != 7
+    # check that the shapes of all input arguments are identical
+    lFlag2 = not (counts.shape == offset.shape == scale.shape == immersion_factor.shape)
+    if lFlag1 or lFlag2:
+        raise ValueError('counts, offset, scale, and immersion arrays must have the same shape and have 7 columns')
 
     # Apply cal coeffs to raw data
     Ed = (counts - offset) * scale * immersion_factor
