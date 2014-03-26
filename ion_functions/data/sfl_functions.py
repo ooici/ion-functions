@@ -8,6 +8,7 @@
 
 import numpy as np
 import numexpr as ne
+from scipy.interpolate import RectBivariateSpline
 
 from ion_functions.utils import fill_value
 
@@ -167,6 +168,9 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
                                        Improved speed by removing a temperature conditional
                                            statement from inside the for loop and incorporating
                                            it into the range of the for loop.
+        2014-03-26: Russell Desiderio. Incorporated optimization due to Chris Fortin: calculate
+                                           Ccurve using scalar T instead of a vector of constant
+                                           T values. Sped up execution by factor of 5.
 
     Usage:
 
@@ -188,8 +192,6 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
             >> Controlled >> 1000 System Level >>
             1341-00160_Data_Product_Spec_TRHPHCC_OOI.pdf)
     """
-    from scipy.interpolate import RectBivariateSpline
-
     # load sfl_functions_surface.py This loads the 3-dimensional calibration
     # surface of temperature, chloride, and conductivity reproduced as numpy
     # arrays from Larson_2007surface.mat
@@ -219,14 +221,12 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
     # always give nan values for Cl as is required. Since Cl has been initialized
     # to nan values, iterate only over good T values, which also improves speed.
     for ii in np.where(np.logical_and(T >= min(tdat), T <= max(tdat)))[0]:
-        # form constant T vector (Tcurve) for a given T value
-        Tcurve = np.zeros(len(Scurve)) + T[ii]
-        # find conductivity curve Ccurve as f(T=constant, chloride).
-        Ccurve = f(Tcurve, Scurve)
+        # find conductivity Ccurve as f(T=constant, chloride).
+        Ccurve = f(T[ii], Scurve)
         # now interpolate measured conductivity C into (Ccurve,Scurve) to get Cl.
-        # this conditional statement is in the DPS and therefore retained.
+        # the conditional statement is in the DPS and therefore retained.
         if (np.all(np.isfinite(Ccurve))):
-            Cl[ii] = np.interp(C[ii], Ccurve[0, :], Scurve, left=np.nan, right=np.nan)
+            Cl[ii] = np.interp(C[ii], Ccurve[0], Scurve, left=np.nan, right=np.nan)
 
     # change units to mmol/kg; round to required # of sigfigs as specified in the DPS
     Cl = np.round(Cl * 1000.)
