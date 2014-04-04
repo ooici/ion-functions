@@ -59,7 +59,7 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
 
     def test_adcp_beam(self):
         """
-        Tests adcp_beam2ins, adcp_ins2earth and magentic_correction functions
+        Tests adcp_beam2ins, adcp_ins2earth and magnetic_correction functions
         for ADCPs that output data in beam coordinates. All three functions
         must return the correct output for final tests cases to work.
 
@@ -148,8 +148,11 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
 
         Implemented by Christopher Wingard, 2014-02-06
         """
+
         # set the test data
         u, v, w, e = af.adcp_beam2ins(self.b1, self.b2, self.b3, self.b4)
+
+        ### old adcp_ins2earth returned 3 variables
         uu, vv, ww = af.adcp_ins2earth(u, v, w, self.heading,
                                        self.pitch, self.roll, self.orient)
 
