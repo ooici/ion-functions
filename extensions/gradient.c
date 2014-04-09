@@ -7,11 +7,11 @@
  * gradient
  * 
  * The algorithm scans the data points in dat successively, one-by-one.
- * Starting from ad ata point assumed to be good, if the change from this point
+ * Starting from a data point assumed to be good, if the change from this point
  * to the next, divided by the respective advance in x, is within the range
  * defined by ddatdx, the next point will be assumed good, else bad. Once a
  * data point is identified as bad, successive data points will be considered
- * bad until a data point falls within toldat of hte last known good data
+ * bad until a data point falls within toldat of the last known good data
  * point.
  *
  * As a default starting point, the first data point is considered good. This
@@ -22,7 +22,7 @@
  * x must be strictly increasing. In order to avoid small x steps, which can
  * lead to exaggerated gradients because the x difference is used in the
  * denominator, setting mindx to a value greater than zero is an option to
- * remove all data points dat (and x) fo rwhich x is separated by mindx or
+ * remove all data points dat (and x) for which x is separated by mindx or
  * less.
  *
  * Arguments:
