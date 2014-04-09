@@ -20,12 +20,6 @@ import os
 @attr('UNIT', group='func')
 class TestQCFunctionsUnit(BaseUnitTestCase):
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
-
     def test_dataqc_modulustest(self):
         """
         Test Numpy modulus function.
@@ -503,6 +497,22 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         startdat = np.array([])
         toldat = 5.0
         outqc = np.array([1, 1, -99, -99, 1], dtype=np.int8)
+        gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat)
+
+        np.testing.assert_array_equal(gotqc, outqc)
+
+
+        # test case 5 (not part of DPS)
+        # Ensure that multiple sequences of values where dx < mindx is handled
+        # in an appropriate and desired manner.
+
+        x = np.arange(10)
+        dat = np.ones(10) * 2
+        ddatdx = [-2., 2.]
+        mindx = 2.
+        startdat = np.nan
+        toldat = 5.0
+        outqc = np.array([1, -99, -99, 1, -99, -99, 1, -99, -99, 1], np.int8)
         gotqc = qcfunc.dataqc_gradienttest(dat, x, ddatdx, mindx, startdat, toldat)
 
         np.testing.assert_array_equal(gotqc, outqc)
