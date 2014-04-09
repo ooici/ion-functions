@@ -12,7 +12,7 @@ cdef extern from "spike.h":
     int spike(signed char *out, double *dat, size_t len, int L, double N, double acc)
 
 cdef extern from "gradient.h":
-    int gradient(signed char *out, double *dat, double *x, size_t len, double grad_min, double grad_max, double mindx, double startdat, double toldat)
+    int gradient(signed char *out, double *dat, double *x, size_t len, double grad_min, double grad_max, double mindx, double startdat, double toldat, double skipped_value)
     
 cdef extern from "time_utils.h":
     int ntp_month_vector(short int *out, double *input, size_t len)
