@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include "gradient.h"
 
-int gradient(signed char *out, const double *dat, const double *x, size_t len, double grad_min, double grad_max, double mindx, double startdat, double toldat)
+int gradient(signed char *out, const double *dat, const double *x, size_t len, double grad_min, double grad_max, double mindx, double startdat, double toldat, const double skipped_value)
 {
     double ddatdx;
     size_t i=0;
@@ -59,7 +59,7 @@ int gradient(signed char *out, const double *dat, const double *x, size_t len, d
         else {
             /* dx was <= mindx */
             skipped++;
-            out[i] = -99;
+            out[i] = skipped_value;
         }
     }
     return 0;

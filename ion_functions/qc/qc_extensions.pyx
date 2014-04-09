@@ -45,13 +45,14 @@ def spikevalues(dat, L, N, acc):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def gradientvalues(dat, x, grad_min, grad_max, mindx, startdat, toldat):
+def gradientvalues(dat, x, grad_min, grad_max, mindx, startdat, toldat, skipped_value=-99.):
     cdef int dat_shape = dat.shape[0]
     cdef np.ndarray[double] idat = dat
     cdef np.ndarray[double] ix = x
     cdef np.ndarray[signed char] out = np.zeros([dat_shape], dtype=np.int8)
+    cdef float _skip = skipped_value
     out.fill(1)
-    gradient(&out[0], &idat[0], &ix[0], dat_shape, grad_min, grad_max, mindx, startdat, toldat)
+    gradient(&out[0], &idat[0], &ix[0], dat_shape, grad_min, grad_max, mindx, startdat, toldat, _skip)
     return out
 
 @cython.boundscheck(False)
