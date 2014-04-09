@@ -358,7 +358,7 @@ char test_gradient6()
     signed char out[10];
     signed char expected[] = {1, -99, -99, 1, -99, -99, 1, -99, -99, 1};
     memset(out, 1, 10);
-    printf("test_gradient6... \n");
+    printf("test_gradient6... ");
     gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat, -99);
     for(int i=0;i<len;i++) {
         if(!(expected[i] == out[i])) {

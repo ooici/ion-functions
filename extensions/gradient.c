@@ -63,12 +63,17 @@ int gradient(
 
     if(startdat==0) { 
         /* If there was no startdat then set it to dat[0] */
-        startdat = dat[0]; } else {
+        startdat = dat[0];
+    }
+    else {
         /* startdat was specified */
         if(fabs(dat[0] - startdat) > toldat) {
-            /* If dat[0] is not within toldat of startdat then it's a bad value
-             * */
-            bad=true; out[0] = -2; } } for(i=1;i<len;i++) {
+            /* If dat[0] is not within toldat of startdat then it's a bad value */
+            bad=true;
+            out[0] = 0;
+        }
+    }
+    for(i=1;i<len;i++) {
 
         if (fabs((x[i]-x[i-(1+skipped)])) > mindx) {
             /* If the change in x is greater than mindx */
@@ -77,7 +82,7 @@ int gradient(
                     bad = false;
                 }
                 else {
-                    out[i] = -3; /* still bad mark it and move on */
+                    out[i] = 0; /* still bad mark it and move on */
                 }
                 /* The test for this element is simple, if it's within the tolerance
                  * set it to startdat and continue on
@@ -91,10 +96,10 @@ int gradient(
                 /* If the differential is outside of the min/max */
                 for(j=1;j<=skipped;j++) {
                     /* Set all the skipped to 0 as well */
-                    out[i-j] = -5;
+                    out[i-j] = 0;
                 }
                 skipped = 0; /* Reset the skipped */
-                out[i] = -4;  /* Set the output to false */
+                out[i] = 0;  /* Set the output to false */
                 bad=true;    /* Mark a bad */
             }
             else {
