@@ -23,6 +23,7 @@ char test_gradient2(void);
 char test_gradient3(void);
 char test_gradient4(void);
 char test_gradient5(void);
+char test_gradient6(void);
 char test_time_month(void);
 char test_time_vector(void);
 char test_time_vector_split(void);
@@ -45,6 +46,7 @@ int main(int argc, char *argv[])
     test(&test_gradient3);
     test(&test_gradient4);
     test(&test_gradient5);
+    test(&test_gradient6);
     test(&test_time_month);
     test(&test_time_vector);
     test(&test_time_vector_split);
@@ -222,7 +224,7 @@ char test_gradient()
     signed char expected[] = {1, 1, 0, 0, 1};
     signed char out[] = {1, 1, 1, 1, 1};
     printf("test_gradient... ");
-    gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat);
+    gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat, -99);
     for(int i=0;i<len;i++) {
         if(!(expected[i]==out[i])) {
             message = "Expected doesn't match received";
@@ -249,7 +251,7 @@ char test_gradient2()
     signed char expected[] = {0, 0, 1, 1, 0};
     signed char out[] = {1, 1, 1, 1, 1};
     printf("test_gradient2... ");
-    gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat);
+    gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat, -99);
     for(int i=0;i<len;i++) {
         if(!(expected[i]==out[i])) {
             message = "Expected doesn't match received";
@@ -275,7 +277,7 @@ char test_gradient3()
     signed char expected[] = {1, 1, 0, -99, 1};
     signed char out[] = {1, 1, 1, 1, 1};
     printf("test_gradient3... ");
-    gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat);
+    gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat, -99);
     for(int i=0;i<len;i++) {
         if(!(expected[i]==out[i])) {
             message = "Expected doesn't match received";
@@ -302,7 +304,7 @@ char test_gradient4()
     signed char expected[] = {1, 1, -99, -99, 1};
     signed char out[] = {1, 1, 1, 1, 1};
     printf("test_gradient4... ");
-    gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat);
+    gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat, -99);
     for(int i=0;i<len;i++) {
         if(!(expected[i]==out[i])) {
             message = "Expected doesn't match received";
@@ -329,7 +331,7 @@ char test_gradient5()
     signed char expected[] = {1, 0, -99, -99, 1};
     signed char out[] = {1, 1, 1, 1, 1};
     printf("test_gradient5... ");
-    gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat);
+    gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat, -99);
     for(int i=0;i<len;i++) {
         if(!(expected[i]==out[i])) {
             message = "Expected doesn't match received";
@@ -342,6 +344,35 @@ char test_gradient5()
     }
     return true;
 }
+
+char test_gradient6() 
+{
+    double x[]   = {0. , 1. , 2. , 3. , 4. , 5. , 6. , 7. , 8. , 9.};
+    double dat[] = {2. , 2. , 2. , 2. , 2. , 2. , 2. , 2. , 2. , 2.};
+    double grad_min = -10.0;
+    double grad_max = 10.0;
+    double mindx = 2;
+    double startdat = 0;
+    double toldat = 5;
+    size_t len = 10;
+    signed char out[10];
+    signed char expected[] = {1, -99, -99, 1, -99, -99, 1, -99, -99, 1};
+    memset(out, 1, 10);
+    printf("test_gradient6... \n");
+    gradient(out, dat, x, len, grad_min, grad_max, mindx, startdat, toldat, -99);
+    for(int i=0;i<len;i++) {
+        if(!(expected[i] == out[i])) {
+            message = "Expected doesn't match received";
+            printf("\n");
+            print_double_array(dat, 10);
+            print_array(expected, 5);
+            print_array(out, 5);
+            return false;
+        }
+    }
+    return true;
+}
+
 
 
 char test_polyval()
