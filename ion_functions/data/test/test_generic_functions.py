@@ -53,7 +53,8 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
         """
         Test magentic_correction function.
 
-        Values based on those defined in DPS:
+        Input values based on those defined in DPS; output values calculated to
+            more significant figures using matlab code specified in the DPS.
 
         OOI (2012). Data Product Specification for Velocity Profile and Echo
             Intensity. Document Control Number 1341-00750.
@@ -62,14 +63,17 @@ class TestGenericFunctionsUnit(BaseUnitTestCase):
             1341-00750_Data_Product_SPEC_VELPROF_OOI.pdf)
 
         Implemented by Christopher Wingard, April 2013
+        Modified by Russell Desiderio, April 07, 2014. Changed the rtol values
+            from 1e4 to 1e-4 to get a fair test. Changed the output values by
+            adding more significant figures.
         """
         # apply the magnetic declination correction.
         uu_cor, vv_cor = gfunc.magnetic_correction(16.9604, np.array([0.4413]),
                                                    np.array([0.1719]))
 
         # test the transform
-        self.assertTrue(np.allclose(uu_cor, 0.4722, rtol=1e4, atol=0))
-        self.assertTrue(np.allclose(vv_cor, 0.0357, rtol=1e4, atol=0))
+        self.assertTrue(np.allclose(uu_cor, 0.472251, rtol=1e-4, atol=0))
+        self.assertTrue(np.allclose(vv_cor, 0.035692, rtol=1e-4, atol=0))
 
     def test_ntp_to_unix_time(self):
         """
