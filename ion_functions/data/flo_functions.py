@@ -15,14 +15,16 @@ def flo_bback_total(beta, degC=20.0, psu=32.0, theta=117.0, wlngth=700.0,
     """
     Description:
 
-        OOI Level 1 Optical Backscatter (Red Wavelengths, 700 nm with a 117
+        OOI Level 1 Optical Backscatter (Red Wavelengths, at 700 nm with a 117
         degree scattering angle) data product (FLUBSCT), which is calculated
         using data from the WET Labs, Inc. ECO fluorometer family of
         instruments.
 
     Implemented by:
 
-        2013-07-16: Christopher Wingard. Initial Code
+        2013-07-16: Christopher Wingard. Initial Code.
+        2014-04-23: Christopher Wingard. Slight revisions to address
+                    integration issues and to meet intent of DPS.
 
     Usage:
 
@@ -30,8 +32,8 @@ def flo_bback_total(beta, degC=20.0, psu=32.0, theta=117.0, wlngth=700.0,
 
             where
 
-        bback = total optical backscatter (FLUBSCT) [m-1]
-        beta = total volume scattering coefficient [m-1 sr-1]
+        bback = total optical backscatter (FLUBSCT-BBACK_L1) [m-1]
+        beta = total volume scattering coefficient (FLUBSCT-BBACK_L1) [m-1 sr-1]
         degC = in situ water temperature from co-located CTD, if available [deg_C].
             Default is 20.
         psu = in situ salinity from a co-located CTD, if available [psu].
@@ -41,7 +43,7 @@ def flo_bback_total(beta, degC=20.0, psu=32.0, theta=117.0, wlngth=700.0,
         theta = optical backscatter scattering angle [degrees]. All OOI FLORT
             and FLORD instruments use 117 degrees.
         xfactor = X (Chi) factor for high angular resolution. For 117 degree
-            scattering angle X = 1.10.
+            scattering angle X = 1.08.
 
     References:
 
@@ -52,37 +54,40 @@ def flo_bback_total(beta, degC=20.0, psu=32.0, theta=117.0, wlngth=700.0,
             1341-00540_Data_Product_SPEC_FLUBSCT_OOI.pdf)
     """
     # calculate the volume scattering coefficient (m-1 sr-1, betasw) and the
-    # optical backscatter (m-1, bbacksw) of seawater using data from a
-    # co-located CTD. Values below are computed using provided code from Zhang
-    # et al 2009.
-    #betasw, bsw = flo_zhang_scatter_coeffs(degC, psu, theta, wlngth)
+    # total optical scattering (m-1, bsw) of seawater using data from a
+    # co-located CTD or defaults entered above. Values below are computed using
+    # provided code from Zhang et al 2009.
+    betasw, bsw = flo_zhang_scatter_coeffs(degC, psu, theta, wlngth)
 
-    # recompute bsw from equation in the the manual...
-    betasw = 1.38 * (wlngth / 500.0)**-4.32 * (1 + 0.3 * psu / 37) * 10**-4 \
-        * (1 + ((1 - 0.09)/(1 + 0.09)) * np.cos(np.radians(theta))**2)
-    bsw = 0.0029308 * (wlngth / 500.0)**-4.24
+    ## compute bsw from equation in the vendor provided manual...
+    #betasw = 1.38 * (wlngth / 500.0)**-4.32 * (1 + 0.3 * psu / 37) * 10**-4 \
+    #    * (1 + ((1 - 0.09)/(1 + 0.09)) * np.cos(np.radians(theta))**2)
+    #bsw = 0.0029308 * (wlngth / 500.0)**-4.24
 
     # calculate the volume scattering of particles (total - seawater)
     betap = beta - betasw
 
     # calculate the particulate backscatter coefficient (m-1)
-    bbackp = xfactor * 2.0 * np.pi * betap
+    pi = np.pi
+    bbackp = xfactor * 2.0 * pi * betap
 
-    # calculate the total backscatter coefficient (particulates + seawater)
-    bback = bbackp + (bsw / 2.0)
+    # calculate the total backscatter coefficient (particulates + seawater).
+    # note for backscatter coefficients, divide the total scattering
+    # coefficient by 2.
+    bbsw = bsw / 2
+    bback = bbackp + bbsw
 
-    print betasw, bsw, beta, betap, bbackp, bback
     return bback
 
 
-def flo_zhang_scatter_coeffs(degC, psu, theta=124.0, wlngth=700.0, delta=0.039):
+def flo_zhang_scatter_coeffs(degC, psu, theta=117.0, wlngth=700.0, delta=0.039):
     """
     Description:
 
         Computes the scattering coefficients of seawater (both the volume
-        scattering and the total backscatter of seawater) based on computation
-        of Zhang et al 2009 as presented in the DPS for optical backscatter
-        (red wavelengths).
+        scattering and the total scattering coefficients of seawater) based on
+        the computation of Zhang et al 2009 as presented in the DPS for Optical
+        Backscatter (red wavelengths).
 
         This code is derived from Matlab code developed and made available
         online by:
@@ -90,7 +95,7 @@ def flo_zhang_scatter_coeffs(degC, psu, theta=124.0, wlngth=700.0, delta=0.039):
             Dr. Xiaodong Zhang
             Associate Professor
             Department of Earth Systems Science and Policy
-            University of North Dakota 
+            University of North Dakota
             http://www.und.edu/instruct/zhang/
 
     Implemented by:
@@ -122,10 +127,10 @@ def flo_zhang_scatter_coeffs(degC, psu, theta=124.0, wlngth=700.0, delta=0.039):
             1341-00540_Data_Product_SPEC_FLUBSCT_OOI.pdf)
     """
     # values of the constants
-    Na = 6.0221417930e23  # Avogadro's constant
-    Kbz = 1.3806503e-23  # Boltzmann constant
-    degK = degC + 273.15  # Absolute tempearture
-    M0 = 0.018  # Molecular weigth of water in kg/mol
+    Na = 6.0221417930e23    # Avogadro's constant
+    Kbz = 1.3806503e-23     # Boltzmann constant
+    degK = degC + 273.15    # Absolute tempearture
+    M0 = 0.018              # Molecular weigth of water in kg/mol
     pi = np.pi
 
     # convert the scattering angle from degrees to radians
@@ -139,16 +144,14 @@ def flo_zhang_scatter_coeffs(degC, psu, theta=124.0, wlngth=700.0, delta=0.039):
     # Sea-Research), pages 10-11 The error ~ +/-0.004e-6 bar^-1
     icomp = flo_isotherm_compress(degC, psu)
 
-    # density of seawater from UNESCO 38 (1981). Note, this could/should be
-    # changed to use the Gibbs Seawater Toolbox routines built in to
-    # ion-functions.
+    # density of seawater from UNESCO 38 (1981).
     rho = flo_density_seawater(degC, psu)
 
     # water activity data of seawater is from Millero and Leung (1976, American
     # Journal of Science, 276, 1035-1077). Table 19 was reproduced using
-    # Eq.(14,22,23,88,107) that were fitted to polynominal equation.
-    # dlnawds is partial derivative of the natural logarithm of water activity
-    # with regards to salinity.
+    # Eq.(14,22,23,88,107) that were fitted to polynominal equation. dlnawds is
+    # a partial derivative of the natural logarithm of water activity with
+    # regards to salinity.
     dlnawds = ne.evaluate('(-5.58651e-4 + 2.40452e-7 * degC - 3.12165e-9 * degC**2 + 2.40808e-11 * degC**3) +'
                           '1.5 * (1.79613e-5 - 9.9422e-8 * degC + 2.08919e-9 * degC**2 - 1.39872e-11 * degC**3) *'
                           'psu**0.5 + 2 * (-2.31065e-6 - 1.37674e-9 * degC - 1.93316e-11 * degC**2) * psu')
@@ -157,7 +160,7 @@ def flo_zhang_scatter_coeffs(degC, psu, theta=124.0, wlngth=700.0, delta=0.039):
     dfri = ne.evaluate('(nsw**2 - 1.0) * (1.0 + 2.0/3.0 * (nsw**2 + 2.0)'
                        '* (nsw/3.0 - 1.0/3.0 / nsw)**2)')
 
-    # volume scattering at 90 degree due to the density fluctuation
+    # volume scattering at 90 degrees due to the density fluctuation
     beta_df = ne.evaluate('pi**2 / 2.0 * (wlngth*1e-9)**-4 * Kbz * degK * icomp '
                           '* dfri**2 * (6.0 + 6.0 * delta) / (6.0 - 7.0 * delta)')
 
@@ -291,7 +294,7 @@ def flo_scale_and_offset(counts_output, counts_dark, scale_factor):
             where
 
         value = output value
-        counts_output = calibrated sample voltage output [counts]
+        counts_output = measured sample output [counts]
         counts_dark = measured signal output of fluormeter in clean water with
                       black tape over the detector [counts]
         scale_factor = multiplier [units counts^-1]
@@ -300,7 +303,6 @@ def flo_scale_and_offset(counts_output, counts_dark, scale_factor):
 
         N/A
     """
-
     value = ne.evaluate('(counts_output - counts_dark) * scale_factor')
     return value
 
@@ -309,12 +311,12 @@ def flo_chla(counts_output, counts_dark, scale_factor):
     """
     Description:
 
-        The OOI Level1 Fluorometric Chlorophyll-a Concentration core data
+        The OOI Level 1 Fluorometric Chlorophyll-a Concentration core data
         product is a measure of how much light has been re-emitted after
-        being absorbed by chlorophyll-a molecules found in all phytoplankton.
+        being absorbed by Chlorophyll-a molecules found in all phytoplankton.
         By measuring the intensity and nature of this fluorescence,
         phytoplankton biomass can be estimated. The concentration of
-        chlorophyll-a is a proxy for the abundance of phytoplankton in the
+        Chlorophyll-a is a proxy for the abundance of phytoplankton in the
         water column, and thus the amount of primary productivity that can be
         empirically achieved. Chlorophyll absorbs photons in the visible
         spectrum (400-700nm) and fluoresces visible blue light.
@@ -330,7 +332,7 @@ def flo_chla(counts_output, counts_dark, scale_factor):
             where
 
         chla_conc = Fluorometric Chlorophyll-a Concentration (CHLAFLO_L1) [ug L^-1]
-        counts_output = calibrated sample voltage output (CHLAFLO_L0) [counts]
+        counts_output = measured sample output (CHLAFLO_L0) [counts]
         counts_dark = measured signal output of fluormeter in clean water with
                       black tape over the detector [counts]
         scale_factor = multiplier [ug L^-1 counts^-1]
@@ -343,7 +345,6 @@ def flo_chla(counts_output, counts_dark, scale_factor):
             >> Controlled >> 1000 System Level >>
             1341-00530_Data_Product_SPEC_CHLAFLO_OOI.pdf)
     """
-
     chla_conc = flo_scale_and_offset(counts_output, counts_dark, scale_factor)
     return chla_conc
 
@@ -354,19 +355,19 @@ def flo_cdom(counts_output, counts_dark, scale_factor):
 
         The OOI Level 1 Fluorometric CDOM concentration core data product is a
         measure of how much light has been re-emitted from refractory colored
-        organic compounds found in the colored dissolved organic matter (CDOM)
-        in seawater. This data product describes as a measure of the amount of
-        tannins (polyphenols that bind to proteins and other large molecules)
-        or lignins (polymers of phenolic acids) from decaying plant material or
-        byproducts from the decomposition of animals. It accounts for the
-        tea-like color of some water masses. CDOM is not particulate, but water
-        masses can contain both CDOM and turbidity. CDOM absorbs ultraviolet
-        light and fluoresces visible blue light. The fluorescence of CDOM is
-        used in many applications such as continuous monitoring of wastewater
-        discharge, natural tracer of specific water bodies, ocean color
-        research and the effect of CDOM on satellite imagery, and
-        investigations of CDOM concentrations impacting light availability used
-        for primary production.
+        organic compounds found in the fluorometric pool of colored dissolved
+        organic matter (CDOM) in seawater. This data product describes a
+        measure of the amount of tannins (polyphenols that bind to proteins and
+        other large molecules) or lignins (polymers of phenolic acids) from
+        decaying plant material or byproducts from the decomposition of
+        animals. It accounts for the tea-like color of some water masses. CDOM
+        is not particulate, but water masses can contain both CDOM and
+        turbidity. CDOM absorbs ultraviolet light and fluoresces visible blue
+        light. The fluorescence of CDOM is used in many applications such as
+        continuous monitoring of wastewater discharge, natural tracer of
+        specific water bodies, ocean color research and the effect of CDOM on
+        satellite imagery, and investigations of CDOM concentrations impacting
+        light availability used for primary production.
 
     Implemented by:
 
@@ -379,10 +380,10 @@ def flo_cdom(counts_output, counts_dark, scale_factor):
             where
 
         cdom_conc = Fluorometric CDOM Concentration (CDOMFLO_L1) [ppb]
-        counts_output = calibrated sample voltage output (CDOMFLO_L0) [counts]
+        counts_output = measured sample output (CDOMFLO_L0) [counts]
         counts_dark = measured signal output of fluormeter in clean water with
                       black tape over the detector [counts]
-        scale_factor = multiplier [ppb volts^-1]
+        scale_factor = multiplier [ppb counts^-1]
 
     References:
 
@@ -392,7 +393,6 @@ def flo_cdom(counts_output, counts_dark, scale_factor):
             >> Controlled >> 1000 System Level >>
             1341-00550_Data_Product_SPEC_CDOMFLO_OOI.pdf)
     """
-
     cdom_conc = flo_scale_and_offset(counts_output, counts_dark, scale_factor)
     return cdom_conc
 
@@ -403,17 +403,11 @@ def flo_beta(counts_output, counts_dark, scale_factor):
 
         The OOI Level 1 Optical backscatter (red wavelengths) core data product
         is an estimate of turbidity and suspended solids in seawater that
-        scatter photons of light in the back direction. Red wavelengths of
+        scatter photons of light in the backwards direction. Red wavelengths of
         light fall between roughly 630 and 740nm. Turbidity commonly describes
         water clarity and is a gross assessment of light attenuation factors
         like suspended solids, but not a direct measurement of them, only their
-        effect (Boss, et al, 2009). Optical backscatter meters measure red
-        light scattered from suspended matter which is a proxy for turbidity
-        and suspended solids. The size, composition and shape of the suspended
-        particles affect the meters response, so pre-deployment field
-        verification is necessary to define a standard that adequately
-        represents the expected type and size of suspended matter found in situ
-        is crucial to achieve the highest quality data.
+        effect.
 
     Implemented by:
 
@@ -421,12 +415,12 @@ def flo_beta(counts_output, counts_dark, scale_factor):
 
     Usage:
 
-        backscat = flo_flubsct(counts_output, counts_dark, scale_factor)
+        beta = flo_flubsct(counts_output, counts_dark, scale_factor)
 
             where
 
-        opt_backscat = Optical backscatter (FLUBSCT-BETA_L1) [m^-1 sr^-1]
-        counts_output = calibrated sample voltage output (FLUBSCT_L0) [counts]
+        beta = Volume Scattering Coefficient (FLUBSCT-BETA_L1) [m^-1 sr^-1]
+        counts_output = measured sample output (FLUBSCT_L0) [counts]
         counts_dark = measured signal output of fluormeter in clean water
                       with black tape over the detector [counts]
         scale_factor = multiplier [m^-1 sr^-1 counts^-1]
@@ -439,5 +433,5 @@ def flo_beta(counts_output, counts_dark, scale_factor):
             >> Controlled >> 1000 System Level >>
             1341-00540_Data_Product_SPEC_FLUBSCT_OOI.pdf)
     """
-    backscat = flo_scale_and_offset(counts_output, counts_dark, scale_factor)
-    return backscat
+    beta = flo_scale_and_offset(counts_output, counts_dark, scale_factor)
+    return beta
