@@ -80,6 +80,45 @@ def flo_bback_total(beta, degC=20.0, psu=32.0, theta=117.0, wlngth=700.0,
     return bback
 
 
+def flo_scat_seawater(degC, psu, theta=117.0, wlngth=700.0, delta=0.039):
+    """
+    Description:
+
+        Computes the scattering coefficient of seawater based on the
+        computation of Zhang et al 2009 as presented in the DPS for Optical
+        Backscatter (red wavelengths).
+
+    Implemented by:
+
+        2014-04-24: Christopher Wingard. Initial Code
+
+    Usage:
+
+        bsw = flo_scat_seawater(degC, psu, theta, wlngth, delta)
+
+            where
+
+        bsw = total scattering coefficient of pure seawater [m-1]
+        degC = in situ water temperature from co-located CTD [deg_C]
+        psu = in situ salinity from a co-located CTD [psu]
+        theta = optical backscatter angle [degrees]. All OOI FLORT
+            and FLORD instruments use 117 degrees.
+        wlngth = optical backscatter measurement wavelength [nm]. All OOI FLORT
+            and FLORD instruments use 700 nm.
+        delta = depolarization ratio [unitless]. Default of 0.039 is assumed.
+
+    References:
+
+        OOI (2012). Data Product Specification for Optical Backscatter (Red
+            Wavelengths). Document Control Number 1341-00540.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >>
+            OOI >> Controlled >> 1000 System Level >>
+            1341-00540_Data_Product_SPEC_FLUBSCT_OOI.pdf)
+    """
+    betasw, bsw = flo_zhang_scatter_coeffs(degC, psu, theta, wlngth, delta)
+    return bsw
+
+
 def flo_zhang_scatter_coeffs(degC, psu, theta=117.0, wlngth=700.0, delta=0.039):
     """
     Description:
