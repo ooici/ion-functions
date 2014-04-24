@@ -560,7 +560,7 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
     offset = 10.1
     scale = 5.897e-04 / (6.02 * 10**13)
 
-    par_volts = np.array([1.016793, 0.599800, 0.452400, 0.305000, 0.187000, 0.178900, 0.069100, 0.039600, 0.010100])
+    par_mvolts = np.array([1016.793, 599.800, 452.400, 305.000, 187.000, 178.900, 69.100, 39.600, 10.100])
 
     # expected outputs
     par_expected = np.array([1707.13, 1000.00, 750.00, 500.00, 300.00, 286.25, 100.00, 50.00, 0.00])
@@ -568,7 +568,7 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
     # compute par values
     par_calc = np.zeros(9)
     for i in range(0, 9):
-        par_calc[i] = optfunc.opt_par_biospherical_wfp(par_volts[i], offset, scale)
+        par_calc[i] = optfunc.opt_par_biospherical_wfp(par_mvolts[i], offset, scale)
 
     # compare calculated results to expected
     np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
