@@ -6,6 +6,7 @@
 #include <math.h>
 #include "spike.h"
 #include "utils.h"
+#include "polycals.h"
 #include "time_utils.h"
 #include "gradient.h"
 #include "wmm.h"
@@ -14,6 +15,7 @@ void arange(double *arr, size_t len);
 signed char all(signed char *, size_t);
 void print_array(signed char *, size_t);
 void print_double_array(double *, size_t);
+void print_array_size_t(size_t *array, size_t len);
 char test_spike_simple(void);
 char test_spike_l(void);
 char test_spike_long(void);
@@ -29,6 +31,8 @@ char test_time_vector(void);
 char test_time_vector_split(void);
 char test_mag_decl(void);
 char test_velocity_corr(void);
+char test_search_sorted(void);
+char test_polycal(void);
 void test(char (*func)(void));
 
 extern bool nearly_equal(double, double, double);
@@ -52,6 +56,8 @@ int main(int argc, char *argv[])
     test(&test_time_vector_split);
     test(&test_mag_decl);
     test(&test_velocity_corr);
+    test(&test_search_sorted);
+    test(&test_polycal);
     return 0;
 }
 
@@ -467,6 +473,84 @@ char test_spike_long()
     return 1;
 }
 
+char test_search_sorted()
+{
+    double a[] = {1, 2, 3, 4, 5};
+    double v[] = {-10, 2, 3, 10};
+    const size_t len = 4;
+    size_t out[len];
+    size_t expected[] = {0, 1, 2, 5};
+    int i=0;
+    memset(out, len * sizeof(size_t), 0);
+    printf("test_search_sorted... ");
+    search_sorted(out, a, 5, v, len);
+    for(i=0;i<len;i++) {
+        if(expected[i] != out[i]) {
+            message = "Expected does not match received.";
+            printf("\n");
+            print_array_size_t(expected, len);
+            print_array_size_t(out, len);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+char test_polycal()
+{
+    double x[] = 
+    {    9.97142857,  10.08457143,  10.19542857,  10.304     ,
+        10.41028571,  10.51428571,  10.616     ,  10.71542857,
+        10.81257143,  10.90742857,  11.        ,  11.09028571,
+        11.17828571,  11.264     ,  11.34742857,  11.42857143,
+        11.50742857,  11.584     ,  11.65828571,  11.73028571,
+        11.8       ,  11.86742857,  11.93257143,  11.99542857,
+        12.056     ,  12.11428571,  12.17028571,  12.224     ,
+        12.27542857,  12.32457143,  12.37142857,  12.416     ,
+        12.45828571,  12.49828571,  12.536     ,  12.57142857,
+        12.60457143,  12.63542857,  12.664     ,  12.69028571,
+        12.71428571,  12.736     ,  12.75542857,  12.77257143,
+        12.78742857,  12.8       ,  12.81028571,  12.81828571,
+        12.824     ,  12.82742857,  12.82857143,  12.82742857,
+        12.824     ,  12.81828571,  12.81028571,  12.8       ,
+        12.78742857,  12.77257143,  12.75542857,  12.736     ,
+        12.71428571,  12.69028571,  12.664     ,  12.63542857,
+        12.60457143,  12.57142857,  12.536     ,  12.49828571,
+        12.45828571,  12.416     ,  12.37142857,  12.32457143,
+        12.27542857,  12.224     ,  12.17028571,  12.11428571,
+        12.056     ,  11.99542857,  11.93257143,  11.86742857,
+        11.8       ,  11.73028571,  11.65828571,  11.584     ,
+        11.50742857,  11.42857143,  11.34742857,  11.264     ,
+        11.17828571,  11.09028571,  11.        ,  10.90742857,
+        10.81257143,  10.71542857,  10.616     ,  10.51428571,
+        10.41028571,  10.304     ,  10.19542857,  10.08457143};
+    double t[] = 
+    { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
+     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+     34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+     51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67,
+     68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
+     85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99};
+    coeff_vector cals[4];
+    double cal0[] = {1.02, 1.0};
+    double cal1[] = {1.02, 2.0};
+    double cal2[] = {1.02, 3.0};
+    double cal3[] = {1.02, 4.0};
+    cals[0].N = 2;
+    cals[0].coeff = cal0;
+    cals[1].N = 2;
+    cals[1].coeff = cal1;
+    cals[2].N = 2;
+    cals[2].coeff = cal2;
+    cals[3].N = 2;
+    cals[3].coeff = cal3;
+    printf("test_polycal... ");
+    return 1;
+}
+
+
+
 signed char all(signed char *input, size_t len) 
 {
     size_t i=0;
@@ -493,6 +577,17 @@ void print_array(signed char *array, size_t len)
         printf("%d ", (int)array[i]);
     }
     printf("%d]\n", (int)array[i]);
+}
+
+
+void print_array_size_t(size_t *array, size_t len)
+{
+    size_t i=0;
+    printf("[");
+    for(i=0;i<len-1;i++) {
+        printf("%lu ", (size_t)array[i]);
+    }
+    printf("%lu]\n", (size_t)array[i]);
 }
 
 void print_double_array(double *array, size_t len)
