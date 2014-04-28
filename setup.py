@@ -40,6 +40,10 @@ wmm_extension_sources = ["ion_functions/data/wmm.pyx",
 
 wmm_extension = Extension("ion_functions.data.wmm", wmm_extension_sources, include_dirs=[np.get_include(), "extensions/"], libraries=["m"])
 
+polycals_sources = ["ion_functions/data/polycals.pyx",
+                    "extensions/polycals.c"]
+polycals_extension = Extension("ion_functions.data.polycals", polycals_sources, include_dirs=[np.get_include(), "extensions/"], libraries=["m"])
+
 
 
 setup(name = 'ion-functions', 
@@ -53,7 +57,7 @@ setup(name = 'ion-functions',
         classifiers=classifiers.split('\n'),
         packages=packages,
         keywords=['oceanography', 'seawater'],
-        ext_modules=[qc_extension, wmm_extension],
+        ext_modules=[qc_extension, wmm_extension, polycals_extension],
         setup_requires=['setuptools_cython'],
         install_requires=[
             'ipython==0.13.0',
