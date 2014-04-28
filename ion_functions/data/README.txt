@@ -131,11 +131,16 @@ pH (pH)
         * ph_functions.py -- Covers calculation of the L1 PHWATER data product
           and extraction of the associated L0 data products.
           
-          [TODO: Fill out with module names and descriptions]
-          ph_434_intensity
-          ph_578_intensity
-          ph_thermistor
-          ph_phwater
+          ph_434_intensity -- extracts the 23 measurements of the 434 nm signal
+                intensity [PH434SI_L0] from the 92 light measurements.
+          ph_578_intensity -- extracts the 23 measurements of the 578 nm signal
+                intensity [PH578SI_L0] from the 92 light measurements.
+          ph_battery -- converts the raw battery measurements from counts to
+                volts.
+          ph_thermistor -- converts the raw thermistor measurements from counts
+                [ABSTHRM_L0] to degrees Centigrade.
+          ph_calc_phwater -- calculates the OOI Level 1 pH of seawater core
+                data product [PHWATER_L1].
 
 Seafloor Pressure (PRS)
 

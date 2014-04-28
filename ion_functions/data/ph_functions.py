@@ -9,7 +9,8 @@
 
 # imports
 import numpy as np
-from ion_functions.utils import isscalar
+import numexpr as ne
+import scipy as sp
 
 
 # wrapper functions to extract L0 parameters from SAMI-II pH instruments (PHSEN)
@@ -19,19 +20,10 @@ def ph_434_intensity(light):
     from the pH instrument light measurements. Coded to accept either a
     single record or an array of records.
     """
-    light = light.astype(np.float)
-    if light.ndim == 1:
-        new = np.reshape(light, (23, 4))
-        si434 = new[:, 3]
-    else:
-        tmp = np.zeros(23, dtype=np.float)
-        for iRec in light:
-            new = np.reshape(iRec, (23, 4))
-            tmp = np.vstack((tmp, new[:, 1]))
-
-        si434 = tmp[1:, :]
-
-    return si434  # signal intensity, 434 nm (PH578SI_L0)
+    light = np.atleast_3d(light).astype(np.float)
+    new = np.reshape(light, (-1, 23, 4))
+    si434 = new[:, :, 1]
+    return si434  # signal intensity, 434 nm (PH434SI_L0)
 
 
 def ph_578_intensity(light):
@@ -40,18 +32,9 @@ def ph_578_intensity(light):
     from the pH instrument light measurements. Coded to accept either a
     single record or an array of records.
     """
-    light = light.astype(np.float)
-    if light.ndim == 1:
-        new = np.reshape(light, (23, 4))
-        si578 = new[:, 3]
-    else:
-        tmp = np.zeros(23, dtype=np.float)
-        for iRec in light:
-            new = np.reshape(iRec, (23, 4))
-            tmp = np.vstack((tmp, new[:, 3]))
-
-        si578 = tmp[1:, :]
-
+    light = np.atleast_3d(light).astype(np.float)
+    new = np.reshape(light, (-1, 23, 4))
+    si578 = new[:, :, 3]
     return si578  # signal intensity, 578 nm (PH578SI_L0)
 
 
@@ -61,45 +44,55 @@ def ph_thermistor(traw):
     degrees Centigrade from the pH instrument.
     """
     # convert raw thermistor readings from counts to degrees Centigrade
-    Rt = (traw / (4096.0 - traw)) * 17400.0
-    InvT = 0.0010183 + 0.000241 * np.log(Rt) + 0.00000015 * np.log(Rt)**3
-    TempK = 1.0 / InvT
-    therm = TempK - 273.15
+    Rt = ne.evaluate('(traw / (4096.0 - traw)) * 17400.0')
+    lRt = np.log(Rt) 
+    InvT = ne.evaluate('0.0010183 + 0.000241 * lRt + 0.00000015 * lRt**3')
+    therm = ne.evaluate('(1.0 / InvT) - 273.15')
 
     return therm
 
 
-def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0):
+def ph_battery(braw):
     """
-    Wrapper function to vectorize the Sea Water pH calculation defined
-    below in ph_phwater. Coded to accept either a single record or an array of
-    records.
+    Wrapper function to convert the battery voltage from counts to Volts from
+    the pH instrument.
     """
-    if ref.ndim == 1:
-        # only one record is being presented to the function
-        pH = ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal)
-    else:
-        # multiple records are being passed in, determine how many and create
-        # an empty pH array to hold the final outputs.
-        nRec = ref.shape[0]
-        pH = np.zeros(nRec, dtype=np.float)
-
-        # Salinity can either be a default value of 35 or from a co-located
-        # CTD. Need to replicate it to the same size as nRec if it is just the
-        # default scalar.
-        if np.isscalar(psal) is True:
-            psal = np.tile(psal, (nRec, 1))
-
-        # Iterate through the records
-        for iRec in range(nRec):
-            pH[iRec] = ph_phwater(ref[iRec, :], light[iRec, :], therm[iRec],
-                                  ea434[iRec], eb434[iRec], ea578[iRec],
-                                  eb578[iRec], psal[iRec])
-
-    return pH
+    # convert raw battery readings from counts to Volts
+    volts = ne.evaluate('braw * 15. / 4096.')
+    return volts
 
 
-def ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0):
+#def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0):
+#    """
+#    Wrapper function to vectorize the Sea Water pH calculation defined
+#    below in ph_phwater. Coded to accept either a single record or an array of
+#    records.
+#    """
+#    if ref.ndim == 1:
+#        # only one record is being presented to the function
+#        pH = ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal)
+#    else:
+#        # multiple records are being passed in, determine how many and create
+#        # an empty pH array to hold the final outputs.
+#        nRec = ref.shape[0]
+#        pH = np.zeros(nRec, dtype=np.float)
+#
+#        # Salinity can either be a default value of 35 or from a co-located
+#        # CTD. Need to replicate it to the same size as nRec if it is just the
+#        # default scalar.
+#        if np.isscalar(psal) is True:
+#            psal = np.tile(psal, (nRec, 1))
+#
+#        # Iterate through the records
+#        for iRec in range(nRec):
+#            pH[iRec] = ph_phwater(ref[iRec, :], light[iRec, :], therm[iRec],
+#                                  ea434[iRec], eb434[iRec], ea578[iRec],
+#                                  eb578[iRec], psal[iRec])
+#
+#    return pH
+
+
+def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0, ind=1):
     """
     Description:
 
@@ -114,7 +107,8 @@ def ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0):
 
     Usage:
 
-        ph = ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35)
+        ph = ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578,
+                             psal=35.0, ind=1)
 
             where
 
@@ -129,7 +123,8 @@ def ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0):
         ea578 = mCP molar absorptivities as above
         eb578 = mCP molar absorptivities as above
         psal = practical salinity estimate used in calculcations, default is
-            35.0 [unitless]
+            35.0 [unitless], from a co-located CTD.
+        ind = indicator impurity correction, default is 1 [unitless]
 
     References:
 
@@ -138,115 +133,143 @@ def ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0):
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00510_Data_Product_SPEC_PHWATER_OOI.pdf)
     """
-    # Calculate blanks from the 16 sets of reference light measurements
-    ref = ref.astype(np.float)  # convert to float array
+    # reformat all input values to arrays of the correct dimensions, shape, and
+    # type, recording the number of input records.
+    ref = (np.atleast_2d(ref)).astype(np.float)
+    nRec = ref.shape[0]
 
+    light = np.atleast_3d(light).astype(np.float)
+    light = np.reshape(light, (nRec, 23, 4))
+
+    therm = np.reshape(therm, (nRec, 1)).astype(np.float)
+
+    ea434 = np.reshape(ea434, (nRec, 1)).astype(np.float)
+    eb434 = np.reshape(eb434, (nRec, 1)).astype(np.float)
+    ea578 = np.reshape(ea578, (nRec, 1)).astype(np.float)
+    eb578 = np.reshape(eb578, (nRec, 1)).astype(np.float)
+
+    if np.isscalar(ind) is True:
+        ind = np.tile(ind, nRec).astype(np.int)
+
+    if np.isscalar(psal) is True:
+        psal = np.tile(psal, (nRec, 1)).astype(np.float)
+    else:
+        psal = np.reshape(psal, (nRec, 1)).astype(np.float)
+
+    # Calculate blanks from the 16 sets of reference light measurements
     arr434 = np.array([
-        (ref[1] / ref[0]),
-        (ref[5] / ref[4]),
-        (ref[9] / ref[8]),
-        (ref[13] / ref[12]),
+        (ref[:, 1] / ref[:, 0]),
+        (ref[:, 5] / ref[:, 4]),
+        (ref[:, 9] / ref[:, 8]),
+        (ref[:, 13] / ref[:, 12]),
     ])
-    blank434 = np.mean(arr434)
+    blank434 = np.reshape(np.mean(arr434, axis=0), (nRec, 1))
 
     arr578 = np.array([
-        (ref[3] / ref[2]),
-        (ref[7] / ref[6]),
-        (ref[11] / ref[10]),
-        (ref[15] / ref[14]),
+        (ref[:, 3] / ref[:, 2]),
+        (ref[:, 7] / ref[:, 6]),
+        (ref[:, 11] / ref[:, 10]),
+        (ref[:, 15] / ref[:, 14]),
     ])
-    blank578 = np.mean(arr578)
+    blank578 = np.reshape(np.mean(arr578, axis=0), (nRec, 1))
 
     # Extract 23 sets of 4 light measurements into arrays corresponding to the
     # raw reference and signal measurements at 434 and 578 nm. Input is an
     # array of length 92 (23 sets * 4 measurements per set). Can reshape and
     # slice to extract the parameters.
-    light = light.astype(np.float)
-    new = np.reshape(light, (23, 4))
-    ref434 = new[:, 0]   # reference signal, 434 nm
-    int434 = new[:, 1]   # signal intensity, 434 nm (PH434SI_L0)
-    ref578 = new[:, 2]   # reference signal, 578 nm
-    int578 = new[:, 3]   # signal intensity, 578 nm (PH578SI_L0)
+    ref434 = light[:, :, 0]   # reference signal, 434 nm
+    int434 = light[:, :, 1]   # signal intensity, 434 nm (PH434SI_L0)
+    ref578 = light[:, :, 2]   # reference signal, 578 nm
+    int578 = light[:, :, 3]   # signal intensity, 578 nm (PH578SI_L0)
 
     # Absorbance
-    A434 = -np.log10(int434 / ref434)
-    A434blank = -np.log10(blank434)
+    A434 = -sp.log10(int434 / ref434)
+    A434blank = -sp.log10(blank434)
     abs434 = A434 - A434blank
 
-    A578 = -np.log10(int578 / ref578)
-    A578blank = -np.log10(blank578)
+    A578 = -sp.log10(int578 / ref578)
+    A578blank = -sp.log10(blank578)
     abs578 = A578 - A578blank
+
+    R = abs578 / abs434
 
     # pka from Clayton and Byrne, 1993
     pKa = (1245.69 / (therm + 273.15)) + 3.8275 + (0.0021 * (35. - psal))
-    R = (A578 - A578blank) / (A434 - A434blank)
+    pKa = np.reshape(pKa, (-1, 1))
 
     # Molar absorptivities
-    ea434 = ea434 - (26. * (therm - 24.788))
-    ea578 = ea578 + (therm - 24.788)
-    eb434 = eb434 + (12. * (therm - 24.788))
-    eb578 = eb578 - (71. * (therm - 24.788))
-    e1 = ea578 / ea434
-    e2 = eb578 / ea434
-    e3 = eb434 / ea434
+    Ea434 = ea434 - (26. * (therm - 24.788))
+    Ea578 = ea578 + (therm - 24.788)
+    Eb434 = eb434 + (12. * (therm - 24.788))
+    Eb578 = eb578 - (71. * (therm - 24.788))
+    e1 = Ea578 / Ea434
+    e2 = Eb578 / Ea434
+    e3 = Eb434 / Ea434
 
     V1 = R - e1
     V2 = e2 - R * e3
 
     # indicator concentration calculations
-    HI = (abs434 * eb578 - abs578 * eb434) / (ea434 * eb578 - eb434 * ea578)
-    I = (abs578 * ea434 - abs434 * ea578) / (ea434 * eb578 - eb434 * ea578)
+    HI = (abs434 * Eb578 - abs578 * Eb434) / (Ea434 * Eb578 - Eb434 * Ea578)
+    I = (abs578 * Ea434 - abs434 * Ea578) / (Ea434 * Eb578 - Eb434 * Ea578)
     IndConc = HI + I
-    pointph = np.real(pKa + np.lib.scimath.log10(V1 / V2))
+    pointph = np.real(pKa + sp.log10(V1 / V2))
 
     # ************************ Initial pH Calcs ************************
     # determine the most linear region of points for pH of seawater
     # calculation, skipping the first 5 points.
-    IndConca = IndConc[5:]
-    Y = pointph[5:]
+    IndConca = IndConc[:, 5:]
+    Y = pointph[:, 5:]
     X = np.linspace(1, 18, 18)
 
-    # [TODO: The next sequence of steps could likely be optimized by using the
-    # built-in numpy linear interpolation algorithm, rather than the hand-coded
-    # implementation provided in the vendor code. However, coordination with
-    # the DPS author will be required as the calculated pH values do differ
-    # slightly when using the different methods.]
-
+    # create arrays for vectorized computations used in sum of squares below.
+    # reflows 1D and 2D arrays into 2D and 3D arrays, respectively, shifting
+    # each "row" of the arrays by one value, allowing the sum of square
+    # calculations to be computed in a vectorized fashion, replacing the for
+    # loop that had the computations running on 1:8, 2:9, ... 11:18.
     step = 7  # number of points to use
     count = step + 1
-    npts = np.size(X) - step
-    r2 = np.zeros(npts)
-    for i in range(npts):
-        sumx = np.sum(X[i:i+count])
-        sumy = np.sum(Y[i:i+count])
-        sumxy = np.sum(X[i:i+count] * Y[i:i+count])
-        sumx2 = np.sum(X[i:i+count]**2)
-        sumy2 = np.sum(Y[i:i+count]**2)
-        avgx = np.mean(X[i:i+count])
-        avgy = np.mean(Y[i:i+count])
-        sumxx = sumx * sumx
-        sumyy = sumy * sumy
-        ssxy = sumxy - (sumx * sumy) / count
-        ssx = sumx2 - (sumxx / count)
-        ssy = sumy2 - (sumyy / count)
-        r2[i] = ssxy**2 / (ssx * ssy)
+    nPts = np.size(X) - step
+    x = np.zeros((nPts, count))
+    y = np.zeros((nRec, nPts, count))
+    for i in range(nPts):
+        x[i, :] = X[i:i+count]
+        for j in range(nRec):
+            y[j, i, :] = Y[j, i:i+count]
+
+    # compute the range of best fitting points, using array multiplications to
+    # determine the best fit via the correlation coefficient.
+    sumx = np.sum(x, axis=1)
+    sumy = np.sum(y, axis=2)
+    sumxy = np.sum(x * y, axis=2)
+    sumx2 = np.sum(x**2, axis=1)
+    sumy2 = np.sum(y**2, axis=2)
+    sumxx = sumx * sumx
+    sumyy = sumy * sumy
+    ssxy = sumxy - (sumx * sumy) / count
+    ssx = sumx2 - (sumxx / count)
+    ssy = sumy2 - (sumyy / count)
+    r2 = ssxy**2 / (ssx * ssy)
 
     # Range of seawater points to use
-    cutoff1 = np.argmax(r2)  # Find the first, best R-squared value
+    cutoff1 = np.argmax(r2, axis=1)  # Find the first, best R-squared value
     cutoff2 = cutoff1 + count
 
     # Indicator and pH range limited to best points
-    IndConcS = IndConca[cutoff1:cutoff2]
-    pointphS = Y[cutoff1:cutoff2]
+    IndConcS = np.zeros((nRec, count))
+    pointphS = np.zeros((nRec, count))
+    for i in range(nRec):
+        IndConcS[i, :] = IndConca[i, cutoff1[i]:cutoff2[i]]
+        pointphS[i, :] = Y[i, cutoff1[i]:cutoff2[i]]
 
     # ************************* Final pH Calcs *************************
-    sumx = np.sum(IndConcS)
-    sumy = np.sum(pointphS)
-    sumxy = np.sum(pointphS * IndConcS)
-    sumx2 = np.sum(IndConcS**2)
-    sumy2 = np.sum(pointphS**2)
-    xbar = np.mean(IndConcS)
-    ybar = np.mean(pointphS)
+    sumx = np.sum(IndConcS, axis=1)
+    sumy = np.sum(pointphS, axis=1)
+    sumxy = np.sum(pointphS * IndConcS, axis=1)
+    sumx2 = np.sum(IndConcS**2, axis=1)
+    sumy2 = np.sum(pointphS**2, axis=1)
+    xbar = np.mean(IndConcS, axis=1)
+    ybar = np.mean(pointphS, axis=1)
     sumxx = sumx * sumx
     sumyy = sumy * sumy
     ssxy = sumxy - (sumx * sumy) / count
@@ -254,5 +277,13 @@ def ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0):
     ssy = sumy2 - (sumyy / count)
     slope = ssxy / ssx
     ph = ybar - slope * xbar
+
+    # pH corrections due to indicator impurity
+    # If the indicator impurity == 0 and the pH is >= 8.2
+    ind0Flag = (ind == 0) & (ph >= 8.2)
+    ph[ind0Flag] = ph[ind0Flag] * 0.9723 + 0.2235
+    # If the indicator impurity == 1 and the pH is >= 8.2
+    ind1Flag = (ind == 1) & (ph >= 8.2)
+    ph[ind1Flag] = ph[ind1Flag] * 0.9698 + 0.2484
 
     return ph
