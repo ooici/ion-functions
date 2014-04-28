@@ -1,9 +1,9 @@
 CC=gcc
 SRCDIR=extensions
-CFLAGS=-std=c99 -g -ggdb -Wall -I$(SRCDIR)
-LDFLAGS=-lm
+override CFLAGS+=-std=c99 -g -ggdb -Wall -I$(SRCDIR) 
+override LDFLAGS+=-lm
 
-test_objects=$(SRCDIR)/test.o $(SRCDIR)/spike.o $(SRCDIR)/utils.o $(SRCDIR)/gradient.o $(SRCDIR)/time_utils.o $(SRCDIR)/GeomagnetismLibrary.o $(SRCDIR)/wmm.o
+test_objects=$(SRCDIR)/test.o $(SRCDIR)/spike.o $(SRCDIR)/utils.o $(SRCDIR)/gradient.o $(SRCDIR)/time_utils.o $(SRCDIR)/GeomagnetismLibrary.o $(SRCDIR)/wmm.o $(SRCDIR)/polycals.o
 
 all: $(SRCDIR)/test
 

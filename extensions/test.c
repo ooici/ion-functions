@@ -4,8 +4,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
+#include <float.h>
 #include "spike.h"
 #include "utils.h"
+#include "polycals.h"
 #include "time_utils.h"
 #include "gradient.h"
 #include "wmm.h"
@@ -14,6 +16,7 @@ void arange(double *arr, size_t len);
 signed char all(signed char *, size_t);
 void print_array(signed char *, size_t);
 void print_double_array(double *, size_t);
+void print_array_size_t(size_t *array, size_t len);
 char test_spike_simple(void);
 char test_spike_l(void);
 char test_spike_long(void);
@@ -29,7 +32,10 @@ char test_time_vector(void);
 char test_time_vector_split(void);
 char test_mag_decl(void);
 char test_velocity_corr(void);
+char test_search_sorted(void);
+char test_polycal(void);
 void test(char (*func)(void));
+char check_expected(double *out, double *expected, size_t len, double atol, double rtol);
 
 extern bool nearly_equal(double, double, double);
 
@@ -52,6 +58,8 @@ int main(int argc, char *argv[])
     test(&test_time_vector_split);
     test(&test_mag_decl);
     test(&test_velocity_corr);
+    test(&test_search_sorted);
+    test(&test_polycal);
     return 0;
 }
 
@@ -467,6 +475,134 @@ char test_spike_long()
     return 1;
 }
 
+char test_search_sorted()
+{
+    double a[] = {1, 2, 3, 4, 5};
+    double v[] = {-10, 2, 3, 10};
+    const size_t len = 4;
+    size_t out[len];
+    size_t expected[] = {0, 1, 2, 5};
+    int i=0;
+    memset(out, len * sizeof(size_t), 0);
+    printf("test_search_sorted... ");
+    search_sorted(out, a, 5, v, len);
+    for(i=0;i<len;i++) {
+        if(expected[i] != out[i]) {
+            message = "Expected does not match received.";
+            printf("\n");
+            print_array_size_t(expected, len);
+            print_array_size_t(out, len);
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+char test_polycal()
+{
+    double x[] = 
+    {    9.97142857,  10.08457143,  10.19542857,  10.304     ,
+        10.41028571,  10.51428571,  10.616     ,  10.71542857,
+        10.81257143,  10.90742857,  11.        ,  11.09028571,
+        11.17828571,  11.264     ,  11.34742857,  11.42857143,
+        11.50742857,  11.584     ,  11.65828571,  11.73028571,
+        11.8       ,  11.86742857,  11.93257143,  11.99542857,
+        12.056     ,  12.11428571,  12.17028571,  12.224     ,
+        12.27542857,  12.32457143,  12.37142857,  12.416     ,
+        12.45828571,  12.49828571,  12.536     ,  12.57142857,
+        12.60457143,  12.63542857,  12.664     ,  12.69028571,
+        12.71428571,  12.736     ,  12.75542857,  12.77257143,
+        12.78742857,  12.8       ,  12.81028571,  12.81828571,
+        12.824     ,  12.82742857,  12.82857143,  12.82742857,
+        12.824     ,  12.81828571,  12.81028571,  12.8       ,
+        12.78742857,  12.77257143,  12.75542857,  12.736     ,
+        12.71428571,  12.69028571,  12.664     ,  12.63542857,
+        12.60457143,  12.57142857,  12.536     ,  12.49828571,
+        12.45828571,  12.416     ,  12.37142857,  12.32457143,
+        12.27542857,  12.224     ,  12.17028571,  12.11428571,
+        12.056     ,  11.99542857,  11.93257143,  11.86742857,
+        11.8       ,  11.73028571,  11.65828571,  11.584     ,
+        11.50742857,  11.42857143,  11.34742857,  11.264     ,
+        11.17828571,  11.09028571,  11.        ,  10.90742857,
+        10.81257143,  10.71542857,  10.616     ,  10.51428571,
+        10.41028571,  10.304     ,  10.19542857,  10.08457143};
+    double t[] = 
+    { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
+     17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+     34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50,
+     51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67,
+     68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
+     85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99};
+    coeff_vector cals[4];
+    double cal0[] = {1.02, 1.0};
+    double cal1[] = {1.02, 2.0};
+    double cal2[] = {1.02, 3.0};
+    double cal3[] = {1.02, 4.0};
+    double cal_t[] = {10, 20, 60, 80};
+    double out[100];
+    const size_t cal_len = 4;
+    const size_t x_len = 100;
+    double expected[] = {  9.97142857,  10.08457143,  10.19542857,  10.304     ,
+        10.41028571,  10.51428571,  10.616     ,  10.71542857,
+        10.81257143,  10.90742857,  12.22      ,  12.41209143,
+        12.60185143,  12.78928   ,  12.97437714,  13.15714286,
+        13.33757714,  13.51568   ,  13.69145143,  13.86489143,
+        14.036     ,  14.12977714,  14.22122286,  14.31033714,
+        14.39712   ,  14.48157143,  14.56369143,  14.64348   ,
+        14.72093714,  14.79606286,  14.86885714,  14.93932   ,
+        15.00745143,  15.07325143,  15.13672   ,  15.19785714,
+        15.25666286,  15.31313714,  15.36728   ,  15.41909143,
+        15.46857143,  15.51572   ,  15.56053714,  15.60302286,
+        15.64317714,  15.681     ,  15.71649143,  15.74965143,
+        15.78048   ,  15.80897714,  15.83514286,  15.85897714,
+        15.88048   ,  15.89965143,  15.91649143,  15.931     ,
+        15.94317714,  15.95302286,  15.96053714,  15.96572   ,
+        15.96857143,  15.99409143,  16.01728   ,  16.03813714,
+        16.05666286,  16.07285714,  16.08672   ,  16.09825143,
+        16.10745143,  16.11432   ,  16.11885714,  16.12106286,
+        16.12093714,  16.11848   ,  16.11369143,  16.10657143,
+        16.09712   ,  16.08533714,  16.07122286,  16.05477714,
+        16.036     ,  11.73028571,  11.65828571,  11.584     ,
+        11.50742857,  11.42857143,  11.34742857,  11.264     ,
+        11.17828571,  11.09028571,  11.        ,  10.90742857,
+        10.81257143,  10.71542857,  10.616     ,  10.51428571,
+        10.41028571,  10.304     ,  10.19542857,  10.08457143 };
+    cals[0].N = 2;
+    cals[0].coeff = cal0;
+    cals[1].N = 2;
+    cals[1].coeff = cal1;
+    cals[2].N = 2;
+    cals[2].coeff = cal2;
+    cals[3].N = 2;
+    cals[3].coeff = cal3;
+    printf("test_polycal... ");
+    polycal(out, cals, cal_t,  cal_len, x, t, x_len);
+    // Should be really close but not DBL_EPSILON because of numpy's 
+    // lossy representation of the floats
+    if( !check_expected(out, expected, x_len, 0.00001, 0)) 
+        return 0;
+    return 1;
+}
+
+char check_expected(double *out, double *expected, size_t len, double atol, double rtol)
+{
+    size_t i=0;
+    for(i=0;i<len;i++) {
+        if( fabs(expected[i] - out[i]) > (atol + rtol * fabs(out[i])) ) {
+            message = "Expected does not match received.";
+            printf("index is %lu\n", i);
+            printf("| %.6f - %.6f | >= %.6f\n", out[i], expected[i], (atol + rtol * fabs(out[i])));
+            printf("\n");
+            print_double_array(expected, len);
+            print_double_array(out, len);
+            return 0;
+        }
+    }
+    return 1;
+
+}
+
 signed char all(signed char *input, size_t len) 
 {
     size_t i=0;
@@ -493,6 +629,17 @@ void print_array(signed char *array, size_t len)
         printf("%d ", (int)array[i]);
     }
     printf("%d]\n", (int)array[i]);
+}
+
+
+void print_array_size_t(size_t *array, size_t len)
+{
+    size_t i=0;
+    printf("[");
+    for(i=0;i<len-1;i++) {
+        printf("%lu ", (size_t)array[i]);
+    }
+    printf("%lu]\n", (size_t)array[i]);
 }
 
 void print_double_array(double *array, size_t len)
