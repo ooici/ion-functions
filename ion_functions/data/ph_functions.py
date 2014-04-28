@@ -23,7 +23,7 @@ def ph_434_intensity(light):
     light = np.atleast_3d(light).astype(np.float)
     new = np.reshape(light, (-1, 23, 4))
     si434 = new[:, :, 1]
-    return si434  # signal intensity, 434 nm (PH578SI_L0)
+    return si434  # signal intensity, 434 nm (PH434SI_L0)
 
 
 def ph_578_intensity(light):
@@ -107,7 +107,8 @@ def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0, in
 
     Usage:
 
-        ph = ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35)
+        ph = ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578,
+                             psal=35.0, ind=1)
 
             where
 
@@ -278,11 +279,11 @@ def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0, in
     ph = ybar - slope * xbar
 
     # pH corrections due to indicator impurity
-    ind0Flag = (ind == 0) & (ph >= 8.2)
-    ind1Flag = (ind == 1) & (ph >= 8.2)
     # If the indicator impurity == 0 and the pH is >= 8.2
+    ind0Flag = (ind == 0) & (ph >= 8.2)
     ph[ind0Flag] = ph[ind0Flag] * 0.9723 + 0.2235
     # If the indicator impurity == 1 and the pH is >= 8.2
+    ind1Flag = (ind == 1) & (ph >= 8.2)
     ph[ind1Flag] = ph[ind1Flag] * 0.9698 + 0.2484
 
     return ph

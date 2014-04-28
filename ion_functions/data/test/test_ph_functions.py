@@ -115,7 +115,7 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
         """
         bout = ph.ph_battery(self.braw)
         tout = ph.ph_thermistor(self.traw)
-        a434 = ph.ph_434_intensity(self.light)
+        a434 = ph.ph_434_intensity(self.light)  # no unit tests, just checking to see if they work
         a578 = ph.ph_578_intensity(self.light)
 
         # reset calibration values to an array, replicating how ION will pass
