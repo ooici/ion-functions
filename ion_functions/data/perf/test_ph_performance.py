@@ -1,21 +1,11 @@
 #!/usr/bin/env python
-
-"""
-@package ion_functions.test.pH_functions
-@file ion_functions/test/pH_functions.py
-@author Christopher Wingard
-@brief Unit tests for pH_functions module
-"""
-
-from nose.plugins.attrib import attr
-from ion_functions.test.base_test import BaseUnitTestCase
-
+from ion_functions.data.perf.test_performance import PerformanceTestCase
+from ion_functions.data.ph_functions import (ph_434_intensity, ph_578_intensity,
+                                             ph_thermistor, ph_battery, ph_calc_phwater)
 import numpy as np
-from ion_functions.data import ph_functions as ph
 
 
-@attr('UNIT', group='func')
-class TestpHFunctionsUnit(BaseUnitTestCase):
+class TestPHPerformance(PerformanceTestCase):
     def setUp(self):
         """
         Test values for the PHWATER unit tests, based on test strings in the
@@ -48,14 +38,6 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
             '*A3E70ACAB3F2AB05B207E00669075108AF07DD0663075308AB07E40666075208AB07DB0668075108A907DC0663074C08AA07DE0666075008AF07DF065C0751088F07DF05E30753073B07DF048A074C043807DE02F3074D01D707DC01DF074E00D807DD016F0752008E07DC0160074F008807DE018B074C00A107E301E7075400DF07DE025C0750014507DD02F1074F01D607D903870749029307DC04110751036007E004920753044307DA04EE074B04FC07DC0543074C05B107DC05810749064707DC05B0074C06B207DE05D4074F071507DF05EE0750075C07DF06070751079900000C4105B20D'
         ])
 
-        # setup expected output arrays
-        self.vbatt = np.array([11.4990, 11.4954, 11.4954,
-                               11.4917, 11.4917, 11.4880])
-        self.therm = np.array([25.9204, 25.7612, 25.7082,
-                               25.6024, 25.6552, 25.8673])
-        self.pH = np.array([8.0077, 8.0264, 8.0557,
-                            8.0547, 8.0645, 8.0555])
-
         # setup calculated output arrays
         self.ref = np.zeros((6, 16), dtype=np.int)       # reference measurements
         self.light = np.zeros((6, 92), dtype=np.int)     # light measurements
@@ -79,56 +61,49 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
                 self.light[i, j] = int(s[strt:strt+step], 16)
                 strt += step
 
-    def test_ph_singles(self):
-        """
-        Test ability of ph_calc_phwater to process a single pH measurement, one
-        measurement at a time.
-        """
-        # determine the number of records and create the output arrays
-        nRec = self.ref.shape[0]
-        bout = np.zeros(nRec, dtype=np.float)
-        tout = np.zeros(nRec, dtype=np.float)
-        a434 = np.zeros((nRec, 23), dtype=np.float)
-        a578 = np.zeros((nRec, 23), dtype=np.float)
-        pout = np.zeros(nRec, dtype=np.float)
+    def test_ph_battery(self):
+        stats = []
 
-        # index through the records, calculating pH one record at a time
-        for iRec in range(nRec):
-            # compute the battery voltage, final temperature in deg_C and pH,
-            # record by record.
-            bout[iRec] = ph.ph_battery(self.braw[iRec])
-            a434[iRec, :] = ph.ph_434_intensity(self.light[iRec, :])
-            a578[iRec, :] = ph.ph_578_intensity(self.light[iRec, :])
-            tout[iRec] = ph.ph_thermistor(self.traw[iRec])
-            pout[iRec] = ph.ph_calc_phwater(self.ref[iRec, :], self.light[iRec, :], tout[iRec],
-                                            self.ea434, self.eb434, self.ea578, self.eb578)
+        # create 12000 data points
+        braw = np.repeat(self.braw, 2000)
+        self.profile(stats, ph_battery, braw)
 
-        # test above output where records were processed one at a time
-        np.testing.assert_array_almost_equal(bout, self.vbatt, 4)
-        np.testing.assert_array_almost_equal(tout, self.therm, 4)
-        np.testing.assert_array_almost_equal(pout, self.pH, 4)
+    def test_ph_thermistor(self):
+        stats = []
 
-    def test_ph_multiples(self):
-        """
-        Test ability of ph_calc_phwater to process multiple pH measurements
-        in a single block.
-        """
-        bout = ph.ph_battery(self.braw)
-        tout = ph.ph_thermistor(self.traw)
-        a434 = ph.ph_434_intensity(self.light)
-        a578 = ph.ph_578_intensity(self.light)
+        # create 12000 data points
+        traw = np.repeat(self.traw, 2000)
+        self.profile(stats, ph_thermistor, traw)
+
+    def test_ph_434_intensity(self):
+        stats = []
+
+        # create 12000 data points
+        light = np.repeat(self.light, 2000, axis=0)
+        self.profile(stats, ph_434_intensity, light)
+
+    def test_ph_578_intensity(self):
+        stats = []
+
+        # create 12000 data points
+        light = np.repeat(self.light, 2000, axis=0)
+        self.profile(stats, ph_578_intensity, light)
+
+    def test_ph_calc_phwater(self):
+        stats = []
+
+        # create 12000 data points
+        light = np.repeat(self.light, 2000, axis=0)
+        ref = np.repeat(self.ref, 2000, axis=0)
+        traw = np.repeat(self.traw, 2000)
+        therm = ph_thermistor(traw)
 
         # reset calibration values to an array, replicating how ION will pass
         # the data when processing blocks of values.
-        ea434 = np.ones(6) * self.ea434
-        eb434 = np.ones(6) * self.eb434
-        ea578 = np.ones(6) * self.ea578
-        eb578 = np.ones(6) * self.eb578
+        ea434 = np.ones(12000) * self.ea434
+        eb434 = np.ones(12000) * self.eb434
+        ea578 = np.ones(12000) * self.ea578
+        eb578 = np.ones(12000) * self.eb578
 
         # test the function
-        pout = ph.ph_calc_phwater(self.ref, self.light, tout, ea434, eb434, ea578, eb578)
-
-        # test above output where records were processed one at a time
-        np.testing.assert_array_almost_equal(bout, self.vbatt, 4)
-        np.testing.assert_array_almost_equal(tout, self.therm, 4)
-        np.testing.assert_array_almost_equal(pout, self.pH, 4)
+        self.profile(stats, ph_calc_phwater, ref, light, therm, ea434, eb434, ea578, eb578)
