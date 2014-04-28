@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <math.h>
+#include <float.h>
 #include "spike.h"
 #include "utils.h"
 #include "polycals.h"
@@ -34,6 +35,7 @@ char test_velocity_corr(void);
 char test_search_sorted(void);
 char test_polycal(void);
 void test(char (*func)(void));
+char check_expected(double *out, double *expected, size_t len, double atol, double rtol);
 
 extern bool nearly_equal(double, double, double);
 
@@ -537,6 +539,35 @@ char test_polycal()
     double cal1[] = {1.02, 2.0};
     double cal2[] = {1.02, 3.0};
     double cal3[] = {1.02, 4.0};
+    double cal_t[] = {10, 20, 60, 80};
+    double out[100];
+    const size_t cal_len = 4;
+    const size_t x_len = 100;
+    double expected[] = {  9.97142857,  10.08457143,  10.19542857,  10.304     ,
+        10.41028571,  10.51428571,  10.616     ,  10.71542857,
+        10.81257143,  10.90742857,  12.22      ,  12.41209143,
+        12.60185143,  12.78928   ,  12.97437714,  13.15714286,
+        13.33757714,  13.51568   ,  13.69145143,  13.86489143,
+        14.036     ,  14.12977714,  14.22122286,  14.31033714,
+        14.39712   ,  14.48157143,  14.56369143,  14.64348   ,
+        14.72093714,  14.79606286,  14.86885714,  14.93932   ,
+        15.00745143,  15.07325143,  15.13672   ,  15.19785714,
+        15.25666286,  15.31313714,  15.36728   ,  15.41909143,
+        15.46857143,  15.51572   ,  15.56053714,  15.60302286,
+        15.64317714,  15.681     ,  15.71649143,  15.74965143,
+        15.78048   ,  15.80897714,  15.83514286,  15.85897714,
+        15.88048   ,  15.89965143,  15.91649143,  15.931     ,
+        15.94317714,  15.95302286,  15.96053714,  15.96572   ,
+        15.96857143,  15.99409143,  16.01728   ,  16.03813714,
+        16.05666286,  16.07285714,  16.08672   ,  16.09825143,
+        16.10745143,  16.11432   ,  16.11885714,  16.12106286,
+        16.12093714,  16.11848   ,  16.11369143,  16.10657143,
+        16.09712   ,  16.08533714,  16.07122286,  16.05477714,
+        16.036     ,  11.73028571,  11.65828571,  11.584     ,
+        11.50742857,  11.42857143,  11.34742857,  11.264     ,
+        11.17828571,  11.09028571,  11.        ,  10.90742857,
+        10.81257143,  10.71542857,  10.616     ,  10.51428571,
+        10.41028571,  10.304     ,  10.19542857,  10.08457143 };
     cals[0].N = 2;
     cals[0].coeff = cal0;
     cals[1].N = 2;
@@ -546,10 +577,31 @@ char test_polycal()
     cals[3].N = 2;
     cals[3].coeff = cal3;
     printf("test_polycal... ");
+    polycal(out, cals, cal_t,  cal_len, x, t, x_len);
+    // Should be really close but not DBL_EPSILON because of numpy's 
+    // lossy representation of the floats
+    if( !check_expected(out, expected, x_len, 0.00001, 0)) 
+        return 0;
     return 1;
 }
 
+char check_expected(double *out, double *expected, size_t len, double atol, double rtol)
+{
+    size_t i=0;
+    for(i=0;i<len;i++) {
+        if( fabs(expected[i] - out[i]) > (atol + rtol * fabs(out[i])) ) {
+            message = "Expected does not match received.";
+            printf("index is %lu\n", i);
+            printf("| %.6f - %.6f | >= %.6f\n", out[i], expected[i], (atol + rtol * fabs(out[i])));
+            printf("\n");
+            print_double_array(expected, len);
+            print_double_array(out, len);
+            return 0;
+        }
+    }
+    return 1;
 
+}
 
 signed char all(signed char *input, size_t len) 
 {
