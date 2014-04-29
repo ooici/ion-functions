@@ -9,6 +9,8 @@
 import numpy as np
 import numexpr as ne
 
+from ion_functions.utils import fill_value
+
 # load the temperature and salinity correction coefficients table
 from ion_functions.data.opt_functions_tscor import tscor
 
@@ -32,6 +34,9 @@ def opt_beam_attenuation(cref, csig, traw, cwl, coff, tcal, tbins, tc_arr,
         2014-03-07: Russell Desiderio. Added Usage documentation.
         2014-03-21: Russell Desiderio. Added rounding wavelengths to tenths to make sure
                     they will match tscor dictionary key values.
+        2014-05-29: Russell Desiderio. Added capability to handle OPTAA wavelengths outside
+                    the wavelength range of the empirically derived temperature and salinity
+                    correction coefficients.
 
     Usage:
 
@@ -117,6 +122,9 @@ def opt_beam_attenuation(cref, csig, traw, cwl, coff, tcal, tbins, tc_arr,
         cpd_ts_row = opt_tempsal_corr('c', cpd, cwl[ii, :], tcal[ii], T[ii], PS[ii])
         cpd_ts[ii, :] = cpd_ts_row
 
+    # replace any nans (from tscor dictionary lookups) to fill values.
+    cpd_ts[np.isnan(cpd_ts)] = fill_value
+
     # return the temperature and salinity corrected beam attenuation
     # coefficient OPTATTN_L2 [m^-1]
     return cpd_ts
@@ -139,6 +147,9 @@ def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
         2014-03-07: Russell Desiderio. Added Usage documentation.
         2014-03-21: Russell Desiderio. Added rounding wavelengths to tenths to make sure
                     they will match tscor dictionary key values.
+        2014-05-29: Russell Desiderio. Added capability to handle OPTAA wavelengths outside
+                    the wavelength range of the empirically derived temperature and salinity
+                    correction coefficients.
 
     Usage:
 
@@ -218,6 +229,9 @@ def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
     # initialize output array
     apd_ts_s = np.zeros([npackets, nwavelengths])
 
+    # convert fill values to nans
+    cpd_ts[cpd_ts == fill_value] = np.nan
+
     for ii in range(npackets):
 
         # calculate the internal instrument temperature [deg_C]
@@ -233,6 +247,9 @@ def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
         # correct the optical absorption coefficient for scattering effects
         apd_ts_s_row = opt_scatter_corr(apd_ts, awl[ii, :], cpd_ts[ii, :], cwl[ii, :], rwlngth)
         apd_ts_s[ii, :] = apd_ts_s_row
+
+    # replace any nans to fill values.
+    apd_ts_s[np.isnan(apd_ts_s)] = fill_value
 
     # return the temperature, salinity and scattering corrected optical
     # absorption coefficient OPTABSN_L2 [m^-1]
