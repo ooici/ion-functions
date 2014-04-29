@@ -12,6 +12,7 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 from ion_functions.data import opt_functions as optfunc
+from ion_functions.utils import fill_value
 
 
 @attr('UNIT', group='func')
@@ -372,7 +373,7 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
 
     def test_opt_functions_OPTAA_vectorization(self):
         """
-        Test the OPTAA wrapper functions in the opt_functions.py module. Implement vectorization.
+        Test the vectorization of the OPTAA wrapper functions in the opt_functions.py module.
 
         OOI (2013). Data Product Specification for Optical Beam Attenuation
             Coefficient. Document Control Number 1341-00690.
@@ -464,6 +465,98 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         a_ts_s700 = optfunc.opt_optical_absorption(a_ref, a_sig, traw, awlngth, a_off, Tcal,
                                                    tbins, tarr, cpd_ts, cwlngth, T, PS, ref_wave)
 
+        np.testing.assert_allclose(a_ts_s700, apd_ts_s_ref700, rtol=1e-6, atol=1e-6)
+
+    def test_opt_functions_OPTAA_vectorization_with_tscor_nans(self):
+        """
+        Test the vectorized OPTAA wrapper functions in the opt_functions.py module;
+        include "a" and "c" test wavelengths outside of the (original) range of the
+        wavelength keys in the tscor.py file, which contains the dictionary of the
+        temperature and salinity correction coefficients. The dictionary keys have
+        been extended from [400.0 755.0] to [380.0 775.0] with entries of np.nan.
+
+        OOI (2013). Data Product Specification for Optical Beam Attenuation
+            Coefficient. Document Control Number 1341-00690.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00690_Data_Product_SPEC_OPTATTN_OOI.pdf)
+
+        OOI (2013). Data Product Specification for Optical Absorption
+            Coefficient. Document Control Number 1341-00700.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00700_Data_Product_SPEC_OPTABSN_OOI.pdf)
+
+        OOI (2014). OPTAA Unit Test. 1341-00700_OPTABSN Artifact.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00700_OPTABSN >>
+            OPTAA_unit_test.xlsx)
+
+        Initial code by Russell Desiderio, 29-Apr-2014. Added tests for when OPTAA
+            wavelengths are outside the range of the empirically derived temperature
+            and salinity correction wavelength keys in the original tscor.py dictionary
+            by modifying def test_opt_functions_OPTAA_vectorization test data.
+        """
+        # test inputs:
+        # replicate the inputs to represent 3 data packets
+        npackets = 3
+        # tbins will become a 2D array.
+        tbins = np.array([14.5036, 15.5200, 16.4706, 17.4833, 18.4831, 19.5196, 20.5565])
+        tbins = np.tile(tbins, (npackets, 1))
+        # nrows of tarr = length(nwlngth); ncols of tarr = length(tbins)
+        tarr = np.array([
+            [0.0, -0.004929, -0.004611, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004611, -0.004418, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004418, -0.004355, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004355, -0.004131, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.004131, -0.003422, 0.0, 0.0, 0.0, 0.0],
+            [0.0, -0.003422, -0.002442, 0.0, 0.0, 0.0, 0.0]
+        ])
+        # tarr will become a 3D array
+        # dimensions will be (npackets, nwavelengths, ntempbins)
+        tarr = np.tile(tarr, (npackets, 1, 1))
+        # valid tscor dictionary entries (those without nan values) are
+        # keyed at [400.0 755.0] nm. The dictionary has been extended to
+        # to [380.0 775.0] using np.nan as fill values. test:
+        cwlngth = np.array([398.5, 540., 580., 630., 670., 710.])
+        awlngth = np.array([500., 550., 600., 650., 700., 761.2])
+        c_sig = np.array([150., 225., 200., 350., 450., 495.])
+        c_ref = np.array([550., 540., 530., 520., 510., 500.])
+        c_off = np.array([1.35, 1.30, 1.25, 1.20, 1.15, 1.10])
+        a_sig = np.array([250., 300., 210., 430., 470., 495.])
+        a_ref = np.array([450., 460., 470., 480., 490., 500.])
+        a_off = np.array([0.35, 0.30, 0.25, 0.20, 0.15, 0.10])
+        # make all of the previous vectors 2-D
+        for str in ['cwlngth', 'awlngth', 'c_sig', 'c_ref', 'c_off', 'a_sig', 'a_ref', 'a_off']:
+            exec(str + ' = np.tile(' + str + ', (npackets,1))')
+        # traw, Tcal, T, and PS will now be vectors, so:
+        traw = np.array([48355])
+        Tcal = np.array([20.0])
+        T = np.array([12.0])
+        PS = np.array([35.0])
+        for str in ['traw', 'Tcal', 'T', 'PS']:
+            exec(str + ' = np.tile(' + str + ', (npackets,1))')
+
+        # expected outputs:
+        # 1st c wavelength is out-of-range of the empirical TS corrections, so the DPA
+        # should return the fill value.
+        cpd_ts = np.array([fill_value, 4.807914, 5.156010, 2.788715, 1.655607, 1.171965])
+        # to scatter-correct the 1st abs wavelength value, the c values are interpolated;
+        # because the 1st c value is out-of-TScor-range, the 1st abs value will also be
+        # a fill value. and, the last abs value will also be a fill value because 761.2>755.0.
+        apd_ts_s_ref700 = np.array([fill_value, 1.021574, 3.235057, 0.099367, 0.000000, fill_value])
+        for str in ['cpd_ts', 'apd_ts_s_ref700']:
+            exec(str + ' = np.tile(' + str + ', (npackets,1))')
+
+        # beam attenuation (beam c)  test
+        c_ts = optfunc.opt_beam_attenuation(c_ref, c_sig, traw, cwlngth, c_off, Tcal,
+                                            tbins, tarr, T, PS)
+        np.testing.assert_allclose(c_ts, cpd_ts, rtol=1e-6, atol=1e-6)
+
+        # absorption test
+        a_ts_s700 = np.zeros(6)
+        a_ts_s700 = optfunc.opt_optical_absorption(a_ref, a_sig, traw, awlngth, a_off, Tcal,
+                                                   tbins, tarr, cpd_ts, cwlngth, T, PS)
         np.testing.assert_allclose(a_ts_s700, apd_ts_s_ref700, rtol=1e-6, atol=1e-6)
 
     def test_opt_par_satlantic(self):
