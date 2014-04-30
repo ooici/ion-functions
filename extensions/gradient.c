@@ -51,6 +51,8 @@ static inline int tolerance(double a, double b, double tolerance)
  * remove all data points dat (and x) for which x is separated by mindx or
  * less.
  *
+ * Note: the out array should be initialized to 1s by the client
+ *
  * Arguments:
  * signed char *out           - An array of values that represent the
  *                              evaluation of this QC.  Only bad values and

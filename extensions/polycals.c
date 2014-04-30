@@ -101,9 +101,6 @@ size_t polycal(double *out,
     size_t a_lower;
     size_t a_upper;
 
-    double t_lower;
-    double t_upper;
-
     double x0;
     double x1;
     double w;
