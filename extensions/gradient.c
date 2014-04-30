@@ -70,7 +70,7 @@ static inline int tolerance(double a, double b, double tolerance)
  * double startdat            - Value to apply as a starting value (known good).
  * double toldat              - The tolerance of d(dat)/dx to reach a good 
  *                              value.
- * const double skipped_value - Caller specified value to apply when qc
+ * signed char skipped_value  - Caller specified value to apply when qc
  *                              evaluation is "skipped".
  */
 
@@ -98,11 +98,9 @@ int gradient(
      */
     if (startdat == 0) { 
         startdat = dat[0];
-    } else { 
-        if( !tolerance(dat[0], startdat, toldat) ) {
-            bad=true;
-            out[0] = 0;
-        }
+    } else if ( !tolerance(dat[0], startdat, toldat) ) {
+        bad = true;
+        out[0] = 0;
     }
     for(i = 1; i < len; i++) {
 
@@ -127,7 +125,9 @@ int gradient(
             }
             continue; 
         }
-        ddatdx = (dat[i] - dat[i-(1+skipped)])/(x[i] - x[i-(1+skipped)]);
+
+        ddatdx = (dat[i] - dat[i-(1+skipped)]) / (x[i] - x[i-(1+skipped)]);
+
         /* Calculate the rate of change */
         if(ddatdx < grad_min || ddatdx > grad_max) {
             /* If the differential is outside of the min/max */
@@ -138,8 +138,7 @@ int gradient(
             skipped = 0; /* Reset the skipped */
             out[i] = 0;  /* Set the output to false */
             bad = true;  /* Mark a bad */
-        }
-        else {
+        } else {
             /* Continue on our way and update startdat */
             startdat = dat[i];
             /* Reset the skipped count, we're done skiping for the moment */
