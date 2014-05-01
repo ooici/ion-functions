@@ -37,6 +37,8 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
         self.eb434 = 2287.
         self.ea578 = 107.
         self.eb578 = 38913.
+        self.ind_slp = 1.0
+        self.ind_off = 0.0
 
         # raw data strings provided by the DPS
         raw_strings = np.array([
@@ -100,8 +102,10 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
             a434[iRec, :] = ph.ph_434_intensity(self.light[iRec, :])
             a578[iRec, :] = ph.ph_578_intensity(self.light[iRec, :])
             tout[iRec] = ph.ph_thermistor(self.traw[iRec])
-            pout[iRec] = ph.ph_calc_phwater(self.ref[iRec, :], self.light[iRec, :], tout[iRec],
-                                            self.ea434, self.eb434, self.ea578, self.eb578)
+            pout[iRec] = ph.ph_calc_phwater(self.ref[iRec, :], self.light[iRec, :],
+                                            tout[iRec], self.ea434, self.eb434,
+                                            self.ea578, self.eb578, self.ind_slp,
+                                            self.ind_off)
 
         # test above output where records were processed one at a time
         np.testing.assert_array_almost_equal(bout, self.vbatt, 4)
@@ -116,7 +120,9 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
         bout = ph.ph_battery(self.braw)
         tout = ph.ph_thermistor(self.traw)
         a434 = ph.ph_434_intensity(self.light)  # no unit tests, just checking to see if they work
+        print a434
         a578 = ph.ph_578_intensity(self.light)
+        print a578
 
         # reset calibration values to an array, replicating how ION will pass
         # the data when processing blocks of values.
@@ -124,9 +130,12 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
         eb434 = np.ones(6) * self.eb434
         ea578 = np.ones(6) * self.ea578
         eb578 = np.ones(6) * self.eb578
+        ind_slp = np.ones(6) * self.ind_slp
+        ind_off = np.ones(6) * self.ind_off
 
         # test the function
-        pout = ph.ph_calc_phwater(self.ref, self.light, tout, ea434, eb434, ea578, eb578)
+        pout = ph.ph_calc_phwater(self.ref, self.light, tout, ea434, eb434,
+                                  ea578, eb578, ind_slp, ind_off)
 
         # test above output where records were processed one at a time
         np.testing.assert_array_almost_equal(bout, self.vbatt, 4)
