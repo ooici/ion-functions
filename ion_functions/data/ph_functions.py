@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 @package ion_functions.data.ph_functions
 @file ion_functions/data/ph_functions.py
@@ -13,12 +12,12 @@ import numexpr as ne
 import scipy as sp
 
 
-# wrapper functions to extract L0 parameters from SAMI-II pH instruments (PHSEN)
+# functions to extract L0 parameters from SAMI-II pH instruments (PHSEN)
 def ph_434_intensity(light):
     """
-    Wrapper function to extract the signal intensity at 434 nm (PH434SI_L0)
-    from the pH instrument light measurements. Coded to accept either a
-    single record or an array of records.
+    Function to extract the signal intensity at 434 nm (PH434SI_L0) from the pH
+    instrument light measurements. Coded to accept either a single record or an
+    array of records.
     """
     light = np.atleast_3d(light).astype(np.float)
     new = np.reshape(light, (-1, 23, 4))
@@ -28,9 +27,9 @@ def ph_434_intensity(light):
 
 def ph_578_intensity(light):
     """
-    Wrapper function to extract the signal intensity at 578 nm (PH578SI_L0)
-    from the pH instrument light measurements. Coded to accept either a
-    single record or an array of records.
+    Function to extract the signal intensity at 578 nm (PH578SI_L0) from the pH
+    instrument light measurements. Coded to accept either a single record or an
+    array of records.
     """
     light = np.atleast_3d(light).astype(np.float)
     new = np.reshape(light, (-1, 23, 4))
@@ -38,10 +37,12 @@ def ph_578_intensity(light):
     return si578  # signal intensity, 578 nm (PH578SI_L0)
 
 
+# functions to convert thermistor and battery measurements from counts to
+# applicable engineering units
 def ph_thermistor(traw):
     """
-    Wrapper function to convert the thermistor data (ABSTHRM_L0) from counts to
-    degrees Centigrade from the pH instrument.
+    Function to convert the thermistor data (ABSTHRM_L0) from counts to degrees
+    Centigrade for the pH instrument.
     """
     # convert raw thermistor readings from counts to degrees Centigrade
     Rt = ne.evaluate('(traw / (4096.0 - traw)) * 17400.0')
@@ -54,52 +55,23 @@ def ph_thermistor(traw):
 
 def ph_battery(braw):
     """
-    Wrapper function to convert the battery voltage from counts to Volts from
-    the pH instrument.
+    Function to convert the battery voltage from counts to Volts from the pH
+    instrument.
     """
     # convert raw battery readings from counts to Volts
     volts = ne.evaluate('braw * 15. / 4096.')
     return volts
 
 
-#def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0):
-#    """
-#    Wrapper function to vectorize the Sea Water pH calculation defined
-#    below in ph_phwater. Coded to accept either a single record or an array of
-#    records.
-#    """
-#    if ref.ndim == 1:
-#        # only one record is being presented to the function
-#        pH = ph_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal)
-#    else:
-#        # multiple records are being passed in, determine how many and create
-#        # an empty pH array to hold the final outputs.
-#        nRec = ref.shape[0]
-#        pH = np.zeros(nRec, dtype=np.float)
-#
-#        # Salinity can either be a default value of 35 or from a co-located
-#        # CTD. Need to replicate it to the same size as nRec if it is just the
-#        # default scalar.
-#        if np.isscalar(psal) is True:
-#            psal = np.tile(psal, (nRec, 1))
-#
-#        # Iterate through the records
-#        for iRec in range(nRec):
-#            pH[iRec] = ph_phwater(ref[iRec, :], light[iRec, :], therm[iRec],
-#                                  ea434[iRec], eb434[iRec], ea578[iRec],
-#                                  eb578[iRec], psal[iRec])
-#
-#    return pH
-
-
-def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0, ind=1):
+# function to calculate the PHWATER_L2 data product
+def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, ind_slp, ind_off, psal=35.0):
     """
     Description:
 
-        OOI Level 1 pH of seawater core data product, which is calculated using
+        OOI Level 2 pH of seawater core data product, which is calculated using
         data from the Sunburst SAMI-II pH instrument (PHSEN). This document is
         intended to be used by OOI programmers to construct appropriate
-        processes to create the L1 pH of seawater core data product.
+        processes to create the L2 pH of seawater core data product.
 
     Implemented by:
 
@@ -122,13 +94,15 @@ def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0, in
         eb434 = mCP molar absorptivities as above
         ea578 = mCP molar absorptivities as above
         eb578 = mCP molar absorptivities as above
-        psal = practical salinity estimate used in calculcations, default is
-            35.0 [unitless], from a co-located CTD.
-        ind = indicator impurity correction, default is 1 [unitless]
+        ind_slp = indicator impurity slope correction factor [unitless]
+        ind_off = indicator impurity offset correction factor [unitless]
+        psal = practical salinity estimate used in calculcations from a
+            co-located CTD, default is 35.0 if CTD data is unavailable
+            [unitless] 
 
     References:
 
-        OOI (2012). Data Product Specification for pH of Seawater. Document
+        OOI (2014). Data Product Specification for pH of Seawater. Document
             Control Number 1341-00510. https://alfresco.oceanobservatories.org/
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00510_Data_Product_SPEC_PHWATER_OOI.pdf)
@@ -148,8 +122,15 @@ def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0, in
     ea578 = np.reshape(ea578, (nRec, 1)).astype(np.float)
     eb578 = np.reshape(eb578, (nRec, 1)).astype(np.float)
 
-    if np.isscalar(ind) is True:
-        ind = np.tile(ind, nRec).astype(np.int)
+    if np.isscalar(ind_slp) is True:
+        ind_slp = np.tile(ind_slp, (nRec, 1)).astype(np.float)
+    else:
+        ind_slp = np.reshape(ind_slp, (nRec, 1)).astype(np.float)
+
+    if np.isscalar(ind_off) is True:
+        ind_off = np.tile(ind_off, (nRec, 1)).astype(np.float)
+    else:
+        ind_off = np.reshape(ind_off, (nRec, 1)).astype(np.float)
 
     if np.isscalar(psal) is True:
         psal = np.tile(psal, (nRec, 1)).astype(np.float)
@@ -278,12 +259,9 @@ def ph_calc_phwater(ref, light, therm, ea434, eb434, ea578, eb578, psal=35.0, in
     slope = ssxy / ssx
     ph = ybar - slope * xbar
 
-    # pH corrections due to indicator impurity
-    # If the indicator impurity == 0 and the pH is >= 8.2
-    ind0Flag = (ind == 0) & (ph >= 8.2)
-    ph[ind0Flag] = ph[ind0Flag] * 0.9723 + 0.2235
-    # If the indicator impurity == 1 and the pH is >= 8.2
-    ind1Flag = (ind == 1) & (ph >= 8.2)
-    ph[ind1Flag] = ph[ind1Flag] * 0.9698 + 0.2484
+    # pH corrections due to indicator impurity if the calculated pH is greater
+    # than 8.2.
+    phFlag = ph >= 8.2
+    ph[phFlag] = ph[phFlag] * ind_slp + ind_off
 
     return ph
