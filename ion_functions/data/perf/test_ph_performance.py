@@ -27,6 +27,8 @@ class TestPHPerformance(PerformanceTestCase):
         self.eb434 = 2287.
         self.ea578 = 107.
         self.eb578 = 38913.
+        self.ind_slp = 1.
+        self.ind_off = 0.
 
         # raw data strings provided by the DPS
         raw_strings = np.array([
@@ -104,6 +106,9 @@ class TestPHPerformance(PerformanceTestCase):
         eb434 = np.ones(12000) * self.eb434
         ea578 = np.ones(12000) * self.ea578
         eb578 = np.ones(12000) * self.eb578
+        ind_slp = np.ones(12000) * self.ind_slp
+        ind_off = np.ones(12000) * self.ind_off
 
         # test the function
-        self.profile(stats, ph_calc_phwater, ref, light, therm, ea434, eb434, ea578, eb578)
+        self.profile(stats, ph_calc_phwater, ref, light, therm, ea434, eb434,
+                     ea578, eb578, ind_slp, ind_off)
