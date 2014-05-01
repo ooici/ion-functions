@@ -1,3 +1,14 @@
+/*
+ * polycals.c -- Implementation of the polycals algorithm
+ *
+ * Description:
+ *
+ *   Secondary Calibrations of data streams.
+ *
+ * Implemented by:
+ *   
+ *   2014-04-30: Luke Campbell, initial implementation.
+ */
 #include <stdio.h>
 #include <math.h>
 #include "polycals.h"
@@ -17,12 +28,25 @@ static double polyval(const coeff_vector *cal, const double v)
     return retval;
 }
 
+/*
+ * search_sorted
+ *
+ * The function finds indices into a sorted array `a` such that, if the
+ * corresponding elements in `v` were inserted before the indices, the order
+ * would be preserved.
+ *
+ * Arguments:
+ *   size_t *out  - The array of indices that gets set.
+ *   double *a    - The haystack
+ *   size_t a_len - Length of haystack
+ *   double *v    - The needle
+ *   size_t v_len - Length of needle
+ */
 size_t search_sorted(size_t *out, double *a, size_t a_len, double *v, size_t v_len)
 {
        size_t i=0;
        size_t j=0;
-       for(i=0;i<v_len;i++) 
-       {
+       for(i=0;i<v_len;i++) {
            for(; j < a_len && a[j] < v[i]; j++);
            out[i] = j;
        }
@@ -50,66 +74,72 @@ size_t search_sorted(size_t *out, double *a, size_t a_len, double *v, size_t v_l
  * u = >   c_(i-N) * x
  *     --
  *     i
+ * Arguments:
+ *
+ * double *out        - Output vector
+ * coeff_vector *cals - Calibration vector (ragged array)
+ * double *cal_t      - Timestamps for calibrations
+ * size_t cal_len     - Length of cals and cal_t
+ * double *x          - Vector of data
+ * double *t          - Timestamps for x
+ * size_t x_len       - Lenght of x and t
+ *
  */
-size_t polycal(double *out,         /* output vector */
-               coeff_vector *cals,  /* calibration vector (ragged array) */
-               double *cal_t,       /* timestamps for calibrations */
-               size_t cal_len,      /* length of cals and cal_t */
-               double *x,           /* vector of data, x */
-               double *t,           /* timestamps for x */
-               size_t x_len)        /* length of x and t */
+size_t polycal(double *out,
+               coeff_vector *cals,
+               double *cal_t,
+               size_t cal_len,
+               double *x,
+               double *t,
+               size_t x_len)
 {
     size_t a[cal_len];
 
-    search_sorted(a, t, x_len, cal_t, cal_len);
+    size_t i=0;     /* step in x */
+    size_t lower=0; /* lower bound in calibrations */
+    size_t upper=1; /* the upper bound in calibrations  */
+    size_t a_lower;
+    size_t a_upper;
 
-    size_t i=0; // step in x
-    size_t j=0; // step in the calibrations
     double x0;
     double x1;
     double w;
 
-    /* Iterate through every x */
-    for(i=0; i<x_len; i++)
-    {
-        /* If there are no more calibrations, set out_i = x_i */
-        if((j+1) >= cal_len) 
-        {
+    /*
+     * Fill a with the indexes where cal_t fits in t
+     */
+    search_sorted(a, t, x_len, cal_t, cal_len);
+    /* 
+     * Iterate through every x 
+     */
+    for(i=0; i < x_len; i++) {
+        if ( upper >= cal_len ) {
+            /* 
+             * If there are no more calibrations, set out_i = x_i 
+             */
             out[i] = x[i];
             continue;
-        } 
-        /* x is no longer bounded between this segment of calibrations */
-        else if(i > a[j+1]) 
-        {
-            /* set the calibration step to the next segment boundary */
-            j = min(j+1, cal_len-1);
+        } else if (i > a[upper]) {
+            /* 
+             * x is no longer bounded between this segment of calibrations 
+             * set the calibration step to the next segment boundary 
+             */
+            lower = min(upper, cal_len - 1);
+            upper = lower + 1;
+        }
 
-            /* There is a case where after advacing j that this could be the last
-             * segment. If this is not the last segment, interpolate. */
-            if( (j+1 < cal_len) && (a[j] <= i && i <= a[j+1]) )
-            {
-                x0 = polyval(&cals[j], x[i]);
-                x1 = polyval(&cals[j+1], x[i]);
-                w = (t[i] - t[a[j]] * 1.0) / ( t[a[j+1]] - t[a[j]] * 1.0);
-                out[i] = x0 * (1 - w) + x1 * w;
-            }
-            /* This is now one step after the last segment, so we don't calibrate */
-            else
-            {
-                out[i] = x[i];
-            }
-        }
-        /* x lies between two calibration boundaries, so we calibrate based on the calibrations */
-        else if(a[j] <= i && i <= a[j+1])
-        {
-            x0 = polyval(&cals[j], x[i]);
-            x1 = polyval(&cals[j+1], x[i]);
-            w = (t[i] - t[a[j]] * 1.0) / ( t[a[j+1]] - t[a[j]] * 1.0);
+        if ( (upper < cal_len) && (a[lower] <= i && i <= a[upper])) {
+            /* 
+             * x lies between two calibration boundaries, so we calibrate based on
+             * the calibrations 
+             */
+            x0 = polyval(&cals[lower], x[i]);
+            x1 = polyval(&cals[upper], x[i]);
+            a_lower = a[lower];
+            a_upper = a[upper];
+            w = (t[i] - t[a_lower]) / (t[a_upper] - t[a_lower]);
             out[i] = x0 * (1 - w) + x1 * w;
-        }
-        /* x lies outside the boundaries, we don't calibrate */
-        else
-        {
+        } else {
             out[i] = x[i];
         }
     }

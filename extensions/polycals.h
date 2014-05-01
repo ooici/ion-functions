@@ -2,6 +2,21 @@
 #define __POLYCALS_H__
 
 #include <stddef.h>
+
+/*
+ * search_sorted
+ *
+ * The function finds indices into a sorted array `a` such that, if the
+ * corresponding elements in `v` were inserted before the indices, the order
+ * would be preserved.
+ *
+ * Arguments:
+ *   size_t *out  - The array of indices that gets set.
+ *   double *a    - The haystack
+ *   size_t a_len - Length of haystack
+ *   double *v    - The needle
+ *   size_t v_len - Length of needle
+ */
 size_t search_sorted(size_t *out, double *a, size_t a_len, double *v, size_t v_len);
 
 typedef struct _coeff_vector 
@@ -29,12 +44,22 @@ typedef struct _coeff_vector
  * u = >   c_(i-N) * x
  *     --
  *     i
+ * Arguments:
+ *
+ * double *out        - Output vector
+ * coeff_vector *cals - Calibration vector (ragged array)
+ * double *cal_t      - Timestamps for calibrations
+ * size_t cal_len     - Length of cals and cal_t
+ * double *x          - Vector of data
+ * double *t          - Timestamps for x
+ * size_t x_len       - Lenght of x and t
+ *
  */
-size_t polycal(double *out,         /* output vector */
-               coeff_vector *cals,  /* calibration vector (ragged array) */
-               double *cal_t,       /* timestamps for calibrations */
-               size_t cal_len,      /* length of cals and cal_t */
-               double *x,           /* vector of data, x */
-               double *t,           /* timestamps for x */
-               size_t x_len);       /* length of x and t */
+size_t polycal(double *out,
+               coeff_vector *cals,
+               double *cal_t,
+               size_t cal_len,
+               double *x,
+               double *t,
+               size_t x_len);
 #endif /* __POLYCALS_H__ */

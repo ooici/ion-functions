@@ -23,35 +23,37 @@ cdef class CoeffVector:
         self.coeff_len = len(coeffs)
         if not self.data:
             raise MemoryError()
-        print "memory alloc'd"
         for i, coeff in enumerate(coeffs):
             self.data[i].coeff = <double *> PyMem_Malloc(sizeof(double) * len(coeff))
             if not self.data[i].coeff:
                 raise MemoryError()
-            print "    internal memory alloc'd"
             self.data[i].N = len(coeff)
             for j,c in enumerate(coeff):
                 self.data[i].coeff[j] = <double> c
-                print self.data[i].coeff[j]
 
 
     def __init__(self, coeffs):
-        print "__init__"
+        pass
 
     def __dealloc__(self):
         for i in range(self.coeff_len):
             PyMem_Free(self.data[i].coeff)
-            print "    internal memory freed"
         PyMem_Free(self.data)
-        print "Memory was deallocated"
 
 
+def check_coefficients(coefficients):
+    if not isinstance(coefficients, (list, tuple, np.ndarray)):
+        raise TypeError("Coefficients are not a valid type")
+    for element in coefficients:
+        if not isinstance(element, (list, tuple, np.ndarray)):
+            raise TypeError("Inner arrays are not a valid type")
 
-
+    if len(coefficients) == 0:
+        raise ValueError("Coefficients array can not be empty")
 
 
 def polycal(coefficients, calibration_times, x, times):
-    raise NotImplementedError("polycal is not ready for use")
+    check_coefficients(coefficients)
     cdef CoeffVector v = CoeffVector(coefficients)
     cdef np.ndarray[double] cal_t = calibration_times
     cdef np.ndarray[double] ix = x

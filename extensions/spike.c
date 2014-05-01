@@ -1,22 +1,23 @@
 #include <stdio.h>
 
 
-static double double_max(double a, double b)
+static inline double double_max(double a, double b)
 {
-    if(a >= b)
-        return a;
-    return b;
+    return (a > b) ? a : b;
 }
 
-static double double_abs(double a)
+static inline double double_abs(double a)
 {
-    if(a < 0)
-        return -a;
-    return a;
+    return (a > 0) ? a : -a;
 }
 
 
-static signed char window_spike(const double *sub_array, size_t window_len, size_t window_index, double N, double ACC) 
+static signed char window_spike(
+            const double *sub_array, 
+            size_t window_len, 
+            size_t window_index, 
+            double N, 
+            double ACC) 
 {
     size_t j=0;
     double focus;
@@ -67,12 +68,29 @@ static signed char window_spike(const double *sub_array, size_t window_len, size
     return 1;
 }
 
+/*
+ * spike
+ *
+ * This algorithm generates flags for data values according to whether a single
+ * data value deviates significantly from surrounding data values. The purpose
+ * of this document is to serve as a reference in order to document which
+ * processing steps have been applied to a data product.
+ *
+ * Arguments:
+ * signed char *out  - The output array of flags
+ * const double *dat - The data vector
+ * size_t len        - Length of the data vector
+ * int L             - Window Length
+ * double N          - Range multipier
+ * double ACC        - accuracy
+ */
 int spike(signed char *out, const double *dat, size_t len, int L, double N, double ACC) 
 {
     size_t i;
     size_t L2 = L/2;
-    if(len < L)
+    if(len < L) {
         return 0;
+    }
     for(i=0;i<=(len-L);i++) {
         /*
          * Iterate through the main (center) part of the array
