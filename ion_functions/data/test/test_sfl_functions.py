@@ -3,7 +3,7 @@
 """
 @package ion_functions.test.sfl_functions
 @file ion_functions/test/sfl_functions.py
-@author Christopher Wingard
+@author Christopher Wingard, Russell Desiderio
 @brief Unit tests for sfl_functions module
 """
 
@@ -17,6 +17,153 @@ from ion_functions.utils import fill_value
 
 @attr('UNIT', group='func')
 class TestSFLFunctionsUnit(BaseUnitTestCase):
+
+    def test_sfl_thsph_temp(self):
+        """
+        Test the 6 functions that calculate the THSPHTE data products:
+            sfl_thsph_temp_int : THSPHTE-INT
+            sfl_thsph_temp_ref : THSPHTE-REF
+            sfl_thsph_temp_tcl : THSPHTE-TCL
+            sfl_thsph_temp_tl  : THSPHTE-TL
+            sfl_thsph_temp_tch : THSPHTE-TCH
+            sfl_thsph_temp_th  : THSPHTE-TH
+
+        Values based on those described in DPS as available on Alfresco:
+
+        OOI (2014). Data Product Specification for Vent Fluid Temperature from
+            TRHPH. Document Control Number 1341-00120.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00120_Data_Product_Spec_THSPHTE_OOI.pdf)
+
+        Implemented by:
+
+            2014-05-01: Russell Desiderio. Initial Code
+        """
+        # calibration constants: b thermistor
+        # engineering values to lab calibrated values
+        c0_e2l_b = 0.05935
+        c1_e2l_b = 0.00099151
+        c2_e2l_b = 3.82028e-10
+        c3_e2l_b = 4.54486e-13
+        c4_e2l_b = 0.0
+        # lab calibrated values to scientific values
+        c0_l2s_b = 79.12599
+        c1_l2s_b = -9.58863
+        c2_l2s_b = 0.53886
+        c3_l2s_b = -0.01432
+        c4_l2s_b = 1.38009e-4
+
+        # calibration constants: r thermistor
+        # engineering values to lab calibrated values
+        c0_e2l_r = 0.05935
+        c1_e2l_r = 0.00099151
+        c2_e2l_r = 3.82028e-10
+        c3_e2l_r = 4.54486e-13
+        c4_e2l_r = 0.0
+        # lab calibrated values to scientific values
+        c0_l2s_r = 79.12599
+        c1_l2s_r = -9.58863
+        c2_l2s_r = 0.53886
+        c3_l2s_r = -0.01432
+        c4_l2s_r = 1.38009e-4
+
+        # calibration constants: L thermocouple
+        # engineering values to lab calibrated values
+        c0_e2l_L = -0.00055
+        c1_e2l_L = 1.0
+        c2_e2l_L = 0.0
+        c3_e2l_L = 0.0
+        c4_e2l_L = 0.0
+        # lab calibrated values to scientific values
+        c0_l2s_L = -0.00444
+        c1_l2s_L = 17.06172
+        c2_l2s_L = -0.23532
+        c3_l2s_L = 0.00702
+        c4_l2s_L = -0.000122268
+        c5_l2s_L = 0.000000932483
+
+        # calibration constants: H thermocouple
+        # engineering values to lab calibrated values
+        c0_e2l_H = -0.00055
+        c1_e2l_H = 1.0
+        c2_e2l_H = 0.0
+        c3_e2l_H = 0.0
+        c4_e2l_H = 0.0
+        # lab calibrated values to scientific values
+        c0_l2s_H = -0.00444
+        c1_l2s_H = 17.06172
+        c2_l2s_H = -0.23532
+        c3_l2s_H = 0.00702
+        c4_l2s_H = -0.000122268
+        c5_l2s_H = 0.000000932483
+
+        # calibration constants: final linear calibrations
+        c0_s2f_L = 1.68019
+        c1_s2f_L = 0.95567
+        c0_s2f_H = 1.68019
+        c1_s2f_H = 0.95567
+
+        # test inputs
+        ts_rawdec_b = 8188.0
+        ts_rawdec_r = 8770.0
+        tc_rawdec_L = 16012.0
+        tc_rawdec_H = 4237.0
+
+        # set expected outputs
+        int_xpctd = 23.059
+        ref_xpctd = 19.357
+        tcl_xpctd = 639.038
+        tl_xpctd = 630.889
+        tch_xpctd = 0.374
+        th_xpctd = 20.537
+
+        # calculate the various temperature dataproducts and
+        # compare to the expected outputs; lab accuracy is
+        # between 0.2 and 1.0 degC, so check calculation to 0.01 degC.
+        int_calc = sflfunc.sfl_thsph_temp_int(
+            ts_rawdec_b,
+            c0_e2l_b, c1_e2l_b, c2_e2l_b, c3_e2l_b, c4_e2l_b,
+            c0_l2s_b, c1_l2s_b, c2_l2s_b, c3_l2s_b, c4_l2s_b)
+        np.testing.assert_allclose(int_calc, int_xpctd, rtol=0.0, atol=0.01)
+
+        ref_calc = sflfunc.sfl_thsph_temp_ref(
+            ts_rawdec_r,
+            c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
+            c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        np.testing.assert_allclose(ref_calc, ref_xpctd, rtol=0.0, atol=0.01)
+
+        tcl_calc = sflfunc.sfl_thsph_temp_tcl(
+            tc_rawdec_L,
+            c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L,
+            c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L)
+        np.testing.assert_allclose(tcl_calc, tcl_xpctd, rtol=0.0, atol=0.01)
+
+        tch_calc = sflfunc.sfl_thsph_temp_tch(
+            tc_rawdec_H,
+            c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H,
+            c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H)
+        np.testing.assert_allclose(tch_calc, tch_xpctd, rtol=0.0, atol=0.01)
+
+        tl_calc = sflfunc.sfl_thsph_temp_tl(
+            tc_rawdec_L,
+            c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L,
+            c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L,
+            c0_s2f_L, c1_s2f_L,
+            ts_rawdec_r,
+            c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
+            c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        np.testing.assert_allclose(tl_calc, tl_xpctd, rtol=0.0, atol=0.01)
+
+        th_calc = sflfunc.sfl_thsph_temp_th(
+            tc_rawdec_H,
+            c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H,
+            c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H,
+            c0_s2f_H, c1_s2f_H,
+            ts_rawdec_r,
+            c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
+            c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        np.testing.assert_allclose(th_calc, th_xpctd, rtol=0.0, atol=0.01)
 
     def test_sfl_trhph_vfltemp(self):
         """
