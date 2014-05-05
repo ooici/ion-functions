@@ -463,12 +463,12 @@ def eval_poly(x, c0, c1, c2, c3, c4, c5=0.0):
 
         Calculates polynomial values for use with THSPSTE DPAs.
 
-        The documentation for the numpy v1.7 function to evaluate polynomials was
-        only available in draft form. Also, it uses the convention that the 0th
-        coefficient multiplies the highest degree term, whereas the DPA uses the
-        convention that the 0th coefficient is the constant coefficient, the 1st
-        coefficient is the linear coefficient, etc. For clarity the present routine
-        uses the convention followed in the DPA.
+        The documentation for the numpy v1.7 function to evaluate polynomials
+        was only available in draft form. Also, it uses the convention that the
+        0th coefficient multiplies the highest degree term, whereas the DPA
+        uses the convention that the 0th coefficient is the constant
+        coefficient, the 1st coefficient is the linear coefficient, etc. For
+        clarity the present routine uses the convention followed in the DPA.
 
         Horner's method is used to evaluate the polynomial.
 
@@ -487,13 +487,13 @@ def eval_poly(x, c0, c1, c2, c3, c4, c5=0.0):
     return c0 + x * (c1 + x * (c2 + x * (c3 + x * (c4 + x * c5))))
 
 
-def sfl_trhph_vfltemp(V_s, V_c, a, b, c, d, e):
+def sfl_trhph_vfltemp(V_ts, V_tc, tc_slope, ts_slope, a=-1.00e-6, b=7.00e-5, c=0.0024, d=0.015):
     """
     Description:
 
         OOI Level 1 Vent Fluid Temperature from TRHPH (TRHPHTE) data product,
         which is calculated using data from the Temperature Resistivity Probe
-        (TRHPH) instrument.
+        (TRHPH) instrument placed in a high temperature hydrothermal vent.
 
     Implemented by:
 
@@ -503,23 +503,23 @@ def sfl_trhph_vfltemp(V_s, V_c, a, b, c, d, e):
 
     Usage:
 
-        T = sfl_trhph_vfltemp(V_s, V_c, a, b, c, d, e)
+        T = sfl_trhph_vfltemp(V_ts, V_tc, a, b, c, d, e)
 
             where
 
         T = Vent fluid temperature from TRHPH (TRHPHTE_L1) [deg_C]
-        V_s = Thermistor voltage (TRHPHVS_L0) [volts]
-        V_c = Thermocouple voltage (TRHPHVC_L0) [volts]
-        a = coefficient from 4th degree polynomial fit of laboratory
-            calibration correction curve.
-        b = coefficient from 4th degree polynomial fit of laboratory
-            calibration correction curve.
-        c = coefficient from 4th degree polynomial fit of laboratory
-            calibration correction curve.
-        d = coefficient from 4th degree polynomial fit of laboratory
-            calibration correction curve.
-        e = coefficient from 4th degree polynomial fit of laboratory
-            calibration correction curve.
+        V_ts = Thermistor voltage (TRHPHVS_L0) [volts]
+        V_tc = Thermocouple voltage (TRHPHVC_L0) [volts]
+        tc_slope = thermocople slope laboratory calibration coefficients
+        ts_slope = thermistor slope laboratory calibration coefficients
+        a = coefficient from 3rd degree polynomial fit of laboratory
+            calibration correction curve (not expected to change).
+        b = coefficient from 3rd degree polynomial fit of laboratory
+            calibration correction curve (not expected to change).
+        c = coefficient from 3rd degree polynomial fit of laboratory
+            calibration correction curve (not expected to change).
+        d = coefficient from 3rd degree polynomial fit of laboratory
+            calibration correction curve (not expected to change).
 
     References:
 
@@ -529,36 +529,47 @@ def sfl_trhph_vfltemp(V_s, V_c, a, b, c, d, e):
             >> Controlled >> 1000 System Level >>
             1341-00150_Data_Product_Spec_TRHPHTE_OOI.pdf)
     """
-    # raw thermistor temperature
-    T_s = 27.50133 - 17.2658 * V_s + 15.83424 / V_s
+    # Test if polynomial coefficients are scalars (set via defaults), set to
+    # same size as other inputs if required. Assumes if 'a' is a default, they
+    # all are.
+    if np.isscalar(a):
+        a = np.tile(a, (V_ts.shape))
 
-    # raw thermocouple temperature (PD431)
-    T_c = 244970. * V_c / 1000.
+    if np.isscalar(b):
+        b = np.tile(b, (V_ts.shape))
 
-    # uncorrected total temperature
-    T_u = T_s + T_c
+    if np.isscalar(c):
+        c = np.tile(c, (V_ts.shape))
 
-    # correction based on laboratory calibration
-    #Tu_sq = T_u * T_u
-    #T_lc = a * Tu_sq*Tu_sq + b * T_u*Tu_sq + c * Tu_sq + d * T_u + e
+    if np.isscalar(d):
+        d = np.tile(d, (V_ts.shape))
 
-    # polynomial calculation optimization - this appears to be a little faster
-    T_lc = e + T_u * (d + T_u * (c + T_u * (b + T_u * a)))
+    # raw thermistor temperature (T = T_ts)
+    T = 27.50133 - 17.2658 * V_ts + 15.83424 / V_ts
 
-    # final, corrected temperature at sensor tip
-    T = T_u + T_lc
+    # where V_tc is less than or equal to 0, T = T_ts, otherwise...
+
+    # Adjust raw thermistor temperature when V_tc is greater than 0 and ...
+    tFlag = (V_tc > 0) & (T > 10)  # T is greater than 10
+    T[tFlag] = (V_tc[tFlag] + (a[tFlag] * T[tFlag]**3 + b[tFlag] * T[tFlag]**2
+                               + c[tFlag] * T[tFlag] + d[tFlag])) * 244.97
+
+    tFlag = (V_tc > 0) & ((T > 0) & (T <= 10))  # T is greater than 0 and less than 10
+    T[tFlag] = (V_tc[tFlag] + V_tc[tFlag] * 244.97 * tc_slope[tFlag] + T[tFlag]
+                * ts_slope[tFlag]) * 244.97
 
     return T
 
 
-def sfl_trhph_vfl_thermistor_temp(V_s):
+def sfl_trhph_vfl_thermistor_temp(V_ts):
     """
     Description:
 
-        Calculates T_S, which is an intermediate data product (not a core data product)
-        requested by the authors of the TRHPHTE DPS. It is the instrument's thermistor
-        temperature, useful as an important instrument diagnostic. It is the same variable
-        as T_s in the function sfl_trhph_vfltemp.
+        Calculates T_S, which is an intermediate data product (not a core data
+        product) requested by the authors of the TRHPHTE DPS. It is the
+        instrument's thermistor temperature, useful as an important instrument
+        diagnostic. It is the same variable as T_ts in the function
+        sfl_trhph_vfltemp.
 
     Implemented by:
 
@@ -566,12 +577,12 @@ def sfl_trhph_vfl_thermistor_temp(V_s):
 
     Usage:
 
-        T_s = sfl_trhph_vfl_thermistor_temp(V_s)
+        T_ts = sfl_trhph_vfl_thermistor_temp(V_ts)
 
             where
 
-        T_s = Thermistor reference temperature [deg_C]
-        V_s = Thermistor voltage (TRHPHVS_L0) [volts]
+        T_ts = Thermistor reference temperature [deg_C]
+        V_ts = Thermistor voltage (TRHPHVS_L0) [volts]
 
     References:
 
@@ -582,9 +593,9 @@ def sfl_trhph_vfl_thermistor_temp(V_s):
             1341-00150_Data_Product_Spec_TRHPHTE_OOI.pdf)
     """
     # thermistor temperature
-    T_s = 27.50133 - 17.2658 * V_s + 15.83424 / V_s
+    T_ts = 27.50133 - 17.2658 * V_ts + 15.83424 / V_ts
 
-    return T_s
+    return T_ts
 
 
 def sfl_trhph_vflorp(V, offset, gain):
@@ -592,8 +603,8 @@ def sfl_trhph_vflorp(V, offset, gain):
     Description:
 
         OOI Level 1 Vent Fluid Oxidation-Reduction Potential (ORP) from TRHPH
-        (TRHPHEH_L1) data product, which is calculated using data from the Resistivity-
-        Temperature Probe (TRHPH) instrument.
+        (TRHPHEH_L1) data product, which is calculated using data from the
+        Resistivity- Temperature Probe (TRHPH) instrument.
 
     Implemented by:
 
@@ -636,15 +647,15 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
     Implemented by:
 
         2013-05-01: Christopher Wingard. Initial Code
-        2014-02-28: Russell Desiderio. Modified code to better handle nans and fill_values.
-                                       Added more documentation to algorithm.
-        2014-03-10: Russell Desiderio. Removed unnecessary np.vectorized wrapper function.
-                                       Improved speed by removing a temperature conditional
-                                           statement from inside the for loop and incorporating
-                                           it into the range of the for loop.
-        2014-03-26: Russell Desiderio. Incorporated optimization due to Chris Fortin: calculate
-                                           Ccurve using scalar T instead of a vector of constant
-                                           T values. Sped up execution by factor of 5.
+        2014-02-28: Russell Desiderio. Modified code to better handle nans and
+                    fill_values. Added more documentation to algorithm.
+        2014-03-10: Russell Desiderio. Removed unnecessary np.vectorized
+                    wrapper function. Improved speed by removing a temperature
+                    conditional statement from inside the for loop and
+                    incorporating it into the range of the for loop.
+        2014-03-26: Russell Desiderio. Incorporated optimization due to Chris
+                    Fortin: calculate Ccurve using scalar T instead of a vector
+                    of constant T values. Sped up execution by factor of 5.
 
     Usage:
 
@@ -694,17 +705,19 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
     f = RectBivariateSpline(tdat, sdat, cdat.T, kx=1, ky=1, s=0)
 
     # Note that when T is out-of-range, the interpolation np.interp does not
-    # always give nan values for Cl as is required. Since Cl has been initialized
-    # to nan values, iterate only over good T values, which also improves speed.
+    # always give nan values for Cl as is required. Since Cl has been
+    # initialized to nan values, iterate only over good T values, which also
+    # improves speed.
     for ii in np.where(np.logical_and(T >= min(tdat), T <= max(tdat)))[0]:
         # find conductivity Ccurve as f(T=constant, chloride).
         Ccurve = f(T[ii], Scurve)
-        # now interpolate measured conductivity C into (Ccurve,Scurve) to get Cl.
-        # the conditional statement is in the DPS and therefore retained.
+        # now interpolate measured conductivity C into (Ccurve,Scurve) to get
+        # Cl. the conditional statement is in the DPS and therefore retained.
         if (np.all(np.isfinite(Ccurve))):
             Cl[ii] = np.interp(C[ii], Ccurve[0], Scurve, left=np.nan, right=np.nan)
 
-    # change units to mmol/kg; round to required # of sigfigs as specified in the DPS
+    # change units to mmol/kg; round to required # of sigfigs as specified in
+    # the DPS
     Cl = np.round(Cl * 1000.)
     Cl[np.isnan(Cl)] = fill_value
 
@@ -715,15 +728,14 @@ def sfl_sflpres_l1(p_psia):
     """
     Description:
 
-        The OOI Level 1 Seafloor Pressure core data products, SFLPRES
-        and sub-parameters SFLPRES-RTIME, SFLPRES-TIDE, and SFLPRES-WAVE,
-        are created from the Sea-Bird Electronics SBE 26plus member of
-        the Pressure SF (PRESF) family of instruments by either a)
-        polling, in real-time, for L0 ASCII text format data output and
-        converting from psia to decibar units or b) converting, after
-        instrument recovery, L0 hexadecimal pressure data into decimal
-        format and the resulting tide and wave pressure data in psia to
-        decibar units.
+        The OOI Level 1 Seafloor Pressure core data products, SFLPRES and
+        sub-parameters SFLPRES-RTIME, SFLPRES-TIDE, and SFLPRES-WAVE, are
+        created from the Sea-Bird Electronics SBE 26plus member of the Pressure
+        SF (PRESF) family of instruments by either a) polling, in real-time,
+        for L0 ASCII text format data output and converting from psia to
+        decibar units or b) converting, after instrument recovery, L0
+        hexadecimal pressure data into decimal format and the resulting tide
+        and wave pressure data in psia to decibar units.
 
     Implemented by:
 
@@ -734,7 +746,7 @@ def sfl_sflpres_l1(p_psia):
         sflpres_l1 = sfl_sflpres_l1(p_psia):
 
         Scaling: To convert from psia to dbar, use the Sea-Bird-specified
-        conversion: p_dbar = 0.689475728 *(p_psia)
+        conversion: p_dbar = 0.689475728 * (p_psia)
 
             where
 
