@@ -202,18 +202,19 @@ class TestSFLPerformance(PerformanceTestCase):
     def test_sfl_trhph_vfltemp(self):
         stats = []
         # create 10000 data packets
-        V_s = np.zeros((a_deca, 1)) + 1.931
-        V_c = np.zeros((a_deca, 1)) + 1.077
+        V_s = np.zeros(a_deca) + 1.931
+        V_c = np.zeros(a_deca) + 1.077
 
         # calibration constants
-        a = 1.98e-9
-        b = -2.45e-6
-        c = 9.28e-4
-        d = -0.0888
-        e = 0.731
+        tc_slope = np.zeros(a_deca) + 4.22e-5
+        ts_slope = np.zeros(a_deca) + 0.003
+        a = np.zeros(a_deca) + -1.00e-6
+        b = np.zeros(a_deca) + 7.00e-6
+        c = np.zeros(a_deca) + 0.0024
+        d = np.zeros(a_deca) + 0.015
 
         # timing test
-        self.profile(stats, sfl_trhph_vfltemp, V_s, V_c, a, b, c, d, e)
+        self.profile(stats, sfl_trhph_vfltemp, V_s, V_c, tc_slope, ts_slope, a, b, c, d)
 
     def test_sfl_trhph_vflorp(self):
         stats = []
