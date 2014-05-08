@@ -208,13 +208,14 @@ class TestSFLPerformance(PerformanceTestCase):
         # calibration constants
         tc_slope = np.zeros(a_deca) + 4.22e-5
         ts_slope = np.zeros(a_deca) + 0.003
-        a = np.zeros(a_deca) + -1.00e-6
-        b = np.zeros(a_deca) + 7.00e-6
-        c = np.zeros(a_deca) + 0.0024
-        d = np.zeros(a_deca) + 0.015
+        #c3 = np.zeros(a_deca) + -1.00e-6
+        #c2 = np.zeros(a_deca) + 7.00e-6
+        #c1 = np.zeros(a_deca) + 0.0024
+        #c0 = np.zeros(a_deca) + 0.015
 
         # timing test
-        self.profile(stats, sfl_trhph_vfltemp, V_s, V_c, tc_slope, ts_slope, a, b, c, d)
+        #self.profile(stats, sfl_trhph_vfltemp, V_s, V_c, tc_slope, ts_slope, c0, c1, c2, c3)
+        self.profile(stats, sfl_trhph_vfltemp, V_s, V_c, tc_slope, ts_slope)
 
     def test_sfl_trhph_vflorp(self):
         stats = []
