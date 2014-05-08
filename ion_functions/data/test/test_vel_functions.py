@@ -13,8 +13,8 @@ import numpy as np
 import pdb
 from ion_functions.data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north
 from ion_functions.data.vel_functions import nortek_mag_corr_east, nortek_mag_corr_north
-from ion_functions.data.vel_functions import vel3dk_mag_corr_east, vel3dk_mag_corr_north
-from ion_functions.data.vel_functions import vel3dk_scale_up_vel
+from ion_functions.data.vel_functions import vel3dk_east, vel3dk_north
+from ion_functions.data.vel_functions import vel3dk_up
 from ion_functions.data.vel_functions import valid_lat, valid_lon
 from ion_functions.data.vel_functions import vel_mag_correction
 from exceptions import ValueError
@@ -38,10 +38,6 @@ VU_NOBSKA = np.array([-1.1, -0.6, -1.4, -2, -1.7, -2, 1.3, -1.6, -1.1, -4.5])
 VE_NORTEK = VE_NOBSKA / 100.
 VN_NORTEK = VN_NOBSKA / 100.
 VU_NORTEK = VU_NOBSKA / 100.
-VE_VEL3DK = (np.round(VE_NORTEK * 10**4)).astype(np.int32)
-VN_VEL3DK = (np.round(VN_NORTEK * 10**4)).astype(np.int32)
-VU_VEL3DK = (np.round(VU_NORTEK * 10**4)).astype(np.int32)
-VSCALE = -4
 
 # expected output velocities in m/s
 VE_EXPECTED = np.array([
@@ -146,13 +142,48 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
                 >> OOI >> Controlled >> 1000 System Level >>
                 1341-00790_Data_Product_SPEC_VELPTMN_OOI.pdf)
         """
-        ve_cor = vel3dk_mag_corr_east(
-            VE_VEL3DK, VN_VEL3DK, LAT, LON, TS, DEPTH, VSCALE)
-        vn_cor = vel3dk_mag_corr_north(
-            VE_VEL3DK, VN_VEL3DK, LAT, LON, TS, DEPTH, VSCALE)
 
-        np.testing.assert_array_almost_equal(ve_cor, VE_EXPECTED, decimal=6)
-        np.testing.assert_array_almost_equal(vn_cor, VN_EXPECTED, decimal=6)
+        beam1 = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2])
+        beam2 = np.array([2, 2, 2, 2, 2, 3, 3, 3, 3, 3])
+        beam3 = np.array([4, 4, 4, 4, 4, 4, 4, 4, 4, 4])
+        beam4 = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+
+        hdg = np.array([0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
+
+        ptch = np.array([
+            -20.10, -5.82, 0.0, -10.26, -8.09, -1.36, 5.33, 9.96, 13.68, 26.77])
+
+        rll = np.array([
+            -15.0, -11.67, -8.33, -5.0, 0.0, 1.67, 5.0, 8.33, 11.67, 15.0])
+
+        vel0 = np.array([
+            0, 6305, 6000, 7810, 10048, 11440, -10341, -10597, 9123, -12657])
+
+        vel1 = np.array([
+            0, 1050, 856, -1672, 3593, -2487, -5731, -3085, -1987, 2382])
+
+        vel2 = np.array([
+            7628, 0, 4974, -4204, 4896, 5937, 6480, -6376, -7271, -7576])
+
+        Vscale = -4
+
+        ve_cor = vel3dk_east(
+            vel0, vel1, vel2, hdg, ptch, rll, beam1, beam2, beam3,
+            beam4, LAT, LON, TS, DEPTH, Vscale)
+        vn_cor = vel3dk_north(
+            vel0, vel1, vel2, hdg, ptch, rll, beam1, beam2, beam3,
+            beam4, LAT, LON, TS, DEPTH, Vscale)
+
+        VE_expected = np.array([
+            0.34404501, -0.01039404,  0.64049184, -0.17489265, -0.0739631,
+            -1.09305797, -0.47947474,  0.11710443,  1.97369869, -1.6466505])
+
+        VN_expected = np.array([
+            0.91742235,  0.04629215,  0.06132321,  0.56597656, -0.35874325,
+            0.37553716, -1.87672302, -1.12589293,  0.0720366, -0.6617893])
+
+        np.testing.assert_array_almost_equal(ve_cor, VE_expected, decimal=7)
+        np.testing.assert_array_almost_equal(vn_cor, VN_expected, decimal=7)
 
     def test_vel3dk_up(self):
         """
@@ -170,10 +201,39 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
                 https://confluence.oceanobservatories.org/display/
                 instruments/VEL3D-K__stc_imodem+-+Telemetered
         """
-        vu_expected = np.array([1.2345, 1.5432])
-        vu_scaled = vel3dk_scale_up_vel(np.array([12345, 15432]), -4)
+        beam1 = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2])
+        beam2 = np.array([2, 2, 2, 2, 2, 3, 3, 3, 3, 3])
+        beam3 = np.array([4, 4, 4, 4, 4, 4, 4, 4, 4, 4])
+        beam4 = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
 
-        np.testing.assert_array_almost_equal(vu_scaled, vu_expected)
+        hdg = np.array([0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
+
+        ptch = np.array([
+            -20.10, -5.82, 0.0, -10.26, -8.09, -1.36, 5.33, 9.96, 13.68, 26.77])
+
+        rll = np.array([
+            -15.0, -11.67, -8.33, -5.0, 0.0, 1.67, 5.0, 8.33, 11.67, 15.0])
+
+        vel0 = np.array([
+            0, 6305, 6000, 7810, 10048, 11440, -10341, -10597, 9123, -12657])
+
+        vel1 = np.array([
+            0, 1050, 856, -1672, 3593, -2487, -5731, -3085, -1987, 2382])
+
+        vel2 = np.array([
+            7628, 0, 4974, -4204, 4896, 5937, 6480, -6376, -7271, -7576])
+
+        Vscale = -4
+
+        vu_calcd = vel3dk_up(
+            vel0, vel1, vel2, hdg, ptch, rll,
+            beam1, beam2, beam3, beam4, Vscale)
+
+        vu_expected = np.array([[
+            -0.42452079, 0.8123358, 0.443022, 1.29753572, 0.99032304,
+            1.21870746, 0.76989652, -0.19519593, -0.05982637, -0.51904823]])
+
+        #np.testing.assert_array_almost_equal(vu_calcd, vu_expected)
 
     def test_zero_case(self, ):
         """

@@ -73,16 +73,16 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
 
         # EXPECTED OUTPUTS
         #   intermediate calculation dissolved oxygen in ml/l
-        do_int_expected = np.array([
-            5.89891032167396, 5.56780727769487, 6.76187243958794,
-            6.458117534861, 6.46897458201929, 6.77275996877815,
-            6.73969994032525, 6.74263221709132, 6.64102027182035,
-            6.74036293148305, 6.7267587280842, 6.51674462650798,
-            6.30302843255881, 6.6898131217667, 8.2830386610128,
-            10.7809859878398, 8.95549253591715, 6.68181215593754,
-            -1.51252046989329, 0.00261229787546345, 0.289064271805584,
-            2.09064901350446, 5.6938184969022, 7.49540323860107,
-            9.29698798029994])
+        #do_int_expected = np.array([
+        #    5.89891032167396, 5.56780727769487, 6.76187243958794,
+        #    6.458117534861, 6.46897458201929, 6.77275996877815,
+        #    6.73969994032525, 6.74263221709132, 6.64102027182035,
+        #    6.74036293148305, 6.7267587280842, 6.51674462650798,
+        #    6.30302843255881, 6.6898131217667, 8.2830386610128,
+        #    10.7809859878398, 8.95549253591715, 6.68181215593754,
+        #    -1.51252046989329, 0.00261229787546345, 0.289064271805584,
+        #    2.09064901350446, 5.6938184969022, 7.49540323860107,
+        #    9.29698798029994])
 
         #   final output dissolved oxygen in micro-moles/kg
         do_expected = np.array([
@@ -97,11 +97,11 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
             404.971374447791])
 
         # CALCULATION
-        do, do_int = do2_dofst_frequency(
+        do = do2_dofst_frequency(
             freq, Foffset, Soc, A, B, C, E, pres, temp, salt, lat, lon)
 
         # ASSERT INTERMEDIATE AND FINAL OUTPUTS
-        np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
+        #np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
         np.testing.assert_allclose(do, do_expected, rtol=1e-6, atol=1e-6)
 
     def test_dofst_voltage(self):
@@ -160,14 +160,14 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
 
         # EXPECTED OUTPUTS
         #   intermediate calculation dissolved oxygen in ml/l
-        do_int_expected = np.array([
-            -2.332525266, 0.000797115, 1.412078813, 5.934280027,
-            10.06589881, -1.149671963, 0.000125639, 10.82518961,
-            7.744491469, 12.49523919, -1.149671963, 0.000121139,
-            2.2205184, 7.347649726, 66.32586768, -7.415682793,
-            0.000120053, 2.645019264, 6.083964669, 10.39697952,
-            -0.966429789, 0.000195837, 10.2787545, 6.083964669,
-            12.68706213])
+        #do_int_expected = np.array([
+        #    -2.332525266, 0.000797115, 1.412078813, 5.934280027,
+        #    10.06589881, -1.149671963, 0.000125639, 10.82518961,
+        #    7.744491469, 12.49523919, -1.149671963, 0.000121139,
+        #    2.2205184, 7.347649726, 66.32586768, -7.415682793,
+        #    0.000120053, 2.645019264, 6.083964669, 10.39697952,
+        #    -0.966429789, 0.000195837, 10.2787545, 6.083964669,
+        #    12.68706213])
 
         #   final output dissolved oxygen in micro-moles/kg
         do_expected = np.array([
@@ -180,9 +180,9 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
             567.6400574])
 
         # CALCULATION
-        do, do_int = do2_dofst_volt(
+        do = do2_dofst_volt(
             volt_counts, Voffset, Soc, A, B, C, E, pres, temp, salt, lat, lon)
 
         # ASSERT INTERMEDIATE AND FINAL OUTPUTS
-        np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
+        #np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
         np.testing.assert_allclose(do, do_expected, rtol=1e-6, atol=1e-6)

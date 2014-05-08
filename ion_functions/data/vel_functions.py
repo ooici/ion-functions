@@ -310,28 +310,35 @@ def nortek_up_vel(w):
     return w
 
 
-def vel3dk_mag_corr_east(
+def vel3dk_east(
         vel0, vel1, vel2, heading, pitch, roll, beam1, beam2, beam3,
-        lat, lon, timestamp, z, Vscale, beam4=0, vel3=0):
-    """
-    Corrects the eastward velocity from VEL3D-K (Nortek Aquadopp II)
-    instruments for magnetic declination to produce the L1 VELPTTU-VLE
-    OOI data product.
+        beam4, lat, lon, timestamp, z, Vscale, vel3=0):
+    """Eastward Velocity L1 VELPTTU-VLE in True Earth coordinates
 
-    Takes a velocity in integer counts from a VEL3D-K (Aquadopp II on a McLane
-    Profiler(MMP)) with the provided Vscale parameter from an MMP
-    A#####.DEC binary data file.
+    Transforms beam velocities to Earth coordinate velocities and then
+    corrects for magnetic declination to produce the true Earth frame
+    eastward velocity as the L1 VELPTTU-VLE OOI data product.
 
-    Given a velocity vector with components u & v in the magnetic East
-    and magnetic North directions respectively, this function calculates
-    the magnetic declination for the location, depth, and time of the
-    vector from the World Magnetic Model (WMM) and transforms the vector
-    to a true Earth reference frame.
+    Takes 3 or 4 beam velocities in integer counts from a VEL3D-K
+    (Aquadopp II on a McLane Profiler(MMP)) with the provided Vscale and
+    beam configuration parameters from an MMP A#####.DEC binary data
+    file.
 
-    This function is a wrapper around the function "vel_mag_correction".
+    Given velocities in beam coordinates in the configuration provided
+    by the beam parameters, this function transforms the beam velocities
+    to magnetic Earth coordinates (East, North, and Up). Then the East
+    and North velocity vectors (u & v) are corrected for magnetic
+    declination for the location, depth, and time of the vectors using
+    the World Magnetic Model (WMM), transforming the vectors to a true
+    Earth reference frame.
+
+    This function is a wrapper around the functions "vel_mag_correction"
+    and "vel3dk_transform".
 
     Usage:
-        u_cor = nortek_mag_corr_east(u, v, lat, lon, ntp_timestamp, z, Vscale)
+        u_cor = nortek_mag_corr_east(
+            vel0, vel1, vel2, heading, pitch, roll, beam1, beam2, beam3,
+            beam4, lat, lon, timestamp, z, Vscale, vel3=0)
 
             where
 
@@ -375,45 +382,63 @@ def vel3dk_mag_corr_east(
     if not valid_lat(lat) or not valid_lon(lon):
         raise ValueError('Latitudes or Longitudes are not within the valid range!')
 
+    # transform beam velocites in spherical coordinates to Earth
+    # coordinates using beam configuration and instrument attitude.
+    ENU = vel3dk_transform(vel0, vel1, vel2, heading, pitch, roll,
+                           beam1, beam2, beam3, beam4)
+
+    # separate out the components from the Earth coordinate transformed
+    # data matrix. The zero index is needed since matrix is
+    # automatically 2-D, must change back to a 1-D array.
+    u = np.array(ENU[0, :])[0]
+    v = np.array(ENU[1, :])[0]
+
     # correct for magnetic declination
     u_cor = vel_mag_correction(u, v, lat, lon, timestamp, z)[0]
 
     # return true compass referenced East velocity in m/s
+    #   the zero index is needed here because the vel3dk
     return u_cor
 
 
-def vel3dk_mag_corr_north(
+def vel3dk_north(
         vel0, vel1, vel2, heading, pitch, roll, beam1, beam2, beam3,
-        lat, lon, timestamp, z, Vscale, beam4=0, vel3=0):
-    """
-    Corrects the eastward velocity from VEL3D-K (Nortek Aquadopp II)
-    instruments for magnetic declination to produce the L1 VELPTTU-VLE
-    OOI data product.
+        beam4, lat, lon, timestamp, z, Vscale, vel3=0):
+    """Northward Velocity L1 VELPTTU-VLN in True Earth coordinates
 
-    Takes a velocity in integer counts from a VEL3D-K (Aquadopp II on a McLane
-    Profiler(MMP)) with the provided Vscale parameter from an MMP
-    A#####.DEC binary data file.
+    Transforms beam velocities to Earth coordinate velocities and then
+    corrects for magnetic declination to produce the true Earth frame
+    northward velocity as the L1 VELPTTU-VLN OOI data product.
 
-    Given a velocity vector with components u & v in the magnetic East
-    and magnetic North directions respectively, this function calculates
-    the magnetic declination for the location, depth, and time of the
-    vector from the World Magnetic Model (WMM) and transforms the vector
-    to a true Earth reference frame.
+    Takes 3 or 4 beam velocities in integer counts from a VEL3D-K
+    (Aquadopp II on a McLane Profiler(MMP)) with the provided Vscale and
+    beam configuration parameters from an MMP A#####.DEC binary data
+    file.
 
-    This function is a wrapper around the function "vel_mag_correction".
+    Given velocities in beam coordinates in the configuration provided
+    by the beam parameters, this function transforms the beam velocities
+    to magnetic Earth coordinates (East, North, and Up). Then the East
+    and North velocity vectors (u & v) are corrected for magnetic
+    declination for the location, depth, and time of the vectors using
+    the World Magnetic Model (WMM), transforming the vectors to a true
+    Earth reference frame.
+
+    This function is a wrapper around the functions "vel_mag_correction"
+    and "vel3dk_transform".
 
     Usage:
-        u_cor = nortek_mag_corr_east(u, v, lat, lon, ntp_timestamp, z, Vscale)
+        v_cor = nortek_mag_corr_east(
+            vel0, vel1, vel2, heading, pitch, roll, beam1, beam2, beam3,
+            beam4, lat, lon, ntp_timestamp, z, Vscale, vel3=0)
 
             where
 
-        u_cor = floating point eastward velocity, in true Earth frame,
+        v_cor = floating point northward velocity, in true Earth frame,
             with the correction for magnetic declination applied. [m/s]
 
-        u = uncorrected eastward velocity in magnetic Earth
-            frame.  Integer scaled by 10^Vscale. [scaled integer distance/s]
-        v = uncorrected northward velocity in magnetic Earth
-            frame.  Integer scaled by 10^Vscale. [scaled integer distance/s]
+        vel0,1,2,3 = Integer Beam Velocities scaled by Vscale.
+            [scaled integer distance/s] Becomes m/s when scaled by
+            10^Vscale.
         lat = latitude of the instrument [decimal degrees].  East is
             positive, West negative.
         lon = longitude of the instrument [decimal degrees]. North
@@ -439,12 +464,24 @@ def vel3dk_mag_corr_north(
     # convert from scaled, integer distance/s (as received from the
     # binary data file) to floating point m/s using the Vscale parameter
     # from the MMP binary data file A#####.DEC
-    u = u * 10**Vscale
-    v = v * 10**Vscale
+    vel0 = vel0 * 10**Vscale
+    vel1 = vel1 * 10**Vscale
+    vel2 = vel2 * 10**Vscale
 
    # check for valid latitudes & longitudes
     if not valid_lat(lat) or not valid_lon(lon):
         raise ValueError('Latitudes or Longitudes are not within the valid range!')
+
+    # transform beam velocites in spherical coordinates to Earth
+    # coordinates using beam configuration and instrument attitude.
+    ENU = vel3dk_transform(vel0, vel1, vel2, heading, pitch, roll,
+                           beam1, beam2, beam3, beam4)
+
+    # separate out the components from the Earth coordinate transformed
+    # data matrix. The zero index is needed since matrix is
+    # automatically 2-D, must change back to a 1-D array.
+    u = np.array(ENU[0, :])[0]
+    v = np.array(ENU[1, :])[0]
 
     # correct for magnetic declination
     v_cor = vel_mag_correction(u, v, lat, lon, timestamp, z)[1]
@@ -453,7 +490,9 @@ def vel3dk_mag_corr_north(
     return v_cor
 
 
-def vel3dk_scale_up_vel(w, Vscale):
+def vel3dk_up(
+        vel0, vel1, vel2, heading, pitch, roll,
+        beam1, beam2, beam3, beam4, Vscale):
     """
     Takes an integer vertical velocity in generic distance per second
     units from a VEL3D-K (Aquadopp II on a McLane Profiler(MMP)) with
@@ -461,15 +500,20 @@ def vel3dk_scale_up_vel(w, Vscale):
     file to scale the velocity to a floating point in m/s.
 
     Usage:
-        w_mps = vel3dk_scale_up_vel(w, Vscale)
+        w_mps = vel3dk_scale_up_vel(
+                    vel0, vel1, vel2, heading, pitch, roll,
+                    beam1, beam2, beam3, beam4, Vscale, vel3=0)
 
             where
 
         w_mps = floating point vertical velocity. [m/s]
 
-        w = integer vertical velocity. Integer scaled by 10^Vscale.
+        vel0, 1, 2, 3 = beam velocities. Integers to be scaled by 10^Vscale.
             [scaled integer distance/s]
         Vscale = velocity scaling exponent factor.
+        heading, pitch, roll = the attitude information from the instrument
+        beam1, 2, 3, 4 = beam configuration describes the physical beam
+                used for vel0-3
 
     References:
 
@@ -480,10 +524,19 @@ def vel3dk_scale_up_vel(w, Vscale):
     # convert from scaled, integer distance/s (as received from the
     # binary data file) to floating point m/s using the Vscale parameter
     # from the MMP binary data file A#####.DEC
-    w_mps = w * 10**Vscale
+    vel0 = vel0 * 10**Vscale
+    vel1 = vel1 * 10**Vscale
+    vel2 = vel2 * 10**Vscale
+
+    # transform the beam velocities to Earth coordinates
+    ENU = vel3dk_transform(vel0, vel1, vel2, heading, pitch, roll,
+                           beam1, beam2, beam3, beam4)
+
+    # seperate out the components from the
+    w = ENU[2, :]
 
     # return vertical velocity in m/s
-    return w_mps
+    return w
 
 
 ##### Sub functions #####
@@ -623,7 +676,7 @@ XYZ_TRANSFORMS = generate_beam_transforms()
 
 
 def get_XYZ_transform(beamlist):
-
+    
     if beamlist == [1, 2, 3, 4]:
         t_beam2XYZ = XYZ_TRANSFORMS['stationary']
     elif beamlist == [1, 2, 4, 0]:
@@ -644,42 +697,51 @@ def generate_ENU_transform(heading, pitch, roll):
     # effectively unpitch and unroll the data
     pitch = np.radians(-1.0 * pitch)
     roll = np.radians(-1.0 * roll)
-    Rx = np.matrix([[1.0, 0.0, 0.0],
-                    [0.0, cos(roll), sin(roll)],
-                    [0.0, -sin(roll), cos(roll)]])
-    Ry = np.matrix([[cos(pitch), 0.0, -sin(pitch)],
-                    [0.0, 1.0, 0.0],
-                    [sin(pitch), 0.0, cos(pitch)]])
-    Rz = np.matrix([[cos(heading), sin(heading), 0.0],
-                    [-sin(heading), cos(heading), 0.0],
-                    [0.0, 0.0, 1.0]])
+
+    # "un" roll transform matrix
+    Rx = np.matrix([
+        [1.0, 0.0, 0.0],
+        [0.0, cos(roll), sin(roll)],
+        [0.0, -sin(roll), cos(roll)]]
+    )
+    # "un" pitch transform matrix
+    Ry = np.matrix([
+        [cos(pitch), 0.0, -sin(pitch)],
+        [0.0, 1.0, 0.0],
+        [sin(pitch), 0.0, cos(pitch)]]
+    )
+    # "un" heading transform matrix
+    Rz = np.matrix([
+        [cos(heading), sin(heading), 0.0],
+        [-sin(heading), cos(heading), 0.0],
+        [0.0, 0.0, 1.0]]
+    )
+
+    # multiply together to create the XYZ to Earth coordinate transform
     XYZ2ENU = Rz * Ry * Rx
     return XYZ2ENU
 
 
 def vel3dk_transform(
         vel0, vel1, vel2, heading, pitch, roll,
-        beam1, beam2, beam3, beam4, Vscale, vel3=0):
+        beam1, beam2, beam3, beam4, vel3=0):
 
-    vel0 = vel0 * 10**Vscale
-    vel1 = vel1 * 10**Vscale
-    vel2 = vel2 * 10**Vscale
-    if vel3 != 0:
-        vel2 = vel2 * 10**Vscale
     data = np.matrix([vel0, vel1, vel2])
+    if vel3 != 0:
+        data[4, :] = vel3
 
     beams = np.array([beam1, beam2, beam3, beam4]).T
-    beams_used = list(beams[:, 0])
-    t_beam2XYZ = get_transform_XYZ(beams_used)
+    beams_used = list(beams[0, :])
+    t_beam2XYZ = get_XYZ_transform(beams_used)
 
-    ENU = np.matrix(np.zeros_like(XYZ))  # East, North, Up velocities
+    ENU = np.matrix(np.zeros_like(data))  # East, North, Up velocities
 
     # need a transformation matrix for each measurement
     # because Heading Pitch & Roll will change with each record
     for ii in range(len(heading)):
-        if list(beams[:, ii]) != beams_used:
-            beams_used = list(beams[:, ii])
-            t_beam2XYZ = get_transform_XYZ(beams_used)
+        if list(beams[ii, :]) != beams_used:
+            beams_used = list(beams[ii, :])
+            t_beam2XYZ = get_XYZ_transform(beams_used)
         t_XYZ2ENU = generate_ENU_transform(heading[ii], pitch[ii], roll[ii])
         ENU[:, ii] = t_XYZ2ENU * t_beam2XYZ * data[:, ii]
     return ENU
