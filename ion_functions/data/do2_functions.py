@@ -188,7 +188,7 @@ def do2_dofst_volt(voltage_counts, Voffset, Soc, A, B, C, E, P, T, SP, lat, lon)
     # convert voltage counts to volts
     volts = voltage_counts / 13107.
 
-    do = dofst_calc(volts, Voffset, Soc, A, B, C, E, P, T, SP, lat, lon)
+    do, do_int = dofst_calc(volts, Voffset, Soc, A, B, C, E, P, T, SP, lat, lon)
     return do
 
 
@@ -239,7 +239,7 @@ def do2_dofst_frequency(frequency, Foffset, Soc, A, B, C, E, P, T, SP, lat, lon)
 
     See Also: dofst_calc
     """
-    do = dofst_calc(frequency, Foffset, Soc, A, B, C, E, P, T, SP, lat, lon)
+    do, do_int = dofst_calc(frequency, Foffset, Soc, A, B, C, E, P, T, SP, lat, lon)
     return do
 
 
