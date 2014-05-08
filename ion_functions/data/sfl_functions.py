@@ -487,7 +487,7 @@ def eval_poly(x, c0, c1, c2, c3, c4, c5=0.0):
     return c0 + x * (c1 + x * (c2 + x * (c3 + x * (c4 + x * c5))))
 
 
-def sfl_trhph_vfltemp(V_ts, V_tc, tc_slope, ts_slope, a=-1.00e-6, b=7.00e-5, c=0.0024, d=0.015):
+def sfl_trhph_vfltemp(V_ts, V_tc, tc_slope, ts_slope, c0=0.015, c1=0.0024, c2=7.00e-5, c3=-1.00e-6):
     """
     Description:
 
@@ -503,7 +503,7 @@ def sfl_trhph_vfltemp(V_ts, V_tc, tc_slope, ts_slope, a=-1.00e-6, b=7.00e-5, c=0
 
     Usage:
 
-        T = sfl_trhph_vfltemp(V_ts, V_tc, a, b, c, d, e)
+        T = sfl_trhph_vfltemp(V_ts, V_tc, tc_slope, ts_slope, c0, c1, c2, c3)
 
             where
 
@@ -512,13 +512,13 @@ def sfl_trhph_vfltemp(V_ts, V_tc, tc_slope, ts_slope, a=-1.00e-6, b=7.00e-5, c=0
         V_tc = Thermocouple voltage (TRHPHVC_L0) [volts]
         tc_slope = thermocople slope laboratory calibration coefficients
         ts_slope = thermistor slope laboratory calibration coefficients
-        a = coefficient from 3rd degree polynomial fit of laboratory
+        c0 = coefficient from 3rd degree polynomial fit of laboratory
             calibration correction curve (not expected to change).
-        b = coefficient from 3rd degree polynomial fit of laboratory
+        c1 = coefficient from 3rd degree polynomial fit of laboratory
             calibration correction curve (not expected to change).
-        c = coefficient from 3rd degree polynomial fit of laboratory
+        c2 = coefficient from 3rd degree polynomial fit of laboratory
             calibration correction curve (not expected to change).
-        d = coefficient from 3rd degree polynomial fit of laboratory
+        c3 = coefficient from 3rd degree polynomial fit of laboratory
             calibration correction curve (not expected to change).
 
     References:
@@ -532,30 +532,32 @@ def sfl_trhph_vfltemp(V_ts, V_tc, tc_slope, ts_slope, a=-1.00e-6, b=7.00e-5, c=0
     # Test if polynomial coefficients are scalars (set via defaults), set to
     # same size as other inputs if required. Assumes if 'a' is a default, they
     # all are.
-    if np.isscalar(a):
-        a = np.tile(a, (V_ts.shape))
+    if np.isscalar(c0):
+        c0 = np.tile(c0, (V_ts.shape))
 
-    if np.isscalar(b):
-        b = np.tile(b, (V_ts.shape))
+    if np.isscalar(c1):
+        c1 = np.tile(c1, (V_ts.shape))
 
-    if np.isscalar(c):
-        c = np.tile(c, (V_ts.shape))
+    if np.isscalar(c2):
+        c2 = np.tile(c2, (V_ts.shape))
 
-    if np.isscalar(d):
-        d = np.tile(d, (V_ts.shape))
+    if np.isscalar(c3):
+        c3 = np.tile(c3, (V_ts.shape))
 
-    # raw thermistor temperature (T = T_ts)
-    T = 27.50133 - 17.2658 * V_ts + 15.83424 / V_ts
+    # raw thermistor temperature
+    T_ts = 27.50133 - 17.2658 * V_ts + 15.83424 / V_ts
 
     # where V_tc is less than or equal to 0, T = T_ts, otherwise...
+    T = T_ts
 
     # Adjust raw thermistor temperature when V_tc is greater than 0 and ...
-    tFlag = (V_tc > 0) & (T > 10)  # T is greater than 10
-    T[tFlag] = (V_tc[tFlag] + (a[tFlag] * T[tFlag]**3 + b[tFlag] * T[tFlag]**2
-                               + c[tFlag] * T[tFlag] + d[tFlag])) * 244.97
+    tFlag = (V_tc > 0) & (T_ts > 10)  # T_ts is greater than 10
+    poly = (c3[tFlag] * T_ts[tFlag]**3 + c2[tFlag] * T_ts[tFlag]**2 +
+            c1[tFlag] * T_ts[tFlag] + c0[tFlag])
+    T[tFlag] = (V_tc[tFlag] + poly) * 244.97
 
-    tFlag = (V_tc > 0) & ((T > 0) & (T <= 10))  # T is greater than 0 and less than 10
-    T[tFlag] = (V_tc[tFlag] + V_tc[tFlag] * 244.97 * tc_slope[tFlag] + T[tFlag]
+    tFlag = (V_tc > 0) & ((T_ts > 0) & (T_ts <= 10))  # T_ts is greater than 0 and less than 10
+    T[tFlag] = (V_tc[tFlag] + V_tc[tFlag] * 244.97 * tc_slope[tFlag] + T_ts[tFlag]
                 * ts_slope[tFlag]) * 244.97
 
     return T
@@ -594,7 +596,6 @@ def sfl_trhph_vfl_thermistor_temp(V_ts):
     """
     # thermistor temperature
     T_ts = 27.50133 - 17.2658 * V_ts + 15.83424 / V_ts
-
     return T_ts
 
 
