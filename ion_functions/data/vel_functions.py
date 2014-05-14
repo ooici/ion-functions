@@ -311,8 +311,8 @@ def nortek_up_vel(w):
 
 
 def vel3dk_east(
-        vel0, vel1, vel2, heading, pitch, roll, beam1, beam2, beam3,
-        beam4, lat, lon, timestamp, z, Vscale, vel3=0):
+        vel0, vel1, vel2, heading, pitch, roll, beams, lat, lon,
+        timestamp, z, Vscale, vel3=0):
     """Eastward Velocity L1 VELPTTU-VLE in True Earth coordinates
 
     Transforms beam velocities to Earth coordinate velocities and then
@@ -320,9 +320,9 @@ def vel3dk_east(
     eastward velocity as the L1 VELPTTU-VLE OOI data product.
 
     Takes 3 or 4 beam velocities in integer counts from a VEL3D-K
-    (Aquadopp II on a McLane Profiler(MMP)) with the provided Vscale and
-    beam configuration parameters from an MMP A#####.DEC binary data
-    file.
+    (Aquadopp II on a McLane Profiler(MMP)) with the provided Vscale,
+    beam configuration parameters, and attitude orientation (heading,
+    pitch, and roll) data from an MMP A#####.DEC binary data file.
 
     Given velocities in beam coordinates in the configuration provided
     by the beam parameters, this function transforms the beam velocities
@@ -345,10 +345,14 @@ def vel3dk_east(
         u_cor = floating point eastward velocity, in true Earth frame,
             with the correction for magnetic declination applied. [m/s]
 
-        u = uncorrected eastward velocity in magnetic Earth
-            frame.  Integer scaled by 10^Vscale. [scaled integer distance/s]
-        v = uncorrected northward velocity in magnetic Earth
-            frame.  Integer scaled by 10^Vscale. [scaled integer distance/s]
+        vel0, 1, 2, 3 = AquadoppII beam velocities as integers to be
+            scaled by 10^Vscale. vel3 is optional depending on the
+            number of beams used as listed in beams.
+            [scaled integer distance/s]
+        heading, pitch, roll = attitude data obtained from the
+            AquadoppII.  [degrees]
+        beams = the beam configuration array listing the physical beams
+            used that correspond to velocities vel0-3
         lat = latitude of the instrument [decimal degrees].  East is
             positive, West negative.
         lon = longitude of the instrument [decimal degrees]. North
@@ -385,7 +389,7 @@ def vel3dk_east(
     # transform beam velocites in spherical coordinates to Earth
     # coordinates using beam configuration and instrument attitude.
     ENU = vel3dk_transform(vel0, vel1, vel2, heading, pitch, roll,
-                           beam1, beam2, beam3, beam4)
+                           beams)
 
     # separate out the components from the Earth coordinate transformed
     # data matrix. The zero index is needed since matrix is
@@ -402,8 +406,8 @@ def vel3dk_east(
 
 
 def vel3dk_north(
-        vel0, vel1, vel2, heading, pitch, roll, beam1, beam2, beam3,
-        beam4, lat, lon, timestamp, z, Vscale, vel3=0):
+        vel0, vel1, vel2, heading, pitch, roll, beams, lat, lon,
+        timestamp, z, Vscale, vel3=0):
     """Northward Velocity L1 VELPTTU-VLN in True Earth coordinates
 
     Transforms beam velocities to Earth coordinate velocities and then
@@ -411,9 +415,9 @@ def vel3dk_north(
     northward velocity as the L1 VELPTTU-VLN OOI data product.
 
     Takes 3 or 4 beam velocities in integer counts from a VEL3D-K
-    (Aquadopp II on a McLane Profiler(MMP)) with the provided Vscale and
-    beam configuration parameters from an MMP A#####.DEC binary data
-    file.
+    (Aquadopp II on a McLane Profiler(MMP)) with the provided Vscale,
+    beam configuration parameters, and attitude orientation (heading,
+    pitch, and roll) data from an MMP A#####.DEC binary data file.
 
     Given velocities in beam coordinates in the configuration provided
     by the beam parameters, this function transforms the beam velocities
@@ -428,17 +432,22 @@ def vel3dk_north(
 
     Usage:
         v_cor = nortek_mag_corr_east(
-            vel0, vel1, vel2, heading, pitch, roll, beam1, beam2, beam3,
-            beam4, lat, lon, ntp_timestamp, z, Vscale, vel3=0)
+            vel0, vel1, vel2, heading, pitch, roll, beams, lat, lon,
+            ntp_timestamp, z, Vscale, vel3=0)
 
             where
 
         v_cor = floating point northward velocity, in true Earth frame,
             with the correction for magnetic declination applied. [m/s]
 
-        vel0,1,2,3 = Integer Beam Velocities scaled by Vscale.
-            [scaled integer distance/s] Becomes m/s when scaled by
-            10^Vscale.
+        vel0, 1, 2, 3 = AquadoppII beam velocities as integers to be
+            scaled by 10^Vscale. vel3 is optional depending on the
+            number of beams used as listed in beams.
+            [scaled integer distance/s]
+        heading, pitch, roll = attitude data obtained from the
+            AquadoppII.  [degrees]
+        beams = the beam configuration array listing the physical beams
+            used that correspond to velocities vel0-3
         lat = latitude of the instrument [decimal degrees].  East is
             positive, West negative.
         lon = longitude of the instrument [decimal degrees]. North
@@ -475,7 +484,7 @@ def vel3dk_north(
     # transform beam velocites in spherical coordinates to Earth
     # coordinates using beam configuration and instrument attitude.
     ENU = vel3dk_transform(vel0, vel1, vel2, heading, pitch, roll,
-                           beam1, beam2, beam3, beam4)
+                           beams)
 
     # separate out the components from the Earth coordinate transformed
     # data matrix. The zero index is needed since matrix is
@@ -491,8 +500,7 @@ def vel3dk_north(
 
 
 def vel3dk_up(
-        vel0, vel1, vel2, heading, pitch, roll,
-        beam1, beam2, beam3, beam4, Vscale):
+        vel0, vel1, vel2, heading, pitch, roll, beams, Vscale):
     """
     Takes an integer vertical velocity in generic distance per second
     units from a VEL3D-K (Aquadopp II on a McLane Profiler(MMP)) with
@@ -502,7 +510,7 @@ def vel3dk_up(
     Usage:
         w_mps = vel3dk_scale_up_vel(
                     vel0, vel1, vel2, heading, pitch, roll,
-                    beam1, beam2, beam3, beam4, Vscale, vel3=0)
+                    beams, Vscale, vel3=0)
 
             where
 
@@ -530,7 +538,7 @@ def vel3dk_up(
 
     # transform the beam velocities to Earth coordinates
     ENU = vel3dk_transform(vel0, vel1, vel2, heading, pitch, roll,
-                           beam1, beam2, beam3, beam4)
+                           beams)
 
     # seperate out the components from the
     w = ENU[2, :]
@@ -614,11 +622,54 @@ def vel_mag_correction(u, v, lat, lon, ntp_timestamp, z=0.0, zflag=-1):
 
 
 ## VEL3D-K Beam coordinate transformations ##
-
-## This function generates 3 possible beam transform matrices for the
-## VEL3D-K and outputs a dictionary with those tranforms
 def generate_beam_transforms():
-    BEAMS = {  # Beam spherical coordinates for the VEL3D-k (Aquadopp II)
+    """
+    Description:
+        This function is used to create the 3 possible beam-to-cartesian
+        coordinate transform matrices that transforms velocity vectors
+        from beam coordinates of the Nortek Aquadopp II velocity
+        instrument (VEL3D-K), to the cartesian coordinates of the McLane
+        Moored Profiler (Wire Following Profiler [WFP]). The transform
+        used depends on the beams used by the Aquadopp II during a
+        profile. The spherical coordinates for the 4 beams on the
+        instrument and the orientation of the instrument on the profiler
+        are hard coded here (never expected to change) for processing
+        ease i.e. no required inputs to the function.
+
+        The 3 possible beam configurations are an upward traveling
+        profile (using 3 of 4 beams), a downward traveling profile
+        (using 3 of 4 beams), or a stationary profile (using 4 of 4
+        beams). These 3 transform matrices are returned in a dictionary
+        that is loaded into the module as a constant for use in the
+        actual transformation functions. The dictionary keys are
+        'upward', 'downward', or 'stationary'.
+
+    Implemented by:
+        2014-05-13: Stuart Pearce. Reimplementation of code from P.J.
+            Rusello at Nortek
+
+    References:
+        Lengthy discussions with Nortek and McLane representatives.  No
+        DPS as of yet.
+    """
+    ## INTERNAL DESCRIPTION:
+    ## First a matrix that transforms the velocities from cartesian
+    ## coordinates to spherical beam coordinates is created (identified
+    ## by the xyz2beam). To find the reverse matrix that transforms the
+    ## velocities from spherical beams to cartesian coordinates, the
+    ## inverse of the first matrix must be found (identified by
+    ## beam2xyz). This is known as a "Change of basis". The permutation
+    ## matrix then transforms the velocities from cartesian coordianates
+    ## of the instrument, to cartesian coordinates of the profiler. The
+    ## permutation matrix is muliplied by the beam2xyz to get the single
+    ## transformation matrix beam2XYZ (capital XYZ indicates cartesian
+    ## coordinates of the profiler). To get to Earth coordinates,
+    ## another transformation matrix that reverses heading, pitch, and
+    ## roll must be made, but that occurs in another function.
+
+    # BEAMS dictionary is the rotations for each beam from cartesian
+    # coordinates to spherical coordinates
+    BEAMS = {
         1: (sin(radians(47.5)) * cos(radians(0.0)),
             0.0,  # sin(47.5 deg)*sin(0 deg) = 0
             cos(radians(47.5))),
@@ -632,6 +683,7 @@ def generate_beam_transforms():
             sin(radians(25.0)) * sin(radians(270.0)),
             cos(radians(25.0)))}
 
+    # the cartesian to beam transforms
     upward_xyz2beam = np.matrix([BEAMS[1], BEAMS[2], BEAMS[4]])
     downward_xyz2beam = np.matrix([BEAMS[2], BEAMS[3], BEAMS[4]])
     stationary_xyz2beam = np.matrix([
@@ -640,26 +692,29 @@ def generate_beam_transforms():
         [BEAMS[3][0], BEAMS[3][1], BEAMS[3][2], 0.0],
         [BEAMS[4][0], BEAMS[4][1], 0.0, BEAMS[4][2]]])
 
-    permutation_matrix3 = np.matrix([
+    # get the inverse of the transforms
+    upward_beam2xyz = np.linalg.pinv(upward_xyz2beam)
+    downward_beam2xyz = np.linalg.pinv(downward_xyz2beam)
+    stationary_beam2xyz = np.linalg.pinv(stationary_xyz2beam)
+
+    # set ~0 float point errors to zero
+    upward_beam2xyz[abs(upward_beam2xyz) < 1e-15] = 0.0
+    downward_beam2xyz[abs(downward_beam2xyz) < 1e-15] = 0.0
+    stationary_beam2xyz[abs(stationary_beam2xyz) < 1e-15] = 0.0
+
+    # create permutation matrices
+    permutation_matrix3 = np.matrix([  # if 3 beams are used
         [0,  0, 1],
         [0, -1, 0],
         [1,  0, 0]
     ])
-
-    permutation_matrix4 = np.matrix([
+    permutation_matrix4 = np.matrix([  # if 4 beams are used
         [0,  0, 0.5, 0.5],
         [0, -1,   0,   0],
         [1,  0,   0,   0]
     ])
 
-    upward_beam2xyz = np.linalg.pinv(upward_xyz2beam)
-    downward_beam2xyz = np.linalg.pinv(downward_xyz2beam)
-    stationary_beam2xyz = np.linalg.pinv(stationary_xyz2beam)
-
-    upward_beam2xyz[abs(upward_beam2xyz) < 1e-15] = 0.0
-    downward_beam2xyz[abs(downward_beam2xyz) < 1e-15] = 0.0
-    stationary_beam2xyz[abs(stationary_beam2xyz) < 1e-15] = 0.0
-
+    # combine to create the beam2XYZ (profiler cartesian) transformation
     T_beam2XYZ_up = permutation_matrix3 * upward_beam2xyz
     T_beam2XYZ_down = permutation_matrix3 * downward_beam2xyz
     T_beam2XYZ_stat = permutation_matrix4 * stationary_beam2xyz
@@ -676,7 +731,25 @@ XYZ_TRANSFORMS = generate_beam_transforms()
 
 
 def get_XYZ_transform(beamlist):
-    
+    """
+    Sub-function that retrieves the proper beam-to-profiler-cartesian
+    coordinates from the stored dictionary constant based on the beam
+    configuration for a profile.
+
+    Usage:
+        beam2XYZ_transform = get_XYZ_transform(beamlist)
+
+        where
+
+        beam2XYZ_transform = the beam-to-profiler-cartesian transform
+            matrix
+        beamlist = a list (derived from the data file) that describes
+            the physical beams used in order.  E.g. [1, 2, 4, 0]
+
+    """
+    ## Implemented by:
+    ## 2014-05-13: Stuart Pearce. Reimplementation of code from P.J.
+    ##     Rusello at Nortek
     if beamlist == [1, 2, 3, 4]:
         t_beam2XYZ = XYZ_TRANSFORMS['stationary']
     elif beamlist == [1, 2, 4, 0]:
@@ -688,29 +761,58 @@ def get_XYZ_transform(beamlist):
 
 
 def generate_ENU_transform(heading, pitch, roll):
-    # definitions of rotation matrices taken from Freescale Technical Note
-    # Implementing a Tilt-Compensated eCompass using Accelerometer and
-    # Magnetometer Sensors
-    # http://cache.freescale.com/files/sensors/doc/app_note/AN4248.pdf
+    """
+    Description:
+        This function is used to create the cartesian-to-Earth
+        coordinate transform matrices that transforms velocity vectors
+        from cartesian coordinates of a McLane Profiler (with a Nortek
+        Aquadopp II velocity instrument (VEL3D-K)), to Earth coordinates
+        using heading, pitch, and roll data from the attitude sensor on
+        board the Aquadopp II.
+
+    Usage:
+        XYZ2Earth_trans = generate_ENU_transform(heading, pitch, roll)
+
+        where
+
+        XYZ2Earth_trans = the cartesian-to-Earth coordinate tranform
+            matrix
+        heading, pitch, roll = the attitude measurements by the Aquadopp
+            II velocity instrument.
+
+    Implemented by:
+        2014-05-13: Stuart Pearce. Reimplementation of code from P.J.
+            Rusello at Nortek
+
+    References:
+        Lengthy discussions with Nortek and McLane representatives.  No
+        DPS as of yet.
+
+        Definitions of rotation matrices taken from Freescale Technical
+        Note Implementing a Tilt-Compensated eCompass using
+        Accelerometer and Magnetometer Sensors
+        http://cache.freescale.com/files/sensors/doc/app_note/AN4248.pdf
+    """
+
     heading = np.radians(heading)
-    # need to make these angles negative so the pitch and roll rotation matrices
+    # need to make pitch and roll angles negative so that rotation matrices
     # effectively unpitch and unroll the data
     pitch = np.radians(-1.0 * pitch)
     roll = np.radians(-1.0 * roll)
 
-    # "un" roll transform matrix
+    # "un"-roll transform matrix
     Rx = np.matrix([
         [1.0, 0.0, 0.0],
         [0.0, cos(roll), sin(roll)],
         [0.0, -sin(roll), cos(roll)]]
     )
-    # "un" pitch transform matrix
+    # "un"-pitch transform matrix
     Ry = np.matrix([
         [cos(pitch), 0.0, -sin(pitch)],
         [0.0, 1.0, 0.0],
         [sin(pitch), 0.0, cos(pitch)]]
     )
-    # "un" heading transform matrix
+    # "un"-heading transform matrix
     Rz = np.matrix([
         [cos(heading), sin(heading), 0.0],
         [-sin(heading), cos(heading), 0.0],
@@ -723,14 +825,49 @@ def generate_ENU_transform(heading, pitch, roll):
 
 
 def vel3dk_transform(
-        vel0, vel1, vel2, heading, pitch, roll,
-        beam1, beam2, beam3, beam4, vel3=0):
+        vel0, vel1, vel2, heading, pitch, roll, beams, vel3=0):
+    """
+    Description:
+        Transforms beam velocities to Earth coordinate velocities for an
+        OOI VEL3D-K instrument.
 
+        Takes 3 or 4 beam velocities in m/s from a VEL3D-K
+        (Aquadopp II on a McLane Profiler(MMP)), a beam configuration
+        array, and attitude orientation data (heading, pitch, and roll),
+        and transforms the velocities from beam coordinates to Earth
+        coordinates in the East, North, and Upwards directions.
+
+    Usage:
+        ENU = vel3dk_transform(vel0, vel1, vel2, heading, pitch, roll,
+                               beams, vel3=0)
+
+        where
+
+        ENU = A matrix of velocity data in Earth coordinates (East,
+            North, Up) with East velocities in the first row, North
+            velocities in the second row and Upward velocities in the
+            3rd row.
+        vel0, 1, 2, 3 = AquadoppII beam velocities as integers to be
+            scaled by 10^Vscale. vel3 is optional depending on the
+            number of beams used as listed in beams.
+            [scaled integer distance/s]
+        heading, pitch, roll = attitude data obtained from the
+            AquadoppII.  [degrees]
+        beams = the beam configuration array listing the physical beams
+            used that correspond to velocities vel0-3
+
+    Implemented by:
+        2014-05-13: Stuart Pearce. Reimplementation of code from P.J.
+            Rusello at Nortek
+
+    References:
+        Lengthy discussions with Nortek and McLane representatives.  No
+        DPS as of yet.
+    """
     data = np.matrix([vel0, vel1, vel2])
     if vel3 != 0:
         data[4, :] = vel3
 
-    beams = np.array([beam1, beam2, beam3, beam4]).T
     beams_used = list(beams[0, :])
     t_beam2XYZ = get_XYZ_transform(beams_used)
 

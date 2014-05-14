@@ -11,7 +11,17 @@ import numexpr as ne
 import pygsw.vectors as gsw
 
 
-def do2_SVU(calphase, do_temp, csv):
+def o2_counts_to_uM(o2_counts):
+    """
+    Description:
+        Conversion of oxygen counts from a SBE 16+ V2 CTD with an
+        Aanderaa Optode to Dissolved oxygen in micro-moles/L
+    """
+    DO = (o2_counts / 10000.0) - 10.0
+    return DO
+
+
+def do2_SVU(calphase, temp, csv):
     """
     Description:
 
@@ -20,15 +30,15 @@ def do2_SVU(calphase, do_temp, csv):
 
     Usage:
 
-        DO = do2_SVU(calphase, do_temp, csv)
+        DO = do2_SVU(calphase, temp, csv)
 
             where
 
         DO = dissolved oxygen [micro-mole/L]
         calphase = calibrated phase from an Oxygen sensor [deg]
             (see DOCONCS DPS)
-        do_temp = oxygen sensor temperature [deg C],
-            (see DOCONCS DPS)
+        temp = Either CTD temperature, or oxygen sensor temperature
+            [deg C], (see DOCONCS DPS)
         csv = Stern-Volmer-Uchida Calibration Coefficients array.
             7 element float array, (see DOCONCS DPS)
 
@@ -36,9 +46,9 @@ def do2_SVU(calphase, do_temp, csv):
         csv = np.array([0.002848, 0.000114, 1.51e-6, 70.42301, -0.10302,
                         -12.9462, 1.265377])
         calphase = 27.799
-        do_temp = 19.841
+        temp = 19.841
 
-        DO = do2_SVU(calphase, do_temp, csv)
+        DO = do2_SVU(calphase, temp, csv)
         print DO
         > 363.900534505
 
@@ -54,14 +64,14 @@ def do2_SVU(calphase, do_temp, csv):
     """
 
     # Calculate DO using Stern-Volmer:
-    Ksv = csv[0] + csv[1]*do_temp + csv[2]*(do_temp**2)
-    P0 = csv[3] + csv[4]*do_temp
+    Ksv = csv[0] + csv[1]*temp + csv[2]*(temp**2)
+    P0 = csv[3] + csv[4]*temp
     Pc = csv[5] + csv[6]*calphase
-    DO = ne.evaluate('((P0/Pc) - 1) / Ksv')
+    DO = ((P0/Pc) - 1) / Ksv
     return DO
 
 
-def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
+def do2_salinity_correction(DO, P, T, SP, lat, lon, pref=0):
     """
     Description:
 
@@ -76,7 +86,6 @@ def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
 
         DOc = corrected dissolved oxygen [micro-mole/kg].
         DO = uncorrected dissolved oxygen [micro-mole/L].
-        do_t = Oxygen sensor temperature [deg C].
         P = PRESWAT water pressure [dbar]. (see
             1341-00020_Data_Product_Spec_PRESWAT). Interpolated to the
             same timestamp as DO.
@@ -126,7 +135,7 @@ def do2_salinity_correction(DO, do_t, P, T, SP, lat, lon, pref=0):
 
     # Salinity correction:
     S0 = 0
-    ts = ne.evaluate('log((298.15-do_t)/(273.15+do_t))')
+    ts = ne.evaluate('log((298.15-T)/(273.15+T))')
     B0 = -6.24097e-3
     B1 = -6.93498e-3
     B2 = -6.90358e-3
