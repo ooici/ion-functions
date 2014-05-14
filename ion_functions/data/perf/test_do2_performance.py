@@ -2,6 +2,7 @@
 
 from ion_functions.data.perf.test_performance import PerformanceTestCase
 from ion_functions.data.do2_functions import do2_dofst_frequency, do2_dofst_volt
+from ion_functions.data.do2_functions import do2_SVU, do2_salinity_correction
 
 import numpy as np
 
@@ -66,3 +67,22 @@ class TestDo2Performance(PerformanceTestCase):
             stats, do2_dofst_frequency,
             freq, Foffset, Soc, A, B, C, E,
             self.pres, self.temp, self.salt, self.lat, self.lon)
+
+    def test_dosta_SVU(self):
+        calphase = np.ones(10000, dtype=np.float) * 38
+        temp = np.ones(10000, dtype=np.float) * 15.3
+        csv = np.array([
+            0.002848, 0.000114, 1.51e-6, 70.42301, -0.10302,
+            -12.9462, 1.265377])
+
+        stats = []
+        self.profile(
+            stats, do2_SVU, calphase, temp, csv)
+
+    def test_dosta_salinity_correction(self):
+        do_svu = np.ones(10000, dtype=np.float) * 102.34
+
+        stats = []
+        self.profile(
+            stats, do2_salinity_correction, do_svu, self.pres,
+            self.temp, self.salt, self.lat, self.lon)
