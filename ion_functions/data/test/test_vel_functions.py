@@ -143,10 +143,17 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
                 1341-00790_Data_Product_SPEC_VELPTMN_OOI.pdf)
         """
 
-        beam1 = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2])
-        beam2 = np.array([2, 2, 2, 2, 2, 3, 3, 3, 3, 3])
-        beam3 = np.array([4, 4, 4, 4, 4, 4, 4, 4, 4, 4])
-        beam4 = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        beams = np.array([
+            [1, 2, 4, 0],
+            [1, 2, 4, 0],
+            [1, 2, 4, 0],
+            [1, 2, 4, 0],
+            [1, 2, 4, 0],
+            [2, 3, 4, 0],
+            [2, 3, 4, 0],
+            [2, 3, 4, 0],
+            [2, 3, 4, 0],
+            [2, 3, 4, 0]])
 
         hdg = np.array([0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
 
@@ -168,11 +175,9 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         Vscale = -4
 
         ve_cor = vel3dk_east(
-            vel0, vel1, vel2, hdg, ptch, rll, beam1, beam2, beam3,
-            beam4, LAT, LON, TS, DEPTH, Vscale)
+            vel0, vel1, vel2, hdg, ptch, rll, beams, LAT, LON, TS, DEPTH, Vscale)
         vn_cor = vel3dk_north(
-            vel0, vel1, vel2, hdg, ptch, rll, beam1, beam2, beam3,
-            beam4, LAT, LON, TS, DEPTH, Vscale)
+            vel0, vel1, vel2, hdg, ptch, rll, beams, LAT, LON, TS, DEPTH, Vscale)
 
         VE_expected = np.array([
             0.34404501, -0.01039404,  0.64049184, -0.17489265, -0.0739631,
@@ -201,10 +206,17 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
                 https://confluence.oceanobservatories.org/display/
                 instruments/VEL3D-K__stc_imodem+-+Telemetered
         """
-        beam1 = np.array([1, 1, 1, 1, 1, 2, 2, 2, 2, 2])
-        beam2 = np.array([2, 2, 2, 2, 2, 3, 3, 3, 3, 3])
-        beam3 = np.array([4, 4, 4, 4, 4, 4, 4, 4, 4, 4])
-        beam4 = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        beams = np.array([
+            [1, 2, 4, 0],
+            [1, 2, 4, 0],
+            [1, 2, 4, 0],
+            [1, 2, 4, 0],
+            [1, 2, 4, 0],
+            [2, 3, 4, 0],
+            [2, 3, 4, 0],
+            [2, 3, 4, 0],
+            [2, 3, 4, 0],
+            [2, 3, 4, 0]])
 
         hdg = np.array([0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
 
@@ -227,7 +239,7 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
 
         vu_calcd = vel3dk_up(
             vel0, vel1, vel2, hdg, ptch, rll,
-            beam1, beam2, beam3, beam4, Vscale)
+            beams, Vscale)
 
         vu_expected = np.array([[
             -0.42452079, 0.8123358, 0.443022, 1.29753572, 0.99032304,
