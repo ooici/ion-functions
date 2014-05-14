@@ -10,6 +10,8 @@ from nose.plugins.attrib import attr
 from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
+from ion_functions.data.do2_functions import do2_SVU
+from ion_functions.data.do2_functions import do2_salinity_correction
 from ion_functions.data.do2_functions import do2_dofst_frequency
 from ion_functions.data.do2_functions import do2_dofst_volt
 #import pdb
@@ -73,16 +75,16 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
 
         # EXPECTED OUTPUTS
         #   intermediate calculation dissolved oxygen in ml/l
-        do_int_expected = np.array([
-            5.89891032167396, 5.56780727769487, 6.76187243958794,
-            6.458117534861, 6.46897458201929, 6.77275996877815,
-            6.73969994032525, 6.74263221709132, 6.64102027182035,
-            6.74036293148305, 6.7267587280842, 6.51674462650798,
-            6.30302843255881, 6.6898131217667, 8.2830386610128,
-            10.7809859878398, 8.95549253591715, 6.68181215593754,
-            -1.51252046989329, 0.00261229787546345, 0.289064271805584,
-            2.09064901350446, 5.6938184969022, 7.49540323860107,
-            9.29698798029994])
+        #do_int_expected = np.array([
+        #    5.89891032167396, 5.56780727769487, 6.76187243958794,
+        #    6.458117534861, 6.46897458201929, 6.77275996877815,
+        #    6.73969994032525, 6.74263221709132, 6.64102027182035,
+        #    6.74036293148305, 6.7267587280842, 6.51674462650798,
+        #    6.30302843255881, 6.6898131217667, 8.2830386610128,
+        #    10.7809859878398, 8.95549253591715, 6.68181215593754,
+        #    -1.51252046989329, 0.00261229787546345, 0.289064271805584,
+        #    2.09064901350446, 5.6938184969022, 7.49540323860107,
+        #    9.29698798029994])
 
         #   final output dissolved oxygen in micro-moles/kg
         do_expected = np.array([
@@ -97,11 +99,11 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
             404.971374447791])
 
         # CALCULATION
-        do, do_int = do2_dofst_frequency(
+        do = do2_dofst_frequency(
             freq, Foffset, Soc, A, B, C, E, pres, temp, salt, lat, lon)
 
         # ASSERT INTERMEDIATE AND FINAL OUTPUTS
-        np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
+        #np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
         np.testing.assert_allclose(do, do_expected, rtol=1e-6, atol=1e-6)
 
     def test_dofst_voltage(self):
@@ -160,14 +162,14 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
 
         # EXPECTED OUTPUTS
         #   intermediate calculation dissolved oxygen in ml/l
-        do_int_expected = np.array([
-            -2.332525266, 0.000797115, 1.412078813, 5.934280027,
-            10.06589881, -1.149671963, 0.000125639, 10.82518961,
-            7.744491469, 12.49523919, -1.149671963, 0.000121139,
-            2.2205184, 7.347649726, 66.32586768, -7.415682793,
-            0.000120053, 2.645019264, 6.083964669, 10.39697952,
-            -0.966429789, 0.000195837, 10.2787545, 6.083964669,
-            12.68706213])
+        #do_int_expected = np.array([
+        #    -2.332525266, 0.000797115, 1.412078813, 5.934280027,
+        #    10.06589881, -1.149671963, 0.000125639, 10.82518961,
+        #    7.744491469, 12.49523919, -1.149671963, 0.000121139,
+        #    2.2205184, 7.347649726, 66.32586768, -7.415682793,
+        #    0.000120053, 2.645019264, 6.083964669, 10.39697952,
+        #    -0.966429789, 0.000195837, 10.2787545, 6.083964669,
+        #    12.68706213])
 
         #   final output dissolved oxygen in micro-moles/kg
         do_expected = np.array([
@@ -180,9 +182,105 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
             567.6400574])
 
         # CALCULATION
-        do, do_int = do2_dofst_volt(
+        do = do2_dofst_volt(
             volt_counts, Voffset, Soc, A, B, C, E, pres, temp, salt, lat, lon)
 
         # ASSERT INTERMEDIATE AND FINAL OUTPUTS
-        np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
+        #np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
         np.testing.assert_allclose(do, do_expected, rtol=1e-6, atol=1e-6)
+
+    def test_do2_SVU(self):
+        """ DOSTA Stern-Volmer-Uchida (SVU) test
+        Unit Test of the do2_SVU function in
+        ion_functions/data/do2_functions.py for calculation of
+        oxygen with the SVU equation from phase, temperature, and
+        multipoint calibration coefficients from a Aanderaa oxygen
+        optode.
+        """
+        calphase = np.array([
+            32., 32., 32., 32., 39.825, 39.825, 39.825,
+            39.825, 47.65, 47.65, 47.65, 47.65, 55.475, 55.475,
+            55.475, 55.475, 63.3, 63.3, 63.3, 63.3])
+
+        temp = np.array([
+            10., 16.67, 23.33, 30.,
+            10., 16.67, 23.33, 30.,
+            10., 16.67, 23.33, 30.,
+            10., 16.67, 23.33, 30.,
+            10., 16.67, 23.33, 30.])
+
+        csv = np.array([
+            0.002848, 0.000114, 1.51e-6, 70.42301, -0.10302,
+            -12.9462, 1.265377])
+
+        svu_expected = np.array([
+            3.67038772e+02,   2.89131248e+02,   2.32138540e+02,
+            1.89376503e+02,   2.06105882e+02,   1.61517794e+02,
+            1.28983515e+02,   1.04634998e+02,   1.12481219e+02,
+            8.72771165e+01,   6.89718258e+01,   5.53355979e+01,
+            5.12416074e+01,   3.87165116e+01,   2.97183595e+01,
+            2.30890079e+01,   8.06153583e+00,   4.47641240e+00,
+            2.04072696e+00,   3.51926228e-01])
+
+        # SVU CALCULATION
+        do_svu = do2_SVU(calphase, temp, csv)
+
+        # SVU ASSERT
+        np.testing.assert_array_almost_equal(do_svu, svu_expected, decimal=6)
+
+    def test_salinity_correction(self):
+        """ DOSTA salinity correction test
+        Unit Test of the do2_salinity_correction function in
+        ion_functions/data/do2_functions.py for correction of
+        oxygen for pressure and salinity.
+        """
+        do_svu = np.array([
+            3.67038772e+02,   2.89131248e+02,   2.32138540e+02,
+            1.89376503e+02,   2.06105882e+02,   1.61517794e+02,
+            1.28983515e+02,   1.04634998e+02,   1.12481219e+02,
+            8.72771165e+01,   6.89718258e+01,   5.53355979e+01,
+            5.12416074e+01,   3.87165116e+01,   2.97183595e+01,
+            2.30890079e+01,   8.06153583e+00,   4.47641240e+00,
+            2.04072696e+00,   3.51926228e-01])
+
+        pres = np.array([  # pressure in dbars
+            60.52, 72.58, 31.42, 70.82, 74.87,
+            29.33, 30.95, 43.58, 65.37, 29.46,
+            31.03, 74.57, 75.07, 57.92, 42.98,
+            42.98, 42.98, 0.00, 42.98, 42.98])
+
+        salt = np.array([  # practical salinity in psu
+            34.1145, 34.2845, 33.2464, 33.5524, 33.5619,
+            33.2512, 33.2609, 33.2716, 33.4191, 33.2710,
+            33.2808, 33.5483, 33.5424, 33.3458, 0.0000,
+            37.7843, 35.7594, 33.3313, 33.3132, 33.3132])
+
+        temp = np.array([
+            10., 16.67, 23.33, 30.,
+            10., 16.67, 23.33, 30.,
+            10., 16.67, 23.33, 30.,
+            10., 16.67, 23.33, 30.,
+            10., 16.67, 23.33, 30.])
+
+        lat = np.array([  # latitude in decimal degrees N
+            50.0, -42.0, 39.0, 60.0, 45.0, 60.0, 39.0, 45.0, 50.0,
+            -42.0, 50.0, 39.0, 60.0, 45.0, -42.0, 60.0, 45.0, -42.0,
+            50.0, 39.0])
+
+        lon = np.array([  # longitude in decimal degrees E
+            145.0, -42.0, -70.5, 39.0, -125.0, 39.0, -70.5, -125.0,
+            145.0, -42.0, 145.0, -70.5, 39.0, -125.0, -42.0, 39.0,
+            -125.0, -42.0, 145.0, -70.5])
+
+        do = do2_salinity_correction(do_svu, pres, temp, salt, lat, lon)
+
+        do_expected = np.array([
+            2.88296666e+02,   2.29721597e+02,   1.87629963e+02,
+            1.54646004e+02,   1.62604386e+02,   1.29058268e+02,
+            1.04241732e+02,   8.55210885e+01,   8.88041121e+01,
+            6.97282873e+01,   5.57344581e+01,   4.51939082e+01,
+            4.04323196e+01,   3.09440694e+01,   2.98348603e+01,
+            1.83468213e+01,   6.25456746e+00,   3.57150705e+00,
+            1.64934214e+00,   2.87559085e-01])
+
+        np.testing.assert_array_almost_equal(do, do_expected, decimal=6)

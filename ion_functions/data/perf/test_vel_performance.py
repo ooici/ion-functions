@@ -3,7 +3,7 @@
 from ion_functions.data.perf.test_performance import PerformanceTestCase, a_day
 from ion_functions.data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north
 from ion_functions.data.vel_functions import nortek_mag_corr_east, nortek_mag_corr_north
-from ion_functions.data.vel_functions import vel3dk_mag_corr_east, vel3dk_mag_corr_north
+from ion_functions.data.vel_functions import vel3dk_east, vel3dk_north
 from ion_functions.data.generic_functions import magnetic_declination, magnetic_correction
 
 import numpy as np
@@ -25,9 +25,11 @@ class TestVelPerformance(PerformanceTestCase):
         self.ve = np.ones(10000, dtype=np.float) * -3.2
         self.vn = np.ones(10000, dtype=np.float) * 18.2
         #self.vu = np.ones(10000, dtype=np.float) * -1.1
-        self.ve_vel3dk = np.ones(10000, dtype=np.int) * 12345
-        self.vn_vel3dk = np.ones(10000, dtype=np.int) * 15432
-        self.vscale = -4
+        #vel0 = np.ones(10000, dtype=np.int) * 12345
+        #vel1 = np.ones(10000, dtype=np.int) * 15432
+        #self.vel2 = np.ones(10000, dtype=np.int) * 14253
+        #beams = np.tile(np.array([1, 2, 4, 0]), (10000, 1))
+        #self.vscale = -4
 
     def test_nobska_corr_east(self):
         """
@@ -71,27 +73,28 @@ class TestVelPerformance(PerformanceTestCase):
             stats, nortek_mag_corr_north, self.ve, self.vn,
             self.lat, self.lon, self.ts, 3)
 
-    def test_vel3dk_corr_east(self):
-        """
-        Performance test for the vel3dk_mag_corr_east function for the
-        VEL3D-K (Nortek Aquadopp 2) instrument data processing
-        algorithm.
-        """
-        stats = []
-        self.profile(
-            stats, vel3dk_mag_corr_east, self.ve_vel3dk, self.vn_vel3dk,
-            self.lat, self.lon, self.ts, 3, self.vscale)
-
-    def test_vel3dk_corr_north(self):
-        """
-        Performance test for the vel3dk_mag_corr_north function for the
-        VEL3D-K (Nortek Aquadopp 2) instrument data processing
-        algorithm.
-        """
-        stats = []
-        self.profile(
-            stats, vel3dk_mag_corr_north, self.ve_vel3dk, self.vn_vel3dk,
-            self.lat, self.lon, self.ts, 3, self.vscale)
+    #def test_vel3dk_east(self):
+    #    """
+    #    Performance test for the vel3dk_east function for the
+    #    VEL3D-K (Nortek Aquadopp 2) instrument data processing
+    #    algorithm.
+    #    """
+    #    stats = []
+    #    self.profile(
+    #        stats, vel3dk_east, self.vel0, self.vel1, self.vel2,
+    #        hdg, ptch, rll, beams, self.lat, self.lon, self.ts, 3,
+    #        self.vscale)
+    #
+    #def test_vel3dk_north(self):
+    #    """
+    #    Performance test for the vel3dk_north function for the
+    #    VEL3D-K (Nortek Aquadopp 2) instrument data processing
+    #    algorithm.
+    #    """
+    #    stats = []
+    #    self.profile(
+    #        stats, vel3dk_north, self.ve_vel3dk, self.vn_vel3dk,
+    #        self.lat, self.lon, self.ts, 3, self.vscale)
 
     def test_magnetic_declination(self):
         """
@@ -113,3 +116,50 @@ class TestVelPerformance(PerformanceTestCase):
         theta = magnetic_declination(self.lat, self.lon, self.ts, 3)
         magcor = np.vectorize(magnetic_correction)
         self.profile(stats, magcor, theta, self.ve, self.vn)
+
+
+class TestVel3dkPerformance(PerformanceTestCase):
+    """
+    Performance tests for the vel family of functions to compare to the
+    optimization benchmark of running the function for 10000 data
+    records in under 10 seconds.
+
+    Implemented by:
+        2014-03-04: Stuart Pearce. Initial code.
+    """
+    def setUp(self):
+        self.lat = np.ones(10000, dtype=np.float) * 14.6846
+        self.lon = np.ones(10000, dtype=np.float) * -51.044
+        self.ts = np.ones(10000, dtype=np.int) * 3319563600
+        self.vel0 = np.ones(10000, dtype=np.int) * 12345
+        self.vel1 = np.ones(10000, dtype=np.int) * 15432
+        self.vel2 = np.ones(10000, dtype=np.int) * 14253
+        self.beams = np.tile(np.array([1, 2, 4, 0]), (10000, 1))
+        self.hdg = np.ones(10000, dtype=np.int) * 123
+        self.ptch = np.ones(10000, dtype=np.float) * 1.23
+        self.rll = np.ones(10000, dtype=np.float) * 1.23
+        self.vscale = -4
+
+    def test_vel3dk_east(self):
+        """
+        Performance test for the vel3dk_east function for the
+        VEL3D-K (Nortek Aquadopp 2) instrument data processing
+        algorithm.
+        """
+        stats = []
+        self.profile(
+            stats, vel3dk_east, self.vel0, self.vel1, self.vel2,
+            self.hdg, self.ptch, self.rll, self.beams, self.lat,
+            self.lon, self.ts, 3, self.vscale)
+
+    def test_vel3dk_north(self):
+        """
+        Performance test for the vel3dk_north function for the
+        VEL3D-K (Nortek Aquadopp 2) instrument data processing
+        algorithm.
+        """
+        stats = []
+        self.profile(
+            stats, vel3dk_north, self.vel0, self.vel1, self.vel2,
+            self.hdg, self.ptch, self.rll, self.beams, self.lat,
+            self.lon, self.ts, 3, self.vscale)
