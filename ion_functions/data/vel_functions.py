@@ -336,7 +336,7 @@ def vel3dk_east(
     and "vel3dk_transform".
 
     Usage:
-        u_cor = nortek_mag_corr_east(
+        u_cor = vel3dk_east(
             vel0, vel1, vel2, heading, pitch, roll, beam1, beam2, beam3,
             beam4, lat, lon, timestamp, z, Vscale, vel3=0)
 
@@ -381,6 +381,8 @@ def vel3dk_east(
     vel0 = vel0 * 10**Vscale
     vel1 = vel1 * 10**Vscale
     vel2 = vel2 * 10**Vscale
+    if vel3 != 0:
+        vel3 = vel3 * 10**Vscale
 
    # check for valid latitudes & longitudes
     if not valid_lat(lat) or not valid_lon(lon):
@@ -388,8 +390,12 @@ def vel3dk_east(
 
     # transform beam velocites in spherical coordinates to Earth
     # coordinates using beam configuration and instrument attitude.
-    ENU = vel3dk_transform(vel0, vel1, vel2, heading, pitch, roll,
-                           beams)
+    if vel3 != 0:
+        ENU = vel3dk_transform(
+            vel0, vel1, vel2, heading, pitch, roll, beams, vel3)
+    else:
+        ENU = vel3dk_transform(
+            vel0, vel1, vel2, heading, pitch, roll, beams)
 
     # separate out the components from the Earth coordinate transformed
     # data matrix. The zero index is needed since matrix is
@@ -431,7 +437,7 @@ def vel3dk_north(
     and "vel3dk_transform".
 
     Usage:
-        v_cor = nortek_mag_corr_east(
+        v_cor = vel3dk_north(
             vel0, vel1, vel2, heading, pitch, roll, beams, lat, lon,
             ntp_timestamp, z, Vscale, vel3=0)
 
@@ -476,6 +482,8 @@ def vel3dk_north(
     vel0 = vel0 * 10**Vscale
     vel1 = vel1 * 10**Vscale
     vel2 = vel2 * 10**Vscale
+    if vel3 != 0:
+        vel3 = vel3 * 10**Vscale
 
    # check for valid latitudes & longitudes
     if not valid_lat(lat) or not valid_lon(lon):
@@ -483,8 +491,12 @@ def vel3dk_north(
 
     # transform beam velocites in spherical coordinates to Earth
     # coordinates using beam configuration and instrument attitude.
-    ENU = vel3dk_transform(vel0, vel1, vel2, heading, pitch, roll,
-                           beams)
+    if vel3 != 0:
+        ENU = vel3dk_transform(
+            vel0, vel1, vel2, heading, pitch, roll, beams, vel3)
+    else:
+        ENU = vel3dk_transform(
+            vel0, vel1, vel2, heading, pitch, roll, beams)
 
     # separate out the components from the Earth coordinate transformed
     # data matrix. The zero index is needed since matrix is
@@ -500,7 +512,7 @@ def vel3dk_north(
 
 
 def vel3dk_up(
-        vel0, vel1, vel2, heading, pitch, roll, beams, Vscale):
+        vel0, vel1, vel2, heading, pitch, roll, beams, Vscale, vel3=0):
     """
     Takes an integer vertical velocity in generic distance per second
     units from a VEL3D-K (Aquadopp II on a McLane Profiler(MMP)) with
@@ -508,7 +520,7 @@ def vel3dk_up(
     file to scale the velocity to a floating point in m/s.
 
     Usage:
-        w_mps = vel3dk_scale_up_vel(
+        w_mps = vel3dk_up(
                     vel0, vel1, vel2, heading, pitch, roll,
                     beams, Vscale, vel3=0)
 
@@ -516,7 +528,9 @@ def vel3dk_up(
 
         w_mps = floating point vertical velocity. [m/s]
 
-        vel0, 1, 2, 3 = beam velocities. Integers to be scaled by 10^Vscale.
+        vel0, 1, 2, 3 = AquadoppII beam velocities as integers to be
+            scaled by 10^Vscale. vel3 is optional depending on the
+            number of beams used as listed in beams.
             [scaled integer distance/s]
         Vscale = velocity scaling exponent factor.
         heading, pitch, roll = the attitude information from the instrument
@@ -535,10 +549,16 @@ def vel3dk_up(
     vel0 = vel0 * 10**Vscale
     vel1 = vel1 * 10**Vscale
     vel2 = vel2 * 10**Vscale
+    if vel3 != 0:
+        vel3 = vel3 * 10**Vscale
 
     # transform the beam velocities to Earth coordinates
-    ENU = vel3dk_transform(vel0, vel1, vel2, heading, pitch, roll,
-                           beams)
+    if vel3 != 0:
+        ENU = vel3dk_transform(
+            vel0, vel1, vel2, heading, pitch, roll, beams, vel3)
+    else:
+        ENU = vel3dk_transform(
+            vel0, vel1, vel2, heading, pitch, roll, beams)
 
     # seperate out the components from the
     w = ENU[2, :]
