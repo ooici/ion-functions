@@ -204,16 +204,16 @@ class TestpHFunctionsUnit(BaseUnitTestCase):
         self.therm = np.array([0.9927, 0.9479, 1.0375, 1.0151, 0.9703,
                                0.9927, 0.9479, 1.0375, 1.0151, 0.9703,
                                0.9927, 0.9479, 1.0375, 1.0151, 0.9703])
-        self.pH = np.array([8.3381, 8.2036, 8.1852, 8.1801, 8.1811,
-                            8.3340, 8.1987, 8.1810, 8.1759, 8.1769,
-                            8.3279, 8.1924, 8.1747, 8.1696, 8.1706])
+        self.pH = np.array([8.3381, 8.2042, 8.1884, 8.1796, 8.1801,
+                            8.3340, 8.1993, 8.1842, 8.1754, 8.1759,
+                            8.3279, 8.1930, 8.1779, 8.1691, 8.1696])
 
         # parse raw into test arrays
-        self.tstart = self.raw[:, 2]            # raw thermistor reading
+        self.tstart = self.raw[:, 2]            # thermistor reading at start of readings
         self.ref = self.raw[:, 3:(3+16)]        # reference measurements
         self.light = self.raw[:, 19:(19+92)]    # light measurements
         self.braw = self.raw[:, 112]            # raw battery voltage counts
-        self.traw = self.raw[:, 113]            # raw instrument temperature in counts
+        self.traw = self.raw[:, 113]            # thermistor reading at start of readings
 
     def test_ph_singles(self):
         """
