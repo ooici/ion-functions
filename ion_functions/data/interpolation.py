@@ -33,7 +33,11 @@ def secondary_interpolation(x, range0, range1, starts, ends):
 
     References:
 
-        OOI (2012). Data Product Specification for 1-D Interpolation (INTERP1). Document Control Number 1341-10002. https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >> Controlled >> 1000 System Level >> 1341-10002_Data_Product_SPEC_INTERP1_OOI.pdf)
+        OOI (2012). Data Product Specification for 1-D Interpolation (INTERP1).
+        Document Control Number 1341-10002.
+        https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+        Controlled >> 1000 System Level >>
+        1341-10002_Data_Product_SPEC_INTERP1_OOI.pdf)
 
     """
     result = np.empty_like(x, dtype=np.float32)
