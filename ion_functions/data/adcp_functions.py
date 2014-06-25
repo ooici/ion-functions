@@ -76,7 +76,7 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     theta = magnetic_declination(lat, lon, dt, z)
 
     # correct for it
-    uu_cor, _ = magnetic_correction_vctrzd(theta, uu, vv)
+    uu_cor, _ = magnetic_correction(theta, uu, vv)
 
     # scale velocity to m/s
     uu_cor = uu_cor / 1000.  # mm/s -> m/s
@@ -152,7 +152,7 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     theta = magnetic_declination(lat, lon, dt, z)
 
     # corect for it
-    _, vv_cor = magnetic_correction_vctrzd(theta, uu, vv)
+    _, vv_cor = magnetic_correction(theta, uu, vv)
 
     # scale velocity to m/s
     vv_cor = vv_cor / 1000.  # mm/s -> m/s
@@ -231,7 +231,7 @@ def adcp_earth_eastward(u, v, z, lat, lon, dt):
     theta = magnetic_declination(lat, lon, dt, z)
 
     # correct u and v for magnetic declination
-    uu_cor, _ = magnetic_correction_vctrzd(theta, u, v)
+    uu_cor, _ = magnetic_correction(theta, u, v)
 
     # scale velocity to m/s
     uu_cor = uu_cor / 1000.  # mm/s -> m/s
@@ -261,7 +261,7 @@ def adcp_earth_northward(u, v, z, lat, lon, dt):
     theta = magnetic_declination(lat, lon, dt, z)
 
     # correct u and v for magnetic declination
-    _, vv_cor = magnetic_correction_vctrzd(theta, u, v)
+    _, vv_cor = magnetic_correction(theta, u, v)
 
     # scale velocity to m/s
     vv_cor = vv_cor / 1000.  # mm/s -> m/s
@@ -351,12 +351,73 @@ def adcp_beam2ins(b1, b2, b3, b4):
     theta = 20.0 / 180.0 * np.pi
     a = 1.0 / (2.0 * np.sin(theta))
     b = 1.0 / (4.0 * np.cos(theta))
-    # c = 1.0   # not used in subsequent calculations (1 * N = N)
+    c = 1.0   # +1.0 for convex transducer head, -1 for concave
     d = a / np.sqrt(2.0)
 
-    u = a * (b1 - b2)
-    v = a * (b4 - b3)
+    u = c * a * (b1 - b2)
+    v = c * a * (b4 - b3)
     w = b * (b1 + b2 + b3 + b4)
+    e = d * (b1 + b2 - b3 - b4)
+
+    return (u, v, w, e)
+
+
+def vadcp_beam2ins(b1, b2, b3, b4, b5):
+    """
+    Description:
+
+        This function converts the 5 Beam Coordinate transformed velocity
+        profiles for the VADCP to the instrument coordinate system. The
+        calculations are defined in the Data Product Specification for
+        Turbulent Velocity Profile and Echo Intensity - DCN 1341-00760.
+
+    Implemented by:
+
+        2014-06-25: Christopher Wingard. Initial code.
+
+    Usage:
+
+        u, v, w, e = vadcp_beam2ins(b1, b2, b3, b4, b5)
+
+            where
+
+        u = "east" velocity profiles in instrument coordinates [mm s-1]
+        v = "north" velocity profiles in instrument coordinates [mm s-1]
+        w = "vertical" velocity profiles in instrument coordinates [mm s-1]
+        e = "error" velocity profiles [mm s-1]
+
+        b1 = "beam 1" velocity profiles in beam coordinates [mm s-1]
+        b2 = "beam 2" velocity profiles in beam coordinates [mm s-1]
+        b3 = "beam 3" velocity profiles in beam coordinates [mm s-1]
+        b4 = "beam 4" velocity profiles in beam coordinates [mm s-1]
+        b5 = "beam 5" velocity profiles in beam coordinates [mm s-1]
+
+    References:
+
+        OOI (2012). Data Product Specification for Velocity Profile and Echo
+            Intensity. Document Control Number 1341-00750.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
+    """
+    # Setup the transformation matrix based on the following constants
+    theta = 20.0 / 180.0 * np.pi        # fixed at 20 degrees for 4 beam unit
+    a = 1.0 / (2.0 * np.sin(theta))
+    b = 1.0 / (4.0 * np.cos(theta))
+    c = 1.0   # +1.0 for convex transducer head, -1 for concave
+    d = a / np.sqrt(2.0)
+    # for the 5th beam, theta equals 0. Thus, a = 0, d = 0 and b = 0.25
+
+    # The transformation matrix, is applied as follows
+    # u = | c * a -c * a     0      0     0 | * beam 1-5
+    # v = |   0      0    -c * a  c * a   0 | * beam 1-5
+    # w = |   b      b      -b     -b     b | * beam 1-5
+    # e = |   d      d      -d     -d     d | * beam 1-5
+
+    # or, in other words
+    u = c * a * (b1 - b2)
+    v = c * a * (-b3 + b4)
+    w = b * (b1 + b2 + b3 + b4) + 0.25 * b5
     e = d * (b1 + b2 - b3 - b4)
 
     return (u, v, w, e)
@@ -488,7 +549,7 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
     return (uu, vv, ww)
 
 
-def magnetic_correction_vctrzd(theta, u, v):
+def magnetic_correction(theta, u, v):
     """
     Description:
 
