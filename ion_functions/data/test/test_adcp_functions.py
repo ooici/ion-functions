@@ -28,9 +28,9 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
                             -0.0050,  0.3380,  0.1750, -0.0800, -0.5490]) * 1000
         self.echo = np.array([0, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250])
         self.sfactor = 0.45
-        self.heading = 98.4100
-        self.pitch = 0.6900
-        self.roll = -2.5400
+        self.heading = 98.4100 * 100.
+        self.pitch = 0.6900 * 100.
+        self.roll = -2.5400 * 100.
         self.orient = 1
         self.lat = 50.0000
         self.lon = -145.0000
@@ -53,7 +53,7 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         self.vv_cor = np.array([-0.3855, -0.0916, -0.9773, -0.9707, -1.2140,
                                 0.3188, -0.9940, -0.0308, -0.3229, -0.2582])
 
-        # set the expecte results -- echo intensity conversion from counts to dB
+        # set the expected results -- echo intensity conversion from counts to dB
         self.dB = np.array([0.00, 11.25, 22.50, 33.75, 45.00, 56.25, 67.50,
                             78.75, 90.00, 101.25, 112.50])
 
@@ -153,8 +153,8 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         u, v, w, e = af.adcp_beam2ins(self.b1, self.b2, self.b3, self.b4)
 
         ### old adcp_ins2earth returned 3 variables
-        uu, vv, ww = af.adcp_ins2earth(u, v, w, self.heading,
-                                       self.pitch, self.roll, self.orient)
+        uu, vv, ww = af.adcp_ins2earth(u, v, w, self.heading / 100.,
+                                       self.pitch / 100., self.roll / 100., self.orient)
 
         # test the magnetic variation correction
         got_uu_cor = af.adcp_earth_eastward(uu, vv, self.depth, self.lat, self.lon, self.ntp)
