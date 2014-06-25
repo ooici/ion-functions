@@ -200,6 +200,7 @@ Seafloor Properties (SFL)
           
 Water Velocity (VEL)
 
+<<<<<<< HEAD
     * adcp_functions.py -- Covers calculation of the L1 VELPROF and ECHOINT
       data products from ADCPs. This module includes:
       
@@ -225,6 +226,57 @@ Water Velocity (VEL)
             VELPT
       nortek_up_vel -- passes through VELPTTU-VLU_L1 from VEL3D-CDK &
             VELPT
+=======
+        * adcp_functions.py -- Covers calculation of the L1 VELPROF, VELTURB
+          and ECHOINT data products from the tRDI ADCPs used throughout the
+          program (ADCPA, ADCPS, ADCPT and VADCP). This module includes:
+          
+          **** For instruments programmed in beam coordinates
+          adcp_beam_eastward -- calculates VELPROF-VLE_L1
+          adcp_beam_northward -- calculates VELPROF-VLN_L1
+          adcp_beam_vertical -- calculates VELPROF-VLU_L1
+          adcp_beam_error -- calculates VELPROF-ERR_L1
+          
+          **** For instruments programmed in earth coordinates
+          adcp_earth_eastward -- calculates VELPROF-VLE_L1
+          adcp_earth_northward -- calculates VELPROF-VLN_L1
+          adcp_earth_vertical -- calculates VELPROF-VLU_L1
+          adcp_earth_error -- calculates VELPROF-ERR_L1
+          
+          **** For the VADCP programmed in beam coordinates
+          vadcp_beam_eastward -- calculates VELTURB-VLE_L1
+          vadcp_beam_northward -- calculates VELTURB-VLN_L1
+          vadcp_beam_vertical -- calculates VELTURB-VLU_L1
+          vadcp_beam_error -- calculates VELTURB-ERR_L1
+          
+          **** For all ADCPS
+          adcp_backscatter -- calculates ECHOINT-B1_L1,
+                              calculates ECHOINT-B2_L1,
+                              calculates ECHOINT-B3_L1,
+                              calculates ECHOINT-B4_L1 for all ADCPs
+                
+          **** Base functions used by above functions
+          adcp_beam2ins -- applies the beam to instrument transform using a 4
+                beam solution for instruments programmed in beam coordinates
+          vadcp_beam2ins -- applies the beam to instrument transform using a 5
+                beam solution for the VADCP programmed in beam coordinates
+          adcp_ins2earth -- applies the instrument to Earth transform for all
+                instruments originally programmed in beam coordinates.
+        
+        * vel_functions.py -- Covers calculation of the L1 VEL3D Eastward
+          and Northward component data products from the VEL3D-B, VEL3D-CD,
+          VEL3D-K, and VELPT instruments.  This module includes
+        
+          nobska_mag_corr_east -- calculates VELPTTU-VLE_L1 from VEL3D-B
+          nobska_mag_corr_north -- calculates VELPTTU-VLN_L1 from VEL3D-B
+          nobska_scale_up_vel -- calculates VELPTTU-VLU_L0 from VEL3D-B
+          nortek_mag_corr_east -- calculates VELPTTU-VLE_L1 from VEL3D-CDK &
+                VELPT
+          nortek_mag_corr_north -- calculates VELPTTU-VLN_L1 from VEL3D-CDK &
+                VELPT
+          nortek_up_vel -- passes through VELPTTU-VLU_L1 from VEL3D-CDK &
+                VELPT
+>>>>>>> 5dd5cef... Updates ADCP family for unit conversions and adds wrapper functions for VADCP
        
 Additional Functions, available in generic_functions.py, provide for transforms
 and calculations that apply to multiple instrument families.

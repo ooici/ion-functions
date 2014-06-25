@@ -9,7 +9,8 @@ import numpy as np
 from ion_functions.data.generic_functions import magnetic_declination
 
 
-# Wrapper functions to create 1:1 outputs for ParameterFunctions in Preload
+# Wrapper functions to create the VELPROF L1 data products for instruments
+# programmed in beam coordinates by RSN (ADCPS-I,K and ADCPT-B,D,E)
 def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     """
     Description:
@@ -24,10 +25,12 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
         2013-04-10: Christopher Wingard. Initial code.
         2014-02-03: Christopher Wingard. Formatting and adjusting to use
                     magnetic declination values calculated use the WMM 2010.
-        2014-04-04: Russell Desiderio. Optimized code performance by replacing the
-                    for loops previously used to calculate 2D and 3D vectorized
-                    coordinate transformations with calls to np.einsum (numpy
-                    Einstein summation function).
+        2014-04-04: Russell Desiderio. Optimized code performance by replacing
+                    the for loops previously used to calculate 2D and 3D
+                    vectorized coordinate transformations with calls to
+                    np.einsum (numpy Einstein summation function).
+        2014-06-25: Christopher Wingard. Edited to account for units of
+                    heading, pitch, roll and depth
 
     Usage:
 
@@ -42,14 +45,14 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
         b2 = "beam 2" velocity profiles in beam coordinates (VELPROF-B2_L0) [mm s-1]
         b3 = "beam 3" velocity profiles in beam coordinates (VELPROF-B3_L0) [mm s-1]
         b4 = "beam 4" velocity profiles in beam coordinates (VELPROF-B4_L0) [mm s-1]
-        h = instrument's uncorrected magnetic heading [degrees]
-        p = instrument pitch [degrees]
-        r = instrument roll [degrees]
+        h = instrument's uncorrected magnetic heading [cdegrees]
+        p = instrument pitch [cdegrees]
+        r = instrument roll [cdegrees]
         vf = instrument's vertical orientation (0 = downward looking and
             1 = upward looking)
         lat = instrument's deployment latitude [decimal degrees]
         lon = instrument's deployment longitude [decimal degrees]
-        z = instrument's pressure sensor reading (depth) [dm]
+        z = instrument's pressure sensor reading (depth) [daPa]
         dt = sample date and time value [seconds since 1900-01-01]
     """
     # force shapes of inputs to arrays of the correct dimensions
@@ -57,25 +60,26 @@ def adcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     b2 = np.atleast_2d(b2)
     b3 = np.atleast_2d(b3)
     b4 = np.atleast_2d(b4)
-    h = np.atleast_1d(h)
-    p = np.atleast_1d(p)
-    r = np.atleast_1d(r)
+    h = np.atleast_1d(h) / 100.  # scale cdegrees input to degrees
+    p = np.atleast_1d(p) / 100.  # scale cdegrees input to degrees
+    r = np.atleast_1d(r) / 100.  # scale cdegrees input to degrees
     vf = np.atleast_1d(vf)
-    z = np.atleast_1d(z) / 10.  # scale decimeter depth input to meters
+    z = np.atleast_1d(z) / 1000.  # scale daPa depth input to dbar
+    z = z * 1.019716  # use a simple approximation to calculate depth in m
     lat = np.atleast_1d(lat)
     lon = np.atleast_1d(lon)
     dt = np.atleast_1d(dt)
 
     # compute the beam to instrument transform
-    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
+    u, v, w, _ = adcp_beam2ins(b1, b2, b3, b4)
 
     # compute the instrument to earth beam transform
     uu, vv, _ = adcp_ins2earth(u, v, w, h, p, r, vf)
 
-    # compute the magnetic variation, and
+    # compute the magnetic variation, and ...
     theta = magnetic_declination(lat, lon, dt, z)
 
-    # correct for it
+    # ... correct for it
     uu_cor, _ = magnetic_correction(theta, uu, vv)
 
     # scale velocity to m/s
@@ -99,11 +103,13 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
         2013-04-10: Christopher Wingard. Initial code.
         2014-02-03: Christopher Wingard. Formatting and adjusting to use
                     magnetic declination values calculated use the WMM 2010.
-        2014-03-28: Russell Desiderio. Corrected documentation only (east->north).
-        2014-04-04: Russell Desiderio. Optimized code performance by replacing the
-                    for loops previously used to calculate 2D and 3D vectorized
-                    coordinate transformations with calls to np.einsum (numpy
-                    Einstein summation function).
+        2014-03-28: Russell Desiderio. Corrected documentation only.
+        2014-04-04: Russell Desiderio. Optimized code performance by replacing
+                    the for loops previously used to calculate 2D and 3D
+                    vectorized coordinate transformations with calls to
+                    np.einsum (numpy Einstein summation function).
+        2014-06-25: Christopher Wingard. Edited to account for units of
+                    heading, pitch, roll and depth
 
     Usage:
 
@@ -118,14 +124,14 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
         b2 = "beam 2" velocity profiles in beam coordinates (VELPROF-B2_L0) [mm s-1]
         b3 = "beam 3" velocity profiles in beam coordinates (VELPROF-B3_L0) [mm s-1]
         b4 = "beam 4" velocity profiles in beam coordinates (VELPROF-B4_L0) [mm s-1]
-        h = instrument's uncorrected magnetic heading [degrees]
-        p = instrument pitch [degrees]
-        r = instrument roll [degrees]
+        h = instrument's uncorrected magnetic heading [cdegrees]
+        p = instrument pitch [cdegrees]
+        r = instrument roll [cdegrees]
         vf = instrument's vertical orientation (0 = downward looking and
             1 = upward looking)
         lat = instrument's deployment latitude [decimal degrees]
         lon = instrument's deployment longitude [decimal degrees]
-        z = instrument's pressure sensor reading (depth) [dm]
+        z = instrument's pressure sensor reading (depth) [daPa]
         dt = sample date and time value [seconds since 1900-01-01]
     """
     # force shapes of inputs to arrays of the correct dimensions
@@ -133,25 +139,26 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     b2 = np.atleast_2d(b2)
     b3 = np.atleast_2d(b3)
     b4 = np.atleast_2d(b4)
-    h = np.atleast_1d(h)
-    p = np.atleast_1d(p)
-    r = np.atleast_1d(r)
+    h = np.atleast_1d(h) / 100.  # scale cdegrees input to degrees
+    p = np.atleast_1d(p) / 100.  # scale cdegrees input to degrees
+    r = np.atleast_1d(r) / 100.  # scale cdegrees input to degrees
     vf = np.atleast_1d(vf)
-    z = np.atleast_1d(z) / 10.  # scale decimeter depth input to meters
+    z = np.atleast_1d(z) / 1000.  # scale daPa depth input to dbar
+    z = z * 1.019716  # use a simple approximation to calculate depth in m
     lat = np.atleast_1d(lat)
     lon = np.atleast_1d(lon)
     dt = np.atleast_1d(dt)
 
     # compute the beam to instrument transform
-    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
+    u, v, w, _ = adcp_beam2ins(b1, b2, b3, b4)
 
     # compute the instrument to earth beam transform
     uu, vv, _ = adcp_ins2earth(u, v, w, h, p, r, vf)
 
-    # compute the magnetic variation, and
+    # compute the magnetic variation, and ...
     theta = magnetic_declination(lat, lon, dt, z)
 
-    # corect for it
+    # ... correct for it
     _, vv_cor = magnetic_correction(theta, uu, vv)
 
     # scale velocity to m/s
@@ -163,21 +170,55 @@ def adcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
 
 def adcp_beam_vertical(b1, b2, b3, b4, h, p, r, vf):
     """
-    Wrapper function to compute the Upward Velocity Profile (VELPROF-VLU)
-    from the beam coordinate transformed data.
+    Description:
+
+        Wrapper function to compute the Upward Velocity Profile (VELPROF-VLU)
+        from beam coordinate transformed velocity profiles as defined in the
+        Data Product Specification for Velocity Profile and Echo Intensity -
+        DCN 1341-00750.
+
+    Implemented by:
+
+        2013-04-10: Christopher Wingard. Initial code.
+        2014-02-03: Christopher Wingard. Formatting and adjusting to use
+                    magnetic declination values calculated using the WMM 2010.
+        2014-04-04: Russell Desiderio. Optimized code performance by replacing
+                    the for loops previously used to calculate 2D and 3D
+                    vectorized coordinate transformations with calls to
+                    np.einsum (numpy Einstein summation function).
+        2014-06-25: Christopher Wingard. Edited to account for units of
+                    heading, pitch, roll and depth
+
+    Usage:
+
+        ww_cor = adcp_beam_vertical(b1, b2, b3, b4, h, p, r, vf)
+
+            where
+
+        ww_cor = vertical velocity profiles (VELPROF-VLU_L1) [m s-1]
+
+        b1 = "beam 1" velocity profiles in beam coordinates (VELPROF-B1_L0) [mm s-1]
+        b2 = "beam 2" velocity profiles in beam coordinates (VELPROF-B2_L0) [mm s-1]
+        b3 = "beam 3" velocity profiles in beam coordinates (VELPROF-B3_L0) [mm s-1]
+        b4 = "beam 4" velocity profiles in beam coordinates (VELPROF-B4_L0) [mm s-1]
+        h = instrument's uncorrected magnetic heading [cdegrees]
+        p = instrument pitch [cdegrees]
+        r = instrument roll [cdegrees]
+        vf = instrument's vertical orientation (0 = downward looking and
+            1 = upward looking)
     """
     # force shapes of inputs to arrays of the correct dimensions
     b1 = np.atleast_2d(b1)
     b2 = np.atleast_2d(b2)
     b3 = np.atleast_2d(b3)
     b4 = np.atleast_2d(b4)
-    h = np.atleast_1d(h)
-    p = np.atleast_1d(p)
-    r = np.atleast_1d(r)
+    h = np.atleast_1d(h) / 100.  # scale cdegrees input to degrees
+    p = np.atleast_1d(p) / 100.  # scale cdegrees input to degrees
+    r = np.atleast_1d(r) / 100.  # scale cdegrees input to degrees
     vf = np.atleast_1d(vf)
 
     # compute the beam to instrument transform
-    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
+    u, v, w, _ = adcp_beam2ins(b1, b2, b3, b4)
 
     # compute the instrument to earth beam transform
     _, _, ww = adcp_ins2earth(u, v, w, h, p, r, vf)
@@ -191,8 +232,29 @@ def adcp_beam_vertical(b1, b2, b3, b4, h, p, r, vf):
 
 def adcp_beam_error(b1, b2, b3, b4):
     """
-    Wrapper function to compute the Error Velocity (VELPROF-ERR) from the beam
-    coordinate transformed data.
+    Description:
+
+        Wrapper function to compute the Error Velocity Profile (VELPROF-ERR)
+        from beam coordinate transformed velocity profiles as defined in the
+        Data Product Specification for Velocity Profile and Echo Intensity -
+        DCN 1341-00750.
+
+    Implemented by:
+
+        2013-04-10: Christopher Wingard. Initial code.
+
+    Usage:
+
+        ww_cor = adcp_beam_error(b1, b2, b3, b4)
+
+            where
+
+        e = Error velocity profiles (VELPROF-ERR_L1) [m s-1]
+
+        b1 = "beam 1" velocity profiles in beam coordinates (VELPROF-B1_L0) [mm s-1]
+        b2 = "beam 2" velocity profiles in beam coordinates (VELPROF-B2_L0) [mm s-1]
+        b3 = "beam 3" velocity profiles in beam coordinates (VELPROF-B3_L0) [mm s-1]
+        b4 = "beam 4" velocity profiles in beam coordinates (VELPROF-B4_L0) [mm s-1]
     """
     # force input arrays to 2d shape
     b1 = np.atleast_2d(b1)
@@ -201,7 +263,7 @@ def adcp_beam_error(b1, b2, b3, b4):
     b4 = np.atleast_2d(b4)
 
     # compute the beam to instrument transform
-    u, v, w, e = adcp_beam2ins(b1, b2, b3, b4)
+    _, _, _, e = adcp_beam2ins(b1, b2, b3, b4)
 
     # scale error velocity to m/s
     e = e / 1000.   # mm/s
@@ -210,27 +272,59 @@ def adcp_beam_error(b1, b2, b3, b4):
     return e
 
 
+# Wrapper functions to create the VELPROF L1 data products for instruments
+# programmed in Earth coordinates by CGSN (Pioneer and Endurance) (ADCPA,
+# ADCPS-J,L,N and ADCPT-C,F,G,M)
 def adcp_earth_eastward(u, v, z, lat, lon, dt):
     """
-    Wrapper function to compute the Eastward Velocity Profile (VELPROF-VLE)
-    from the Earth coordinate transformed data.
+    Description:
 
-    This function was written to test intermediate data product values, and
-    is not used to calculate the final data products. However, it is used
-    in the unit tests, and so should not be deleted.
+        Wrapper function to compute the Eastward Velocity Profile (VELPROF-VLE)
+        from Earth coordinate transformed velocity profiles as defined in the
+        Data Product Specification for Velocity Profile and Echo Intensity -
+        DCN 1341-00750.
+
+    Implemented by:
+
+        2013-04-10: Christopher Wingard. Initial code.
+        2014-02-03: Christopher Wingard. Formatting and adjusting to use
+                    magnetic declination values calculated use the WMM 2010.
+        2014-04-04: Russell Desiderio. Optimized code performance by replacing
+                    the for loops previously used to calculate 2D and 3D
+                    vectorized coordinate transformations with calls to
+                    np.einsum (numpy Einstein summation function).
+        2014-06-25: Christopher Wingard. Edited to account for units of
+                    heading, pitch, roll and depth
+
+    Usage:
+
+        uu_cor = adcp_earth_eastward(u, v, z, lat, lon, dt)
+
+            where
+
+        uu_cor = eastward velocity profiles in Earth coordinates corrected for
+                 the magnetic declination (VELPROF-VLE_L1) [m s-1]
+
+        u = Eastward velocity profiles (VELPROF-VLE_L0) [mm s-1]
+        v = Northward velocity profiles (VELPROF-VLN_L0) [mm s-1]
+        z = instrument's pressure sensor reading (depth) [daPa]
+        lat = instrument's deployment latitude [decimal degrees]
+        lon = instrument's deployment longitude [decimal degrees]
+        dt = sample date and time value [seconds since 1900-01-01]
     """
     # force shapes of inputs to arrays
     u = np.atleast_2d(u)
     v = np.atleast_2d(v)
-    z = np.atleast_1d(z) / 10.  # scale decimeter depth input to meters
+    z = np.atleast_1d(z) / 1000.  # scale daPa depth input to dbar
+    z = z * 1.019716  # use a simple approximation to calculate depth in m
     lat = np.atleast_1d(lat)
     lon = np.atleast_1d(lon)
     dt = np.atleast_1d(dt)
 
-    # calculate the magnetic declination using the WWM2010 model
+    # compute the magnetic variation, and ...
     theta = magnetic_declination(lat, lon, dt, z)
 
-    # correct u and v for magnetic declination
+    # ... correct for it
     uu_cor, _ = magnetic_correction(theta, u, v)
 
     # scale velocity to m/s
@@ -242,25 +336,54 @@ def adcp_earth_eastward(u, v, z, lat, lon, dt):
 
 def adcp_earth_northward(u, v, z, lat, lon, dt):
     """
-    Wrapper function to compute the Northward Velocity Profile (VELPROF-VLN)
-    from the Earth coordinate transformed data.
+    Description:
 
-    This function was written to test intermediate data product values, and
-    is not used to calculate the final data products. However, it is used
-    in the unit tests, and so should not be deleted.
+        Wrapper function to compute the Northward Velocity Profile (VELPROF-VLN)
+        from Earth coordinate transformed velocity profiles as defined in the
+        Data Product Specification for Velocity Profile and Echo Intensity -
+        DCN 1341-00750.
+
+    Implemented by:
+
+        2013-04-10: Christopher Wingard. Initial code.
+        2014-02-03: Christopher Wingard. Formatting and adjusting to use
+                    magnetic declination values calculated use the WMM 2010.
+        2014-04-04: Russell Desiderio. Optimized code performance by replacing
+                    the for loops previously used to calculate 2D and 3D
+                    vectorized coordinate transformations with calls to
+                    np.einsum (numpy Einstein summation function).
+        2014-06-25: Christopher Wingard. Edited to account for units of
+                    heading, pitch, roll and depth
+
+    Usage:
+
+        vv_cor = adcp_earth_northward(u, v, z, lat, lon, dt)
+
+            where
+
+        vv_cor = northward velocity profiles in Earth coordinates corrected for
+                 the magnetic declination (VELPROF-VLN_L1) [m s-1]
+
+        u = Eastward velocity profiles (VELPROF-VLE_L0) [mm s-1]
+        v = Northward velocity profiles (VELPROF-VLN_L0) [mm s-1]
+        z = instrument's pressure sensor reading (depth) [daPa]
+        lat = instrument's deployment latitude [decimal degrees]
+        lon = instrument's deployment longitude [decimal degrees]
+        dt = sample date and time value [seconds since 1900-01-01]
     """
     # force shapes of inputs to arrays
     u = np.atleast_2d(u)
     v = np.atleast_2d(v)
-    z = np.atleast_1d(z) / 10.  # scale decimeter depth input to meters
+    z = np.atleast_1d(z) / 1000.  # scale daPa depth input to dbar
+    z = z * 1.019716  # use a simple approximation to calculate depth in m
     lat = np.atleast_1d(lat)
     lon = np.atleast_1d(lon)
     dt = np.atleast_1d(dt)
 
-    # calculate the magnetic declination using the WWM2010 model
+    # compute the magnetic variation, and ...
     theta = magnetic_declination(lat, lon, dt, z)
 
-    # correct u and v for magnetic declination
+    # ... correct for it
     _, vv_cor = magnetic_correction(theta, u, v)
 
     # scale velocity to m/s
@@ -270,12 +393,320 @@ def adcp_earth_northward(u, v, z, lat, lon, dt):
     return vv_cor
 
 
-##### ADCP Beam to Earth Transforms and Magnetic Variation Corrections
+def adcp_earth_vertical(w):
+    """
+    Description:
+
+        Wrapper function to compute the Upward Velocity Profile (VELPROF-VLU)
+        from Earth coordinate transformed velocity profiles as defined in the
+        Data Product Specification for Velocity Profile and Echo Intensity -
+        DCN 1341-00750.
+
+    Implemented by:
+
+        2014-06-25: Christopher Wingard. Initial code.
+
+    Usage:
+
+        w_scl = adcp_earth_vertical(w)
+
+            where
+
+        w_scl = scaled upward velocity profiles in Earth coordinates
+                (VELPROF-VLN_L1) [m s-1]
+
+        w = upward velocity profiles (VELPROF-VLU_L0) [mm s-1]
+    """
+    # scale velocity to m/s
+    w_scl = w / 1000.  # mm/s -> m/s
+
+    # return the Upward Velocity Profile
+    return w_scl
+
+
+def adcp_earth_error(e):
+    """
+    Description:
+
+        Wrapper function to compute the Error Velocity Profile (VELPROF-ERR)
+        from Earth coordinate transformed velocity profiles as defined in the
+        Data Product Specification for Velocity Profile and Echo Intensity -
+        DCN 1341-00750.
+
+    Implemented by:
+
+        2014-06-25: Christopher Wingard. Initial code.
+
+    Usage:
+
+        e_scl = adcp_earth_vertical(w)
+
+            where
+
+        e_scl = scaled error velocity profiles in Earth coordinates
+                (VELPROF-ERR_L1) [m s-1]
+
+        e = error velocity profiles (VELPROF-ERR_L0) [mm s-1]
+    """
+    # scale velocity to m/s
+    e_scl = e / 1000.  # mm/s -> m/s
+
+    # return the scaled Error Velocity Profile
+    return e_scl
+
+
+# Compute the VELTURB_L1 data products for the VADCP instrument deployed by RSN.
+def vadcp_beam_eastward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt):
+    """
+    Description:
+
+        Wrapper function to compute the Eastward Velocity Profile (VELTURB-VLE)
+        from beam coordinate transformed velocity profiles as defined in the
+        Data Product Specification for Turbulent Velocity Profile and Echo Intensity -
+        DCN 1341-00760.
+
+    Implemented by:
+
+        2014-06-25: Christopher Wingard. Initial code, based on existing ADCP
+
+    Usage:
+
+        uu_cor = vadcp_beam_eastward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt)
+
+            where
+
+        uu_corr = east velocity profiles in Earth coordinates corrected for the
+                  magnetic declination (VELTURB-VLE_L1) [m s-1]
+
+        b1 = "beam 1" velocity profiles in beam coordinates (VELTURB-B1_L0) [mm s-1]
+        b2 = "beam 2" velocity profiles in beam coordinates (VELTURB-B2_L0) [mm s-1]
+        b3 = "beam 3" velocity profiles in beam coordinates (VELTURB-B3_L0) [mm s-1]
+        b4 = "beam 4" velocity profiles in beam coordinates (VELTURB-B4_L0) [mm s-1]
+        b5 = "beam 5" velocity profiles in beam coordinates (VELTURB-B5_L0) [mm s-1]
+        h = instrument's uncorrected magnetic heading [cdegrees]
+        p = instrument pitch [cdegrees]
+        r = instrument roll [cdegrees]
+        vf = instrument's vertical orientation (0 = downward looking and
+            1 = upward looking)
+        lat = instrument's deployment latitude [decimal degrees]
+        lon = instrument's deployment longitude [decimal degrees]
+        z = instrument's pressure sensor reading (depth) [dm]
+        dt = sample date and time value [seconds since 1900-01-01]
+    """
+    # force shapes of inputs to arrays of the correct dimensions
+    b1 = np.atleast_2d(b1)
+    b2 = np.atleast_2d(b2)
+    b3 = np.atleast_2d(b3)
+    b4 = np.atleast_2d(b4)
+    b5 = np.atleast_2d(b5)
+    h = np.atleast_1d(h) / 100.  # scale cdegrees input to degrees
+    p = np.atleast_1d(p) / 100.  # scale cdegrees input to degrees
+    r = np.atleast_1d(r) / 100.  # scale cdegrees input to degrees
+    vf = np.atleast_1d(vf)
+    z = np.atleast_1d(z) / 1000.  # scale daPa depth input to dbar
+    z = z * 1.019716  # use a simple approximation to calculate depth in m
+    lat = np.atleast_1d(lat)
+    lon = np.atleast_1d(lon)
+    dt = np.atleast_1d(dt)
+
+    # compute the beam to instrument transform
+    u, v, w, _ = vadcp_beam2ins(b1, b2, b3, b4, b5)
+
+    # compute the instrument to earth beam transform
+    uu, vv, _ = adcp_ins2earth(u, v, w, h, p, r, vf)
+
+    # compute the magnetic variation, and ...
+    theta = magnetic_declination(lat, lon, dt, z)
+
+    # ... correct for it
+    uu_cor, _ = magnetic_correction(theta, uu, vv)
+
+    # scale velocity to m/s
+    uu_cor = uu_cor / 1000.  # mm/s -> m/s
+
+    # return the Eastward Velocity Profile
+    return uu_cor
+
+
+def vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt):
+    """
+    Description:
+
+        Wrapper function to compute the Northward Velocity Profile
+        (VELTURB-VLN) from beam coordinate transformed velocity profiles as
+        defined in the Data Product Specification for Turbulent Velocity
+        Profile and Echo Intensity - DCN 1341-00760.
+
+    Implemented by:
+
+        2014-06-25: Christopher Wingard. Initial code, based on existing ADCP
+
+    Usage:
+
+        vv_cor = vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt)
+
+            where
+
+        vv_corr = north velocity profiles in Earth coordinates corrected for the
+                  magnetic declination (VELTURB-VLN_L1) [m s-1]
+
+        b1 = "beam 1" velocity profiles in beam coordinates (VELTURB-B1_L0) [mm s-1]
+        b2 = "beam 2" velocity profiles in beam coordinates (VELTURB-B2_L0) [mm s-1]
+        b3 = "beam 3" velocity profiles in beam coordinates (VELTURB-B3_L0) [mm s-1]
+        b4 = "beam 4" velocity profiles in beam coordinates (VELTURB-B4_L0) [mm s-1]
+        b5 = "beam 5" velocity profiles in beam coordinates (VELTURB-B5_L0) [mm s-1]
+        h = instrument's uncorrected magnetic heading [cdegrees]
+        p = instrument pitch [cdegrees]
+        r = instrument roll [cdegrees]
+        vf = instrument's vertical orientation (0 = downward looking and
+            1 = upward looking)
+        lat = instrument's deployment latitude [decimal degrees]
+        lon = instrument's deployment longitude [decimal degrees]
+        z = instrument's pressure sensor reading (depth) [dm]
+        dt = sample date and time value [seconds since 1900-01-01]
+    """
+    # force shapes of inputs to arrays of the correct dimensions
+    b1 = np.atleast_2d(b1)
+    b2 = np.atleast_2d(b2)
+    b3 = np.atleast_2d(b3)
+    b4 = np.atleast_2d(b4)
+    b5 = np.atleast_2d(b5)
+    h = np.atleast_1d(h) / 100.  # scale cdegrees input to degrees
+    p = np.atleast_1d(p) / 100.  # scale cdegrees input to degrees
+    r = np.atleast_1d(r) / 100.  # scale cdegrees input to degrees
+    vf = np.atleast_1d(vf)
+    z = np.atleast_1d(z) / 1000.  # scale daPa depth input to dbar
+    z = z * 1.019716  # use a simple approximation to calculate depth in m
+    lat = np.atleast_1d(lat)
+    lon = np.atleast_1d(lon)
+    dt = np.atleast_1d(dt)
+
+    # compute the beam to instrument transform
+    u, v, w, _ = vadcp_beam2ins(b1, b2, b3, b4, b5)
+
+    # compute the instrument to earth beam transform
+    uu, vv, _ = adcp_ins2earth(u, v, w, h, p, r, vf)
+
+    # compute the magnetic variation, and ...
+    theta = magnetic_declination(lat, lon, dt, z)
+
+    # ... corect for it
+    _, vv_cor = magnetic_correction(theta, uu, vv)
+
+    # scale velocity to m/s
+    vv_cor = vv_cor / 1000.  # mm/s -> m/s
+
+    # return the Northward Velocity Profile
+    return vv_cor
+
+
+def vadcp_beam_vertical(b1, b2, b3, b4, b5, h, p, r, vf):
+    """
+    Description:
+
+        Wrapper function to compute the Upward Velocity Profile (VELTURB-VLU)
+        from the beam coordinate transformed velocity profiles as defined in
+        the Data Product Specification for Turbulent Velocity Profile and Echo
+        Intensity - DCN 1341-00760.
+
+    Implemented by:
+
+        2014-06-25: Christopher Wingard. Initial code, based on existing ADCP
+
+    Usage:
+
+        ww_cor = vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf)
+
+            where
+
+        vv_corr = north velocity profiles in Earth coordinates corrected for the
+                  magnetic declination (VELTURB-VLN_L1) [m s-1]
+
+        b1 = "beam 1" velocity profiles in beam coordinates (VELTURB-B1_L0) [mm s-1]
+        b2 = "beam 2" velocity profiles in beam coordinates (VELTURB-B2_L0) [mm s-1]
+        b3 = "beam 3" velocity profiles in beam coordinates (VELTURB-B3_L0) [mm s-1]
+        b4 = "beam 4" velocity profiles in beam coordinates (VELTURB-B4_L0) [mm s-1]
+        b5 = "beam 5" velocity profiles in beam coordinates (VELTURB-B5_L0) [mm s-1]
+        h = instrument's uncorrected magnetic heading [cdegrees]
+        p = instrument pitch [cdegrees]
+        r = instrument roll [cdegrees]
+        vf = instrument's vertical orientation (0 = downward looking and
+            1 = upward looking)
+    """
+    # force shapes of inputs to arrays of the correct dimensions
+    b1 = np.atleast_2d(b1)
+    b2 = np.atleast_2d(b2)
+    b3 = np.atleast_2d(b3)
+    b4 = np.atleast_2d(b4)
+    b5 = np.atleast_2d(b4)
+    h = np.atleast_1d(h) / 100.  # scale cdegrees input to degrees
+    p = np.atleast_1d(p) / 100.  # scale cdegrees input to degrees
+    r = np.atleast_1d(r) / 100.  # scale cdegrees input to degrees
+    vf = np.atleast_1d(vf)
+
+    # compute the beam to instrument transform
+    u, v, w, _ = vadcp_beam2ins(b1, b2, b3, b4, b5)
+
+    # compute the instrument to earth beam transform
+    _, _, ww = adcp_ins2earth(u, v, w, h, p, r, vf)
+
+    # scale upward velocity to m/s
+    ww = ww / 1000.  # mm/s -> m/s
+
+    # return the Upward Velocity Profile
+    return ww
+
+
+def vadcp_beam_error(b1, b2, b3, b4, b5):
+    """
+    Description:
+
+        Wrapper function to compute the Error Velocity Profile (VELTURB-ERR)
+        from the beam coordinate transformed velocity profiles as defined in
+        the Data Product Specification for Turbulent Velocity Profile and Echo
+        Intensity - DCN 1341-00760.
+
+    Implemented by:
+
+        2014-06-25: Christopher Wingard. Initial code, based on existing ADCP
+
+    Usage:
+
+        e = vadcp_beam_northward(b1, b2, b3, b4, b5)
+
+            where
+
+        e = error velocity profiles (VELTURB-ERR_L1) [m s-1]
+
+        b1 = "beam 1" velocity profiles in beam coordinates (VELTURB-B1_L0) [mm s-1]
+        b2 = "beam 2" velocity profiles in beam coordinates (VELTURB-B2_L0) [mm s-1]
+        b3 = "beam 3" velocity profiles in beam coordinates (VELTURB-B3_L0) [mm s-1]
+        b4 = "beam 4" velocity profiles in beam coordinates (VELTURB-B4_L0) [mm s-1]
+        b5 = "beam 5" velocity profiles in beam coordinates (VELTURB-B5_L0) [mm s-1]
+    """
+    # force input arrays to 2d shape
+    b1 = np.atleast_2d(b1)
+    b2 = np.atleast_2d(b2)
+    b3 = np.atleast_2d(b3)
+    b4 = np.atleast_2d(b4)
+    b5 = np.atleast_2d(b5)
+
+    # compute the beam to instrument transform
+    _, _, _, e = adcp_beam2ins(b1, b2, b3, b4, b5)
+
+    # scale error velocity to m/s
+    e = e / 1000.   # mm/s
+
+    # return the Error Velocity Profile
+    return e
+
+
+# Calculates ECHOINT_L1 for all tRDI ADCPs
 def adcp_backscatter(raw, sfactor):
     """
     Description:
 
-        Converts the echo intensity data from counts to dB using a facotry
+        Converts the echo intensity data from counts to dB using a factory
         specified scale factor (nominally 0.45 dB/count for the Workhorse
         family of ADCPs and 0.61 dB/count for the ExplorerDVL family). As
         defined in the Data Product Specification for Velocity Profile and Echo
@@ -311,6 +742,7 @@ def adcp_backscatter(raw, sfactor):
     return dB
 
 
+##### ADCP Beam to Earth Transforms and Magnetic Variation Corrections
 def adcp_beam2ins(b1, b2, b3, b4):
     """
     Description:
