@@ -27,9 +27,9 @@ class TestADCPPerformance(PerformanceTestCase):
                             -0.0050,  0.3380,  0.1750, -0.0800, -0.5490]) * 1000
         self.echo = np.array([0, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250])
         self.sfactor = 0.45
-        self.heading = 98.4100
-        self.pitch = 0.6900
-        self.roll = -2.5400
+        self.heading = 98.4100 / 100.
+        self.pitch = 0.6900 / 100.
+        self.roll = -2.5400 / 100.
         self.orient = 1
         self.lat = 50.0000
         self.lon = -145.0000
@@ -140,3 +140,11 @@ class TestADCPPerformance(PerformanceTestCase):
         dt = np.repeat(self.ntp, 10000)
 
         self.profile(stats, af.adcp_earth_northward, u, v, z, lat, lon, dt)
+
+    def test_adcp_earth_vertical(self):
+        stats = []
+
+        w = np.tile(self.ww, (10000, 1))
+
+        self.profile(stats, af.adcp_earth_vertical, w)
+        # adcp_earth_error is the same transform, so this test applies to both
