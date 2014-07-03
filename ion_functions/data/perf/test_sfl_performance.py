@@ -14,190 +14,90 @@ import numpy as np
 
 
 class TestSFLPerformance(PerformanceTestCase):
+    # Performance tests for seafloor instruments THSPH and TRHPH
 
+    def setUp(self):
+        ### test inputs for THSPHTE products
+        self.ts_rawdec_b = np.tile(8185.0, a_deca)
+        self.ts_rawdec_r = np.tile(8758.0, a_deca)
+        self.tc_rawdec_L = np.tile(16009.0, a_deca)
+        self.tc_rawdec_H = np.tile(4236.0, a_deca)
+
+        ### calibration arrays for THSPHTE products
+        # calibration constants: b thermistor
+        # engineering values to lab calibrated values
+        e2l_b = np.array([0.0, 0.0, 0.0, 0.0, 1.04938, -275.5])
+        # lab calibrated values to scientific values
+        l2s_b = np.array([0.0, 0.0, 8.7755e-08, 0.0, 0.000234101, 0.001129306])
+
+        # calibration constants: r thermistor
+        # engineering values to lab calibrated values
+        e2l_r = np.array([0.0, 0.0, 0.0, 0.0, 1.04938, -275.5])
+        # lab calibrated values to scientific values
+        l2s_r = np.array([0.0, 0.0, 8.7755e-08, 0.0, 0.000234101, 0.001129306])
+
+        # calibration constants: L thermocouple
+        # engineering values to lab calibrated values
+        e2l_L = np.array([0.0, 0.0, 0.0, 0.0, 0.9964, -0.46112])
+        # lab calibrated values to scientific values
+        l2s_L = np.array([9.32483e-7, -0.000122268, 0.00702, -0.23532, 17.06172, 0.0])
+
+        # calibration constants: H thermocouple
+        # engineering values to lab calibrated values
+        e2l_H = np.array([0.0, 0.0, 0.0, 0.0, 0.9979, -0.10287])
+        # lab calibrated values to scientific values
+        l2s_H = np.array([9.32483e-7, -0.000122268, 0.00702, -0.23532, 17.06172, 0.0])
+
+        # calibration constants: convert 'r' thermistor scientific (temperature)
+        # values to thermocouple equivalent voltage [mV]
+        s2v_r = np.array([5.83124e-14, -4.09038e-11, -3.44498e-8, 5.14528e-5, 0.05841, 0.00209])
+
+        ### tiled calibration arrays for THSPHTE products
+        tile_spec = (a_deca, 1)
+        self.e2l_b = np.tile(e2l_b, tile_spec)
+        self.l2s_b = np.tile(l2s_b, tile_spec)
+        self.e2l_r = np.tile(e2l_r, tile_spec)
+        self.l2s_r = np.tile(l2s_r, tile_spec)
+        self.e2l_L = np.tile(e2l_L, tile_spec)
+        self.l2s_L = np.tile(l2s_L, tile_spec)
+        self.e2l_H = np.tile(e2l_H, tile_spec)
+        self.l2s_H = np.tile(l2s_H, tile_spec)
+        self.s2v_r = np.tile(s2v_r, tile_spec)
+
+    # Performance tests for seafloor instruments THSPH
     def test_sfl_thsph_temp_int(self):
         stats = []
-        # create 10000 data packets
-        # input, raw decimal counts
-        ts_rawdec_b = np.zeros((a_deca, 1)) + 8188.0
-        # cal coeffs: engineering values to lab calibrated values
-        c0_e2l_b = np.zeros((a_deca, 1)) + 0.05935
-        c1_e2l_b = np.zeros((a_deca, 1)) + 0.00099151
-        c2_e2l_b = np.zeros((a_deca, 1)) + 3.82028e-10
-        c3_e2l_b = np.zeros((a_deca, 1)) + 4.54486e-13
-        c4_e2l_b = np.zeros((a_deca, 1)) + 0.0
-        # cal coeffs: lab calibrated values to scientific values
-        c0_l2s_b = np.zeros((a_deca, 1)) + 79.12599
-        c1_l2s_b = np.zeros((a_deca, 1)) + -9.58863
-        c2_l2s_b = np.zeros((a_deca, 1)) + 0.53886
-        c3_l2s_b = np.zeros((a_deca, 1)) + -0.01432
-        c4_l2s_b = np.zeros((a_deca, 1)) + 1.38009e-4
-
         # timing test
-        self.profile(stats, sfl_thsph_temp_int, ts_rawdec_b,
-                     c0_e2l_b, c1_e2l_b, c2_e2l_b, c3_e2l_b, c4_e2l_b,
-                     c0_l2s_b, c1_l2s_b, c2_l2s_b, c3_l2s_b, c4_l2s_b)
+        self.profile(stats, sfl_thsph_temp_int, self.ts_rawdec_b, self.e2l_b, self.l2s_b)
 
     def test_sfl_thsph_temp_ref(self):
         stats = []
-        # create 10000 data packets
-        # input, raw decimal counts
-        ts_rawdec_r = np.zeros((a_deca, 1)) + 8770.0
-        # cal coeffs: engineering values to lab calibrated values
-        c0_e2l_r = np.zeros((a_deca, 1)) + 0.05935
-        c1_e2l_r = np.zeros((a_deca, 1)) + 0.00099151
-        c2_e2l_r = np.zeros((a_deca, 1)) + 3.82028e-10
-        c3_e2l_r = np.zeros((a_deca, 1)) + 4.54486e-13
-        c4_e2l_r = np.zeros((a_deca, 1)) + 0.0
-        # cal coeffs: lab calibrated values to scientific values
-        c0_l2s_r = np.zeros((a_deca, 1)) + 79.12599
-        c1_l2s_r = np.zeros((a_deca, 1)) + -9.58863
-        c2_l2s_r = np.zeros((a_deca, 1)) + 0.53886
-        c3_l2s_r = np.zeros((a_deca, 1)) + -0.01432
-        c4_l2s_r = np.zeros((a_deca, 1)) + 1.38009e-4
-
         # timing test
-        self.profile(stats, sfl_thsph_temp_ref, ts_rawdec_r,
-                     c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-                     c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        self.profile(stats, sfl_thsph_temp_ref, self.ts_rawdec_r, self.e2l_r, self.l2s_r)
 
     def test_sfl_thsph_temp_tcl(self):
         stats = []
-        # create 10000 data packets
-        # input, raw decimal counts
-        tc_rawdec_L = np.zeros((a_deca, 1)) + 16012.0
-        # cal coeffs: engineering values to lab calibrated values
-        c0_e2l_L = np.zeros((a_deca, 1)) - 0.00055
-        c1_e2l_L = np.zeros((a_deca, 1)) + 1.0
-        c2_e2l_L = np.zeros((a_deca, 1)) + 0.0
-        c3_e2l_L = np.zeros((a_deca, 1)) + 0.0
-        c4_e2l_L = np.zeros((a_deca, 1)) + 0.0
-        # cal coeffs: lab calibrated values to scientific values
-        c0_l2s_L = np.zeros((a_deca, 1)) - 0.00444
-        c1_l2s_L = np.zeros((a_deca, 1)) + 17.06172
-        c2_l2s_L = np.zeros((a_deca, 1)) - 0.23532
-        c3_l2s_L = np.zeros((a_deca, 1)) + 0.00702
-        c4_l2s_L = np.zeros((a_deca, 1)) - 0.000122268
-        c5_l2s_L = np.zeros((a_deca, 1)) + 0.000000932483
-
         # timing test
-        self.profile(stats, sfl_thsph_temp_tcl, tc_rawdec_L,
-                     c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L,
-                     c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L)
+        self.profile(stats, sfl_thsph_temp_tcl, self.tc_rawdec_L, self.e2l_L, self.l2s_L)
 
     def test_sfl_thsph_temp_tch(self):
         stats = []
-        # create 10000 data packets
-        # input, raw decimal counts
-        tc_rawdec_H = np.zeros((a_deca, 1)) + 4237.0
-        # cal coeffs: engineering values to lab calibrated values
-        c0_e2l_H = np.zeros((a_deca, 1)) - 0.00055
-        c1_e2l_H = np.zeros((a_deca, 1)) + 1.0
-        c2_e2l_H = np.zeros((a_deca, 1)) + 0.0
-        c3_e2l_H = np.zeros((a_deca, 1)) + 0.0
-        c4_e2l_H = np.zeros((a_deca, 1)) + 0.0
-        # cal coeffs: lab calibrated values to scientific values
-        c0_l2s_H = np.zeros((a_deca, 1)) - 0.00444
-        c1_l2s_H = np.zeros((a_deca, 1)) + 17.06172
-        c2_l2s_H = np.zeros((a_deca, 1)) - 0.23532
-        c3_l2s_H = np.zeros((a_deca, 1)) + 0.00702
-        c4_l2s_H = np.zeros((a_deca, 1)) - 0.000122268
-        c5_l2s_H = np.zeros((a_deca, 1)) + 0.000000932483
-
         # timing test
-        self.profile(stats, sfl_thsph_temp_tch, tc_rawdec_H,
-                     c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H,
-                     c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H)
+        self.profile(stats, sfl_thsph_temp_tch, self.tc_rawdec_H, self.e2l_H, self.l2s_H)
 
     def test_sfl_thsph_temp_tl(self):
         stats = []
-        # create 10000 data packets
-        # input, raw decimal counts:L
-        tc_rawdec_L = np.zeros((a_deca, 1)) + 16012.0
-        # cal coeffs: engineering values to lab calibrated values
-        c0_e2l_L = np.zeros((a_deca, 1)) - 0.00055
-        c1_e2l_L = np.zeros((a_deca, 1)) + 1.0
-        c2_e2l_L = np.zeros((a_deca, 1)) + 0.0
-        c3_e2l_L = np.zeros((a_deca, 1)) + 0.0
-        c4_e2l_L = np.zeros((a_deca, 1)) + 0.0
-        # cal coeffs: lab calibrated values to scientific values
-        c0_l2s_L = np.zeros((a_deca, 1)) - 0.00444
-        c1_l2s_L = np.zeros((a_deca, 1)) + 17.06172
-        c2_l2s_L = np.zeros((a_deca, 1)) - 0.23532
-        c3_l2s_L = np.zeros((a_deca, 1)) + 0.00702
-        c4_l2s_L = np.zeros((a_deca, 1)) - 0.000122268
-        c5_l2s_L = np.zeros((a_deca, 1)) + 0.000000932483
-        # calibration constants: final linear calibrations
-        c0_s2f_L = 1.68019
-        c1_s2f_L = 0.95567
-        # input, raw decimal counts:ref
-        ts_rawdec_r = np.zeros((a_deca, 1)) + 8770.0
-        # cal coeffs: engineering values to lab calibrated values
-        c0_e2l_r = np.zeros((a_deca, 1)) + 0.05935
-        c1_e2l_r = np.zeros((a_deca, 1)) + 0.00099151
-        c2_e2l_r = np.zeros((a_deca, 1)) + 3.82028e-10
-        c3_e2l_r = np.zeros((a_deca, 1)) + 4.54486e-13
-        c4_e2l_r = np.zeros((a_deca, 1)) + 0.0
-        # cal coeffs: lab calibrated values to scientific values
-        c0_l2s_r = np.zeros((a_deca, 1)) + 79.12599
-        c1_l2s_r = np.zeros((a_deca, 1)) + -9.58863
-        c2_l2s_r = np.zeros((a_deca, 1)) + 0.53886
-        c3_l2s_r = np.zeros((a_deca, 1)) + -0.01432
-        c4_l2s_r = np.zeros((a_deca, 1)) + 1.38009e-4
-
         # timing test
-        self.profile(stats, sfl_thsph_temp_tl, tc_rawdec_L,
-                     c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L,
-                     c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L,
-                     c0_s2f_L, c1_s2f_L,
-                     ts_rawdec_r,
-                     c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-                     c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        self.profile(stats, sfl_thsph_temp_tl, self.tc_rawdec_L, self.e2l_L, self.l2s_L,
+                     self.ts_rawdec_r, self.e2l_r, self.l2s_r, self.s2v_r)
 
     def test_sfl_thsph_temp_th(self):
         stats = []
-        # create 10000 data packets
-        # input, raw decimal counts:L
-        tc_rawdec_H = np.zeros((a_deca, 1)) + 4237.0
-        # cal coeffs: engineering values to lab calibrated values
-        c0_e2l_H = np.zeros((a_deca, 1)) - 0.00055
-        c1_e2l_H = np.zeros((a_deca, 1)) + 1.0
-        c2_e2l_H = np.zeros((a_deca, 1)) + 0.0
-        c3_e2l_H = np.zeros((a_deca, 1)) + 0.0
-        c4_e2l_H = np.zeros((a_deca, 1)) + 0.0
-        # cal coeffs: lab calibrated values to scientific values
-        c0_l2s_H = np.zeros((a_deca, 1)) - 0.00444
-        c1_l2s_H = np.zeros((a_deca, 1)) + 17.06172
-        c2_l2s_H = np.zeros((a_deca, 1)) - 0.23532
-        c3_l2s_H = np.zeros((a_deca, 1)) + 0.00702
-        c4_l2s_H = np.zeros((a_deca, 1)) - 0.000122268
-        c5_l2s_H = np.zeros((a_deca, 1)) + 0.000000932483
-        # calibration constants: final linear calibrations
-        c0_s2f_H = 1.68019
-        c1_s2f_H = 0.95567
-        # input, raw decimal counts:ref
-        ts_rawdec_r = np.zeros((a_deca, 1)) + 8770.0
-        # cal coeffs: engineering values to lab calibrated values
-        c0_e2l_r = np.zeros((a_deca, 1)) + 0.05935
-        c1_e2l_r = np.zeros((a_deca, 1)) + 0.00099151
-        c2_e2l_r = np.zeros((a_deca, 1)) + 3.82028e-10
-        c3_e2l_r = np.zeros((a_deca, 1)) + 4.54486e-13
-        c4_e2l_r = np.zeros((a_deca, 1)) + 0.0
-        # cal coeffs: lab calibrated values to scientific values
-        c0_l2s_r = np.zeros((a_deca, 1)) + 79.12599
-        c1_l2s_r = np.zeros((a_deca, 1)) + -9.58863
-        c2_l2s_r = np.zeros((a_deca, 1)) + 0.53886
-        c3_l2s_r = np.zeros((a_deca, 1)) + -0.01432
-        c4_l2s_r = np.zeros((a_deca, 1)) + 1.38009e-4
-
         # timing test
-        self.profile(stats, sfl_thsph_temp_tl, tc_rawdec_H,
-                     c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H,
-                     c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H,
-                     c0_s2f_H, c1_s2f_H,
-                     ts_rawdec_r,
-                     c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-                     c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        self.profile(stats, sfl_thsph_temp_th, self.tc_rawdec_H, self.e2l_H, self.l2s_H,
+                     self.ts_rawdec_r, self.e2l_r, self.l2s_r, self.s2v_r)
+
+    # Performance tests for seafloor instruments TRHPH
 
     def test_sfl_trhph_vfltemp(self):
         stats = []
