@@ -39,130 +39,165 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         Implemented by:
 
             2014-05-01: Russell Desiderio. Initial Code
+            2014-07-02: Russell Desiderio. Incorporated changes in DPS calibration algorithms.
         """
         # calibration constants: b thermistor
         # engineering values to lab calibrated values
-        c0_e2l_b = 0.05935
-        c1_e2l_b = 0.00099151
-        c2_e2l_b = 3.82028e-10
-        c3_e2l_b = 4.54486e-13
-        c4_e2l_b = 0.0
+        e2l_b = np.array([0.0, 0.0, 0.0, 0.0, 1.04938, -275.5])
         # lab calibrated values to scientific values
-        c0_l2s_b = 79.12599
-        c1_l2s_b = -9.58863
-        c2_l2s_b = 0.53886
-        c3_l2s_b = -0.01432
-        c4_l2s_b = 1.38009e-4
+        l2s_b = np.array([0.0, 0.0, 8.7755e-08, 0.0, 0.000234101, 0.001129306])
 
         # calibration constants: r thermistor
         # engineering values to lab calibrated values
-        c0_e2l_r = 0.05935
-        c1_e2l_r = 0.00099151
-        c2_e2l_r = 3.82028e-10
-        c3_e2l_r = 4.54486e-13
-        c4_e2l_r = 0.0
+        e2l_r = np.array([0.0, 0.0, 0.0, 0.0, 1.04938, -275.5])
         # lab calibrated values to scientific values
-        c0_l2s_r = 79.12599
-        c1_l2s_r = -9.58863
-        c2_l2s_r = 0.53886
-        c3_l2s_r = -0.01432
-        c4_l2s_r = 1.38009e-4
+        l2s_r = np.array([0.0, 0.0, 8.7755e-08, 0.0, 0.000234101, 0.001129306])
 
         # calibration constants: L thermocouple
         # engineering values to lab calibrated values
-        c0_e2l_L = -0.00055
-        c1_e2l_L = 1.0
-        c2_e2l_L = 0.0
-        c3_e2l_L = 0.0
-        c4_e2l_L = 0.0
+        e2l_L = np.array([0.0, 0.0, 0.0, 0.0, 0.9964, -0.46112])
         # lab calibrated values to scientific values
-        c0_l2s_L = -0.00444
-        c1_l2s_L = 17.06172
-        c2_l2s_L = -0.23532
-        c3_l2s_L = 0.00702
-        c4_l2s_L = -0.000122268
-        c5_l2s_L = 0.000000932483
+        l2s_L = np.array([9.32483e-7, -0.000122268, 0.00702, -0.23532, 17.06172, 0.0])
 
         # calibration constants: H thermocouple
         # engineering values to lab calibrated values
-        c0_e2l_H = -0.00055
-        c1_e2l_H = 1.0
-        c2_e2l_H = 0.0
-        c3_e2l_H = 0.0
-        c4_e2l_H = 0.0
+        e2l_H = np.array([0.0, 0.0, 0.0, 0.0, 0.9979, -0.10287])
         # lab calibrated values to scientific values
-        c0_l2s_H = -0.00444
-        c1_l2s_H = 17.06172
-        c2_l2s_H = -0.23532
-        c3_l2s_H = 0.00702
-        c4_l2s_H = -0.000122268
-        c5_l2s_H = 0.000000932483
+        l2s_H = np.array([9.32483e-7, -0.000122268, 0.00702, -0.23532, 17.06172, 0.0])
 
-        # calibration constants: final linear calibrations
-        c0_s2f_L = 1.68019
-        c1_s2f_L = 0.95567
-        c0_s2f_H = 1.68019
-        c1_s2f_H = 0.95567
+        # calibration constants: convert 'r' thermistor scientific (temperature)
+        # values to thermocouple equivalent voltage [mV]
+        s2v_r = np.array([5.83124e-14, -4.09038e-11, -3.44498e-8, 5.14528e-5, 0.05841, 0.00209])
 
+        # rawdata: aH200B200720C420A1108D3E8C22421FFC#
         # test inputs
         ts_rawdec_b = 8188.0
         ts_rawdec_r = 8770.0
         tc_rawdec_L = 16012.0
         tc_rawdec_H = 4237.0
-
         # set expected outputs
-        int_xpctd = 23.059
-        ref_xpctd = 19.357
-        tcl_xpctd = 639.038
-        tl_xpctd = 630.889
-        tch_xpctd = 0.374
-        th_xpctd = 20.537
+        int_xpctd = 24.53
+        ref_xpctd = 21.25
+        tcl_xpctd = 637.88
+        tl_xpctd = 655.28
+        tch_xpctd = 7.94
+        th_xpctd = 28.91
+
+        ## rawdata: aH2009200820C220A0108C3E8922361FF9#
+        ## test inputs
+        #ts_rawdec_b = 8185.0
+        #ts_rawdec_r = 8758.0
+        #tc_rawdec_L = 16009.0
+        #tc_rawdec_H = 4236.0
+        ## set expected outputs
+        #int_xpctd = 24.55
+        #ref_xpctd = 21.31
+        #tcl_xpctd = 637.72
+        #tl_xpctd = 655.17
+        #tch_xpctd = 7.87
+        #th_xpctd = 28.91
+
+        # SINGLE VALUED TESTS
 
         # calculate the various temperature dataproducts and
         # compare to the expected outputs; lab accuracy is
         # between 0.2 and 1.0 degC, so check calculation to 0.01 degC.
-        int_calc = sflfunc.sfl_thsph_temp_int(
-            ts_rawdec_b,
-            c0_e2l_b, c1_e2l_b, c2_e2l_b, c3_e2l_b, c4_e2l_b,
-            c0_l2s_b, c1_l2s_b, c2_l2s_b, c3_l2s_b, c4_l2s_b)
+        int_calc = sflfunc.sfl_thsph_temp_int(ts_rawdec_b, e2l_b, l2s_b)
         np.testing.assert_allclose(int_calc, int_xpctd, rtol=0.0, atol=0.01)
 
-        ref_calc = sflfunc.sfl_thsph_temp_ref(
-            ts_rawdec_r,
-            c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-            c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        ref_calc = sflfunc.sfl_thsph_temp_ref(ts_rawdec_r, e2l_r, l2s_r)
         np.testing.assert_allclose(ref_calc, ref_xpctd, rtol=0.0, atol=0.01)
 
-        tcl_calc = sflfunc.sfl_thsph_temp_tcl(
-            tc_rawdec_L,
-            c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L,
-            c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L)
+        tcl_calc = sflfunc.sfl_thsph_temp_tcl(tc_rawdec_L, e2l_L, l2s_L)
         np.testing.assert_allclose(tcl_calc, tcl_xpctd, rtol=0.0, atol=0.01)
 
-        tch_calc = sflfunc.sfl_thsph_temp_tch(
-            tc_rawdec_H,
-            c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H,
-            c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H)
+        tch_calc = sflfunc.sfl_thsph_temp_tch(tc_rawdec_H, e2l_H, l2s_H)
         np.testing.assert_allclose(tch_calc, tch_xpctd, rtol=0.0, atol=0.01)
 
-        tl_calc = sflfunc.sfl_thsph_temp_tl(
-            tc_rawdec_L,
-            c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L,
-            c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L,
-            c0_s2f_L, c1_s2f_L,
-            ts_rawdec_r,
-            c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-            c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        tl_calc = sflfunc.sfl_thsph_temp_tl(tc_rawdec_L, e2l_L, l2s_L,
+                                            ts_rawdec_r, e2l_r, l2s_r, s2v_r)
         np.testing.assert_allclose(tl_calc, tl_xpctd, rtol=0.0, atol=0.01)
 
-        th_calc = sflfunc.sfl_thsph_temp_th(
-            tc_rawdec_H,
-            c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H,
-            c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H,
-            c0_s2f_H, c1_s2f_H,
-            ts_rawdec_r,
-            c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-            c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        th_calc = sflfunc.sfl_thsph_temp_th(tc_rawdec_H, e2l_H, l2s_H,
+                                            ts_rawdec_r, e2l_r, l2s_r, s2v_r)
+        np.testing.assert_allclose(th_calc, th_xpctd, rtol=0.0, atol=0.01)
+
+        # trap-out-nans-and-inf test -> replace with fill_value
+        # test inputs
+        ts_rawdec_b = -9999.9
+        ts_rawdec_r = -9999.9
+        tc_rawdec_L = -9999.9
+        tc_rawdec_H = 4237.0
+        # set expected outputs
+        int_xpctd = fill_value
+        ref_xpctd = fill_value
+        tcl_xpctd = -5005.23    # this is unphysical, but no (div by 0) nor np.log(x<0) encountered
+        tl_xpctd = fill_value   # calc uses ref_xpctd
+        tch_xpctd = 7.94
+        th_xpctd = fill_value   # calc uses ref_xpctd
+
+        int_calc = sflfunc.sfl_thsph_temp_int(ts_rawdec_b, e2l_b, l2s_b)
+        np.testing.assert_allclose(int_calc, int_xpctd, rtol=0.0, atol=0.01)
+
+        ref_calc = sflfunc.sfl_thsph_temp_ref(ts_rawdec_r, e2l_r, l2s_r)
+        np.testing.assert_allclose(ref_calc, ref_xpctd, rtol=0.0, atol=0.01)
+
+        tcl_calc = sflfunc.sfl_thsph_temp_tcl(tc_rawdec_L, e2l_L, l2s_L)
+        np.testing.assert_allclose(tcl_calc, tcl_xpctd, rtol=0.0, atol=0.01)
+
+        tch_calc = sflfunc.sfl_thsph_temp_tch(tc_rawdec_H, e2l_H, l2s_H)
+        np.testing.assert_allclose(tch_calc, tch_xpctd, rtol=0.0, atol=0.01)
+
+        tl_calc = sflfunc.sfl_thsph_temp_tl(tc_rawdec_L, e2l_L, l2s_L,
+                                            ts_rawdec_r, e2l_r, l2s_r, s2v_r)
+        np.testing.assert_allclose(tl_calc, tl_xpctd, rtol=0.0, atol=0.01)
+
+        th_calc = sflfunc.sfl_thsph_temp_th(tc_rawdec_H, e2l_H, l2s_H,
+                                            ts_rawdec_r, e2l_r, l2s_r, s2v_r)
+        np.testing.assert_allclose(th_calc, th_xpctd, rtol=0.0, atol=0.01)
+
+        # DOUBLE VALUED (VECTORIZED) TESTS
+        # test inputs
+        ts_rawdec_b = np.array([8188.0, 8185.0])
+        ts_rawdec_r = np.array([8770.0, 8758.0])
+        tc_rawdec_L = np.array([16012.0, 16009.0])
+        tc_rawdec_H = np.array([4237.0, 4236.0])
+        # set expected outputs
+        int_xpctd = np.array([24.53, 24.55])
+        ref_xpctd = np.array([21.25, 21.31])
+        tcl_xpctd = np.array([637.88, 637.72])
+        tl_xpctd = np.array([655.28, 655.17])
+        tch_xpctd = np.array([7.94, 7.87])
+        th_xpctd = np.array([28.91, 28.91])
+        # tile the cal coeff arrays
+        e2l_b = np.tile(e2l_b, (2, 1))
+        l2s_b = np.tile(l2s_b, (2, 1))
+        e2l_r = np.tile(e2l_r, (2, 1))
+        l2s_r = np.tile(l2s_r, (2, 1))
+        e2l_L = np.tile(e2l_L, (2, 1))
+        l2s_L = np.tile(l2s_L, (2, 1))
+        e2l_H = np.tile(e2l_H, (2, 1))
+        l2s_H = np.tile(l2s_H, (2, 1))
+        s2v_r = np.tile(s2v_r, (2, 1))
+
+        int_calc = sflfunc.sfl_thsph_temp_int(ts_rawdec_b, e2l_b, l2s_b)
+        np.testing.assert_allclose(int_calc, int_xpctd, rtol=0.0, atol=0.01)
+
+        ref_calc = sflfunc.sfl_thsph_temp_ref(ts_rawdec_r, e2l_r, l2s_r)
+        np.testing.assert_allclose(ref_calc, ref_xpctd, rtol=0.0, atol=0.01)
+
+        tcl_calc = sflfunc.sfl_thsph_temp_tcl(tc_rawdec_L, e2l_L, l2s_L)
+        np.testing.assert_allclose(tcl_calc, tcl_xpctd, rtol=0.0, atol=0.01)
+
+        tch_calc = sflfunc.sfl_thsph_temp_tch(tc_rawdec_H, e2l_H, l2s_H)
+        np.testing.assert_allclose(tch_calc, tch_xpctd, rtol=0.0, atol=0.01)
+
+        tl_calc = sflfunc.sfl_thsph_temp_tl(tc_rawdec_L, e2l_L, l2s_L,
+                                            ts_rawdec_r, e2l_r, l2s_r, s2v_r)
+        np.testing.assert_allclose(tl_calc, tl_xpctd, rtol=0.0, atol=0.01)
+
+        th_calc = sflfunc.sfl_thsph_temp_th(tc_rawdec_H, e2l_H, l2s_H,
+                                            ts_rawdec_r, e2l_r, l2s_r, s2v_r)
         np.testing.assert_allclose(th_calc, th_xpctd, rtol=0.0, atol=0.01)
 
     def test_sfl_trhph_vfltemp(self):

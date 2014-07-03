@@ -15,13 +15,7 @@ from ion_functions.data.sfl_functions_surface import tdat, sdat, cdat
 from ion_functions.utils import fill_value
 
 
-def sfl_thsph_temp_th(tc_rawdec_H,
-                      c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H,
-                      c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H,
-                      c0_s2f_H, c1_s2f_H,
-                      ts_rawdec_r,
-                      c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-                      c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r):
+def sfl_thsph_temp_th(tc_rawdec_H, e2l_H, l2s_H, ts_rawdec_r, e2l_r, l2s_r, s2v_r):
     """
     Description:
 
@@ -33,56 +27,28 @@ def sfl_thsph_temp_th(tc_rawdec_H,
     Implemented by:
 
         2014-05-01: Russell Desiderio. Initial Code
+        2014-06-30: Russell Desiderio. DPS modifications to cal equations implemented.
 
     Usage:
 
-        T_H = sfl_thsph_temp_tcl(tc_rawdec_H,
-                       c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H,
-                       c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H,
-                       c0_s2f_H, c1_s2f_H,
-                                 ts_rawdec_r,
-                       c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-                       c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        T_H = sfl_thsph_temp_th(tc_rawdec_H, e2l_H, l2s_H, ts_rawdec_r, e2l_r, l2s_r, s2v_r)
 
             where
 
         T_H = final temperature "H" near sample inlet THSPHTE-TH_L1 [deg_C]
         #
         tc_rawdec_H = "H" thermocouple, decimal counts (THSPHTE-TCH_L0) [counts]
-        ### the e2l_H series of calibration coefficients convert the 'H' thermocouple
-        ### engineering values to lab calibrated values using a 4th degree polynomial.
-        c0_e2l_H = constant  coefficient for e2l polynomial for 'H' thermocouple
-        c1_e2l_H = linear    coefficient for e2l polynomial for 'H' thermocouple
-        c2_e2l_H = quadratic coefficient for e2l polynomial for 'H' thermocouple
-        c3_e2l_H = cubic     coefficient for e2l polynomial for 'H' thermocouple
-        c4_e2l_H = quartic   coefficient for e2l polynomial for 'H' thermocouple
-        ### the l2s_H series of calibration coefficients convert the 'H' thermocouple
-        ### lab calibrated values to scientific values using a 5th degree polynomial.
-        c0_l2s_H = constant  coefficient for l2s polynomial for 'H' thermocouple
-        c1_l2s_H = linear    coefficient for l2s polynomial for 'H' thermocouple
-        c2_l2s_H = quadratic coefficient for l2s polynomial for 'H' thermocouple
-        c3_l2s_H = cubic     coefficient for l2s polynomial for 'H' thermocouple
-        c4_l2s_H = quartic   coefficient for l2s polynomial for 'H' thermocouple
-        c5_l2s_H = quintic   coefficient for l2s polynomial for 'H' thermocouple
-        ###
-        c0_s2f_H = offset of final "H" temperature linear calibration
-        c1_s2f_H = slope  of final "H" temperature linear calibration
-        #
+        e2l_H = array of calibration coefficients to convert the 'H' thermocouple
+                engineering values to lab calibrated values.
+        l2s_H = array of calibration coefficients to convert the 'H' thermocouple
+                lab calibrated values to scientific values.
         ts_rawdec_r = reference thermistor, decimal counts (THSPHTE-REF_L0) [counts]
-        ### the e2l_r series of calibration coefficients convert the 'r' thermistor
-        ### engineering values to lab calibrated values using a 4th degree polynomial.
-        c0_e2l_r = constant  coefficient for e2l polynomial for 'r' thermistor
-        c1_e2l_r = linear    coefficient for e2l polynomial for 'r' thermistor
-        c2_e2l_r = quadratic coefficient for e2l polynomial for 'r' thermistor
-        c3_e2l_r = cubic     coefficient for e2l polynomial for 'r' thermistor
-        c4_e2l_r = quartic   coefficient for e2l polynomial for 'r' thermistor
-        ### the l2s_r series of calibration coefficients convert the 'r' thermistor
-        ### lab calibrated values to scientific values using a 4th degree polynomial.
-        c0_l2s_r = constant  coefficient for l2s polynomial for 'r' thermistor
-        c1_l2s_r = linear    coefficient for l2s polynomial for 'r' thermistor
-        c2_l2s_r = quadratic coefficient for l2s polynomial for 'r' thermistor
-        c3_l2s_r = cubic     coefficient for l2s polynomial for 'r' thermistor
-        c4_l2s_r = quartic   coefficient for l2s polynomial for 'r' thermistor
+        e2l_r = array of calibration coefficients to convert the 'r' thermistor
+                engineering values to lab calibrated values.
+        l2s_r = array of calibration coefficients to convert the 'r' thermistor
+                lab calibrated values to scientific values.
+        s2v_r = array of calibration coefficients to convert the 'r' thermistor
+                scientific values to thermocouple equivalent voltage [mV].
 
     References:
 
@@ -92,27 +58,29 @@ def sfl_thsph_temp_th(tc_rawdec_H,
             >> Controlled >> 1000 System Level >>
             1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
     """
-    # calculate required intermediate products
-    T_tc_H = sfl_thsph_temp_tcl(tc_rawdec_H,
-                                c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H,
-                                c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H)
-    T_ts_r = sfl_thsph_temp_ref(ts_rawdec_r,
-                                c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-                                c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+    # calculate intermediate product V_tc_actual_H (= V_tc_labcal_H)
+    V_tc_actual_H = sfl_thsph_temp_labcal_h(tc_rawdec_H, e2l_H)
 
-    # apply final linear calibration
-    T_H = c1_s2f_H * (T_ts_r + T_tc_H) + c0_s2f_H
+    # calculate intermediate products T_ts_r, then V_ts_r (June 2014 DPS)
+    T_ts_r = sfl_thsph_temp_ref(ts_rawdec_r, e2l_r, l2s_r)
+    # the calculation of T_ts_r could result in non-finite (inf, nan) values, which
+    # the sfl_thsph_temp_ref function above returns as fill values. so, replace
+    # the fill values with np.nans so they can be tracked through to the final
+    # data product variable.
+    T_ts_r[np.equal(T_ts_r, fill_value)] = np.nan
+    V_ts_r = eval_poly(T_ts_r, s2v_r)
+
+    # Correct thermocouple temperature to account for offset from cold junction as
+    # measured by the reference thermistor
+    T_H = eval_poly((V_tc_actual_H + V_ts_r), l2s_H)
+
+    # replace nans with fill values
+    T_H[np.isnan(T_H)] = fill_value
 
     return T_H
 
 
-def sfl_thsph_temp_tl(tc_rawdec_L,
-                      c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L,
-                      c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L,
-                      c0_s2f_L, c1_s2f_L,
-                      ts_rawdec_r,
-                      c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-                      c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r):
+def sfl_thsph_temp_tl(tc_rawdec_L, e2l_L, l2s_L, ts_rawdec_r, e2l_r, l2s_r, s2v_r):
     """
     Description:
 
@@ -124,56 +92,28 @@ def sfl_thsph_temp_tl(tc_rawdec_L,
     Implemented by:
 
         2014-05-01: Russell Desiderio. Initial Code
+        2014-06-30: Russell Desiderio. DPS modifications to cal equations implemented.
 
     Usage:
 
-        T_L = sfl_thsph_temp_tcl(tc_rawdec_L,
-                       c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L,
-                       c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L,
-                       c0_s2f_L, c1_s2f_L,
-                                 ts_rawdec_r,
-                       c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-                       c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        T_L = sfl_thsph_temp_tl(tc_rawdec_L, e2l_L, l2s_L, ts_rawdec_r, e2l_r, l2s_r, s2v_r)
 
             where
 
         T_L = final temperature "L" near vent THSPHTE-TL_L1 [deg_C]
         #
         tc_rawdec_L = "L" thermocouple, decimal counts (THSPHTE-TCL_L0) [counts]
-        ### the e2l_L series of calibration coefficients convert the 'L' thermocouple
-        ### engineering values to lab calibrated values using a 4th degree polynomial.
-        c0_e2l_L = constant  coefficient for e2l polynomial for 'L' thermocouple
-        c1_e2l_L = linear    coefficient for e2l polynomial for 'L' thermocouple
-        c2_e2l_L = quadratic coefficient for e2l polynomial for 'L' thermocouple
-        c3_e2l_L = cubic     coefficient for e2l polynomial for 'L' thermocouple
-        c4_e2l_L = quartic   coefficient for e2l polynomial for 'L' thermocouple
-        ### the l2s_L series of calibration coefficients convert the 'L' thermocouple
-        ### lab calibrated values to scientific values using a 5th degree polynomial.
-        c0_l2s_L = constant  coefficient for l2s polynomial for 'L' thermocouple
-        c1_l2s_L = linear    coefficient for l2s polynomial for 'L' thermocouple
-        c2_l2s_L = quadratic coefficient for l2s polynomial for 'L' thermocouple
-        c3_l2s_L = cubic     coefficient for l2s polynomial for 'L' thermocouple
-        c4_l2s_L = quartic   coefficient for l2s polynomial for 'L' thermocouple
-        c5_l2s_L = quintic   coefficient for l2s polynomial for 'L' thermocouple
-        ###
-        c0_s2f_L = offset of final "L" temperature linear calibration
-        c1_s2f_L = slope  of final "L" temperature linear calibration
-        #
+        e2l_L = array of calibration coefficients to convert the 'L' thermocouple
+                engineering values to lab calibrated values.
+        l2s_L = array of calibration coefficients to convert the 'L' thermocouple
+                lab calibrated values to scientific values.
         ts_rawdec_r = reference thermistor, decimal counts (THSPHTE-REF_L0) [counts]
-        ### the e2l_r series of calibration coefficients convert the 'r' thermistor
-        ### engineering values to lab calibrated values using a 4th degree polynomial.
-        c0_e2l_r = constant  coefficient for e2l polynomial for 'r' thermistor
-        c1_e2l_r = linear    coefficient for e2l polynomial for 'r' thermistor
-        c2_e2l_r = quadratic coefficient for e2l polynomial for 'r' thermistor
-        c3_e2l_r = cubic     coefficient for e2l polynomial for 'r' thermistor
-        c4_e2l_r = quartic   coefficient for e2l polynomial for 'r' thermistor
-        ### the l2s_r series of calibration coefficients convert the 'r' thermistor
-        ### lab calibrated values to scientific values using a 4th degree polynomial.
-        c0_l2s_r = constant  coefficient for l2s polynomial for 'r' thermistor
-        c1_l2s_r = linear    coefficient for l2s polynomial for 'r' thermistor
-        c2_l2s_r = quadratic coefficient for l2s polynomial for 'r' thermistor
-        c3_l2s_r = cubic     coefficient for l2s polynomial for 'r' thermistor
-        c4_l2s_r = quartic   coefficient for l2s polynomial for 'r' thermistor
+        e2l_r = array of calibration coefficients to convert the 'r' thermistor
+                engineering values to lab calibrated values.
+        l2s_r = array of calibration coefficients to convert the 'r' thermistor
+                lab calibrated values to scientific values.
+        s2v_r = array of calibration coefficients to convert the 'r' thermistor
+                scientific values to thermocouple equivalent voltage [mV].
 
     References:
 
@@ -183,23 +123,29 @@ def sfl_thsph_temp_tl(tc_rawdec_L,
             >> Controlled >> 1000 System Level >>
             1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
     """
-    # calculate required intermediate products
-    T_tc_L = sfl_thsph_temp_tcl(tc_rawdec_L,
-                                c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L,
-                                c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L)
-    T_ts_r = sfl_thsph_temp_ref(ts_rawdec_r,
-                                c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-                                c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+    # calculate intermediate product V_tc_actual_L (= V_tc_labcal_L)
+    V_tc_actual_L = sfl_thsph_temp_labcal_l(tc_rawdec_L, e2l_L)
 
-    # apply final linear calibration
-    T_L = c1_s2f_L * (T_ts_r + T_tc_L) + c0_s2f_L
+    # calculate intermediate products T_ts_r, then V_ts_r (June 2014 DPS)
+    T_ts_r = sfl_thsph_temp_ref(ts_rawdec_r, e2l_r, l2s_r)
+    # the calculation of T_ts_r could result in non-finite (inf, nan) values, which
+    # the sfl_thsph_temp_ref function above returns as fill values. so, replace
+    # the fill values with np.nans so they can be tracked through to the final
+    # data product variable.
+    T_ts_r[np.equal(T_ts_r, fill_value)] = np.nan
+    V_ts_r = eval_poly(T_ts_r, s2v_r)
+
+    # Correct thermocouple temperature to account for offset from cold junction as
+    # measured by the reference thermistor
+    T_L = eval_poly((V_tc_actual_L + V_ts_r), l2s_L)
+
+    # replace nans with fill values
+    T_L[np.isnan(T_L)] = fill_value
 
     return T_L
 
 
-def sfl_thsph_temp_tch(tc_rawdec_H,
-                       c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H,
-                       c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H):
+def sfl_thsph_temp_tch(tc_rawdec_H, e2l_H, l2s_H):
     """
     Description:
 
@@ -211,32 +157,20 @@ def sfl_thsph_temp_tch(tc_rawdec_H,
     Implemented by:
 
         2014-05-01: Russell Desiderio. Initial Code
+        2014-06-30: Russell Desiderio. DPS modifications to cal equations implemented.
 
     Usage:
 
-        T_tc_H = sfl_thsph_temp_tch(tc_rawdec_H,
-                       c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H,
-                       c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H)
+        T_tc_H = sfl_thsph_temp_tch(tc_rawdec_H, e2l_H, l2s_H)
 
             where
 
         T_tc_H = intermediate thermocouple temperature "H" THSPHTE-TCH_L1 [deg_C]
         tc_rawdec_H = "H" thermocouple, decimal counts (THSPHTE-TCH_L0) [counts]
-        ### the e2l_H series of calibration coefficients convert the 'H' thermocouple
-        ### engineering values to lab calibrated values using a 4th degree polynomial.
-        c0_e2l_H = constant  coefficient for e2l polynomial for 'H' thermocouple
-        c1_e2l_H = linear    coefficient for e2l polynomial for 'H' thermocouple
-        c2_e2l_H = quadratic coefficient for e2l polynomial for 'H' thermocouple
-        c3_e2l_H = cubic     coefficient for e2l polynomial for 'H' thermocouple
-        c4_e2l_H = quartic   coefficient for e2l polynomial for 'H' thermocouple
-        ### the l2s_H series of calibration coefficients convert the 'H' thermocouple
-        ### lab calibrated values to scientific values using a 5th degree polynomial.
-        c0_l2s_H = constant  coefficient for l2s polynomial for 'H' thermocouple
-        c1_l2s_H = linear    coefficient for l2s polynomial for 'H' thermocouple
-        c2_l2s_H = quadratic coefficient for l2s polynomial for 'H' thermocouple
-        c3_l2s_H = cubic     coefficient for l2s polynomial for 'H' thermocouple
-        c4_l2s_H = quartic   coefficient for l2s polynomial for 'H' thermocouple
-        c5_l2s_H = quintic   coefficient for l2s polynomial for 'H' thermocouple
+        e2l_H = array of calibration coefficients to convert the 'H' thermocouple
+                engineering values to lab calibrated values.
+        l2s_H = array of calibration coefficients to convert the 'H' thermocouple
+                lab calibrated values to scientific values.
 
     References:
 
@@ -246,27 +180,16 @@ def sfl_thsph_temp_tch(tc_rawdec_H,
             >> Controlled >> 1000 System Level >>
             1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
     """
-    # convert raw decimal output to engineering values [V]
-    # leave constants as is for clarity
-    V_tc_eng_H = (tc_rawdec_H * 0.25 - 1024.0) / 61606.0
-
-    # convert engineering values to lab calibrated values [V]
-    V_tc_actual_H = eval_poly(V_tc_eng_H,
-                              c0_e2l_H, c1_e2l_H, c2_e2l_H, c3_e2l_H, c4_e2l_H)
-
-    # convert to mV
-    mV_tc_actual_H = 1000.0 * V_tc_actual_H
+    # convert raw decimal output to lab calibrated values [mV]
+    V_tc_actual_H = sfl_thsph_temp_labcal_h(tc_rawdec_H, e2l_H)
 
     # convert lab calibrated values to scientific values [degC]
-    T_tc_H = eval_poly(mV_tc_actual_H,
-                       c0_l2s_H, c1_l2s_H, c2_l2s_H, c3_l2s_H, c4_l2s_H, c5_l2s_H)
+    T_tc_H = eval_poly(V_tc_actual_H, l2s_H)
 
     return T_tc_H
 
 
-def sfl_thsph_temp_tcl(tc_rawdec_L,
-                       c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L,
-                       c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L):
+def sfl_thsph_temp_tcl(tc_rawdec_L, e2l_L, l2s_L):
     """
     Description:
 
@@ -278,32 +201,20 @@ def sfl_thsph_temp_tcl(tc_rawdec_L,
     Implemented by:
 
         2014-05-01: Russell Desiderio. Initial Code
+        2014-06-30: Russell Desiderio. DPS modifications to cal equations implemented.
 
     Usage:
 
-        T_tc_L = sfl_thsph_temp_tcl(tc_rawdec_L,
-                       c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L,
-                       c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L)
+        T_tc_L = sfl_thsph_temp_tcl(tc_rawdec_L, e2l_L, l2s_L)
 
             where
 
         T_tc_L = intermediate thermocouple temperature "L" THSPHTE-TCL_L1 [deg_C]
         tc_rawdec_L = "L" thermocouple, decimal counts (THSPHTE-TCL_L0) [counts]
-        ### the e2l_L series of calibration coefficients convert the 'L' thermocouple
-        ### engineering values to lab calibrated values using a 4th degree polynomial.
-        c0_e2l_L = constant  coefficient for e2l polynomial for 'L' thermocouple
-        c1_e2l_L = linear    coefficient for e2l polynomial for 'L' thermocouple
-        c2_e2l_L = quadratic coefficient for e2l polynomial for 'L' thermocouple
-        c3_e2l_L = cubic     coefficient for e2l polynomial for 'L' thermocouple
-        c4_e2l_L = quartic   coefficient for e2l polynomial for 'L' thermocouple
-        ### the l2s_L series of calibration coefficients convert the 'L' thermocouple
-        ### lab calibrated values to scientific values using a 5th degree polynomial.
-        c0_l2s_L = constant  coefficient for l2s polynomial for 'L' thermocouple
-        c1_l2s_L = linear    coefficient for l2s polynomial for 'L' thermocouple
-        c2_l2s_L = quadratic coefficient for l2s polynomial for 'L' thermocouple
-        c3_l2s_L = cubic     coefficient for l2s polynomial for 'L' thermocouple
-        c4_l2s_L = quartic   coefficient for l2s polynomial for 'L' thermocouple
-        c5_l2s_L = quintic   coefficient for l2s polynomial for 'L' thermocouple
+        e2l_L = array of calibration coefficients to convert the 'L' thermocouple
+                engineering values to lab calibrated values.
+        l2s_L = array of calibration coefficients to convert the 'L' thermocouple
+                lab calibrated values to scientific values.
 
     References:
 
@@ -313,27 +224,16 @@ def sfl_thsph_temp_tcl(tc_rawdec_L,
             >> Controlled >> 1000 System Level >>
             1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
     """
-    # convert raw decimal output to engineering values [V]
-    # leave constants as is for clarity
-    V_tc_eng_L = (tc_rawdec_L * 0.25 - 1024.0) / 61606.0
-
-    # convert engineering values to lab calibrated values [V]
-    V_tc_actual_L = eval_poly(V_tc_eng_L,
-                              c0_e2l_L, c1_e2l_L, c2_e2l_L, c3_e2l_L, c4_e2l_L)
-
-    # convert to mV
-    mV_tc_actual_L = 1000.0 * V_tc_actual_L
+    # convert raw decimal output to lab calibrated values [mV]
+    V_tc_actual_L = sfl_thsph_temp_labcal_l(tc_rawdec_L, e2l_L)
 
     # convert lab calibrated values to scientific values [degC]
-    T_tc_L = eval_poly(mV_tc_actual_L,
-                       c0_l2s_L, c1_l2s_L, c2_l2s_L, c3_l2s_L, c4_l2s_L, c5_l2s_L)
+    T_tc_L = eval_poly(V_tc_actual_L, l2s_L)
 
     return T_tc_L
 
 
-def sfl_thsph_temp_ref(ts_rawdec_r,
-                       c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-                       c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r):
+def sfl_thsph_temp_ref(ts_rawdec_r, e2l_r, l2s_r):
     """
     Description:
 
@@ -345,31 +245,20 @@ def sfl_thsph_temp_ref(ts_rawdec_r,
     Implemented by:
 
         2014-05-01: Russell Desiderio. Initial Code
+        2014-06-30: Russell Desiderio. DPS modifications to cal equations implemented.
 
     Usage:
 
-        T_ts_r = sfl_thsph_temp_ref(ts_rawdec_r,
-                       c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r,
-                       c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+        T_ts_r = sfl_thsph_temp_ref(ts_rawdec_r, e2l_r, l2s_r)
 
             where
 
         T_ts_r = reference thermistor temperature THSPHTE-REF_L1 [deg_C]
         ts_rawdec_r = reference thermistor, decimal counts (THSPHTE-REF_L0) [counts]
-        ### the e2l_r series of calibration coefficients convert the 'r' thermistor
-        ### engineering values to lab calibrated values using a 4th degree polynomial.
-        c0_e2l_r = constant  coefficient for e2l polynomial for 'r' thermistor
-        c1_e2l_r = linear    coefficient for e2l polynomial for 'r' thermistor
-        c2_e2l_r = quadratic coefficient for e2l polynomial for 'r' thermistor
-        c3_e2l_r = cubic     coefficient for e2l polynomial for 'r' thermistor
-        c4_e2l_r = quartic   coefficient for e2l polynomial for 'r' thermistor
-        ### the l2s_r series of calibration coefficients convert the 'r' thermistor
-        ### lab calibrated values to scientific values using a 4th degree polynomial.
-        c0_l2s_r = constant  coefficient for l2s polynomial for 'r' thermistor
-        c1_l2s_r = linear    coefficient for l2s polynomial for 'r' thermistor
-        c2_l2s_r = quadratic coefficient for l2s polynomial for 'r' thermistor
-        c3_l2s_r = cubic     coefficient for l2s polynomial for 'r' thermistor
-        c4_l2s_r = quartic   coefficient for l2s polynomial for 'r' thermistor
+        e2l_r = array of calibration coefficients to convert the 'r' thermistor
+                engineering values to lab calibrated values.
+        l2s_r = array of calibration coefficients to convert the 'r' thermistor
+                lab calibrated values to scientific values.
 
     References:
 
@@ -379,24 +268,33 @@ def sfl_thsph_temp_ref(ts_rawdec_r,
             >> Controlled >> 1000 System Level >>
             1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
     """
+    # reset exception handling so that when divide by zeros and np.log(x<=0) are
+    # encountered, the warnings are suppressed.
+    oldsettings = np.seterr(divide='ignore', invalid='ignore')
+
     # convert raw decimal output to engineering values [ohms]
     ts_rawdec_r_scaled = ts_rawdec_r * 0.125
     R_ts_eng_r = 10000.0 * ts_rawdec_r_scaled / (2048.0 - ts_rawdec_r_scaled)
 
     # convert engineering values to lab calibrated values [ohms]
-    R_ts_actual_r = eval_poly(R_ts_eng_r,
-                              c0_e2l_r, c1_e2l_r, c2_e2l_r, c3_e2l_r, c4_e2l_r)
+    R_ts_actual_r = eval_poly(R_ts_eng_r, e2l_r)
 
     # convert lab calibrated values to scientific values [degC]
-    T_ts_r = eval_poly(R_ts_actual_r,
-                       c0_l2s_r, c1_l2s_r, c2_l2s_r, c3_l2s_r, c4_l2s_r)
+    pval = eval_poly(np.log(R_ts_actual_r), l2s_r)
+    T_ts_r = 1.0 / pval - 273.15
+
+    # restore default exception handling settings
+    np.seterr(**oldsettings)
+
+    # trap out possible occurrences of nans and infs due to log(val<=0) and divide by zero.
+    # nans and infs will be returned only if the variables are elements of numpy arrays.
+    # do not use np.isinf, it does not work as desired if its argument is np.nan.
+    T_ts_r[~np.isfinite(T_ts_r)] = fill_value
 
     return T_ts_r
 
 
-def sfl_thsph_temp_int(ts_rawdec_b,
-                       c0_e2l_b, c1_e2l_b, c2_e2l_b, c3_e2l_b, c4_e2l_b,
-                       c0_l2s_b, c1_l2s_b, c2_l2s_b, c3_l2s_b, c4_l2s_b):
+def sfl_thsph_temp_int(ts_rawdec_b, e2l_b, l2s_b):
     """
     Description:
 
@@ -408,31 +306,20 @@ def sfl_thsph_temp_int(ts_rawdec_b,
     Implemented by:
 
         2014-05-01: Russell Desiderio. Initial Code
+        2014-06-30: Russell Desiderio. DPS modifications to cal equations implemented.
 
     Usage:
 
-        T_ts_b = sfl_thsph_temp_int(ts_rawdec_b,
-                       c0_e2l_b, c1_e2l_b, c2_e2l_b, c3_e2l_b, c4_e2l_b,
-                       c0_l2s_b, c1_l2s_b, c2_l2s_b, c3_l2s_b, c4_l2s_b)
+        T_ts_b = sfl_thsph_temp_int(ts_rawdec_b, e2l_b, l2s_b)
 
             where
 
         T_ts_b = board thermistor temperature THSPHTE-INT_L1 [deg_C]
         ts_rawdec_b = board thermistor, decimal counts (THSPHTE-INT_L0) [counts]
-        ### the e2l_b series of calibration coefficients convert the 'b' thermistor
-        ### engineering values to lab calibrated values using a 4th degree polynomial.
-        c0_e2l_b = constant  coefficient for e2l polynomial for 'b' thermistor
-        c1_e2l_b = linear    coefficient for e2l polynomial for 'b' thermistor
-        c2_e2l_b = quadratic coefficient for e2l polynomial for 'b' thermistor
-        c3_e2l_b = cubic     coefficient for e2l polynomial for 'b' thermistor
-        c4_e2l_b = quartic   coefficient for e2l polynomial for 'b' thermistor
-        ### the l2s_b series of calibration coefficients convert the 'b' thermistor
-        ### lab calibrated values to scientific values using a 4th degree polynomial.
-        c0_l2s_b = constant  coefficient for l2s polynomial for 'b' thermistor
-        c1_l2s_b = linear    coefficient for l2s polynomial for 'b' thermistor
-        c2_l2s_b = quadratic coefficient for l2s polynomial for 'b' thermistor
-        c3_l2s_b = cubic     coefficient for l2s polynomial for 'b' thermistor
-        c4_l2s_b = quartic   coefficient for l2s polynomial for 'b' thermistor
+        e2l_b = array of calibration coefficients to convert the 'b' thermistor
+                engineering values to lab calibrated values.
+        l2s_b = array of calibration coefficients to convert the 'b' thermistor
+                lab calibrated values to scientific values.
 
     References:
 
@@ -442,49 +329,157 @@ def sfl_thsph_temp_int(ts_rawdec_b,
             >> Controlled >> 1000 System Level >>
             1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
     """
+    # reset exception handling so that when divide by zeros and np.log(x<=0) are
+    # encountered, the warnings are suppressed.
+    oldsettings = np.seterr(divide='ignore', invalid='ignore')
+
     # convert raw decimal output to engineering values [ohms]
     ts_rawdec_b_scaled = ts_rawdec_b * 0.125
     R_ts_eng_b = 10000.0 * ts_rawdec_b_scaled / (2048.0 - ts_rawdec_b_scaled)
 
     # convert engineering values to lab calibrated values [ohms]
-    R_ts_actual_b = eval_poly(R_ts_eng_b,
-                              c0_e2l_b, c1_e2l_b, c2_e2l_b, c3_e2l_b, c4_e2l_b)
+    R_ts_actual_b = eval_poly(R_ts_eng_b, e2l_b)
 
     # convert lab calibrated values to scientific values [degC]
-    T_ts_b = eval_poly(R_ts_actual_b,
-                       c0_l2s_b, c1_l2s_b, c2_l2s_b, c3_l2s_b, c4_l2s_b)
+    pval = eval_poly(np.log(R_ts_actual_b), l2s_b)
+
+    T_ts_b = 1.0 / pval - 273.15
+
+    # restore default exception handling settings
+    np.seterr(**oldsettings)
+
+    # trap out possible occurrences of nans and infs due to log(val<=0) and divide by zero.
+    # nans and infs will be returned only if the variables are elements of numpy arrays.
+    # do not use np.isinf, it does not work as desired if its argument is np.nan.
+    T_ts_b[~np.isfinite(T_ts_b)] = fill_value
 
     return T_ts_b
 
 
-def eval_poly(x, c0, c1, c2, c3, c4, c5=0.0):
+def sfl_thsph_temp_labcal_h(tc_rawdec_H, e2l_H):
     """
     Description:
 
-        Calculates polynomial values for use with THSPSTE DPAs.
-
-        The documentation for the numpy v1.7 function to evaluate polynomials
-        was only available in draft form. Also, it uses the convention that the
-        0th coefficient multiplies the highest degree term, whereas the DPA
-        uses the convention that the 0th coefficient is the constant
-        coefficient, the 1st coefficient is the linear coefficient, etc. For
-        clarity the present routine uses the convention followed in the DPA.
-
-        Horner's method is used to evaluate the polynomial.
+        OOI Level 1 THSPH data products THSPHTE-TCH and THSPHTE-TH require this subfunction,
+        which calculates lab calibrated mV values for the 'H' thermistor.
 
     Implemented by:
 
-        2014-05-01: Russell Desiderio. Initial Code
+        2014-06-30: Russell Desiderio. Initial Code
 
     Usage:
 
-        value = eval_poly(x, c0, c1, c2, c3, c4[, c5])
+        V_tc_labcal_H = sfl_thsph_temp_tch(tc_rawdec_H, e2l_H)
 
             where
 
-        value = P(x) = c0 + c1*x + c2*x^2 + c3*x^3 + c4*x^4 + c5*x^5
+        V_tc_labcal_H = intermediate variable used in calculation of THSPHTE-TCH and THSPHTE-TH.
+        tc_rawdec_H = "H" thermocouple, decimal counts (THSPHTE-TCH_L0) [counts]
+        e2l_H = array of calibration coefficients to convert the 'H' thermocouple
+                engineering values to lab calibrated values.
+
+    References:
+
+        OOI (2014). Data Product Specification for Vent Fluid Temperature from
+            THSPH. Document Control Number 1341-00120.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
     """
-    return c0 + x * (c1 + x * (c2 + x * (c3 + x * (c4 + x * c5))))
+    # convert raw decimal output to engineering values [mV]
+    # leave constants as is for clarity
+    V_tc_eng_H = (tc_rawdec_H * 0.25 - 1024.0) / 61.606
+
+    # convert engineering values to lab calibrated values [mV]
+    V_tc_labcal_H = eval_poly(V_tc_eng_H, e2l_H)
+
+    return V_tc_labcal_H
+
+
+def sfl_thsph_temp_labcal_l(tc_rawdec_L, e2l_L):
+    """
+    Description:
+
+        OOI Level 1 THSPH data products THSPHTE-TCL and THSPHTE-TL require this subfunction,
+        which calculates lab calibrated mV values for the 'L' thermistor.
+
+    Implemented by:
+
+        2014-06-30: Russell Desiderio. Initial Code
+
+    Usage:
+
+        V_tc_labcal_L = sfl_thsph_temp_tcl(tc_rawdec_L, e2l_L)
+
+            where
+
+        V_tc_labcal_L = intermediate variable used in calculation of THSPHTE-TCL and THSPHTE-TL.
+        tc_rawdec_L = "L" thermocouple, decimal counts (THSPHTE-TCL_L0) [counts]
+        e2l_L = array of calibration coefficients to convert the 'L' thermocouple
+                engineering values to lab calibrated values.
+
+    References:
+
+        OOI (2014). Data Product Specification for Vent Fluid Temperature from
+            THSPH. Document Control Number 1341-00120.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
+    """
+    # convert raw decimal output to engineering values [mV]
+    # leave constants as is for clarity
+    V_tc_eng_L = (tc_rawdec_L * 0.25 - 1024.0) / 61.606
+
+    # convert engineering values to lab calibrated values [mV]
+    V_tc_labcal_L = eval_poly(V_tc_eng_L, e2l_L)
+
+    return V_tc_labcal_L
+
+
+def eval_poly(x, c):
+    """
+    Description:
+
+        Calculates polynomial values for use with THSPH data products using the
+        Horner algorithm. All coefficient sets are 5th order (6 terms), so that
+        this function is written to be "vectorized" for speed for multiple data
+        sets.
+
+        The documentation for the numpy v1.7 function to evaluate polynomials
+        was only available in draft form; plus, it won't handle "vectorized"
+        calibration coefficients (2D arrays, in which each row is a separate
+        set of calibration coeffs).
+
+        The standard convention of storing polynomial coefficients in an array
+        is used, namely, the highest order coefficient is the first element and
+        coefficients are stored in descending order.
+
+    Implemented by:
+
+        2014-05-01: Russell Desiderio. Initial Code (no arrays, no recursion).
+        2014-07-02: Russell Desiderio. 2D calcoeff array implementation.
+
+    Usage:
+
+        value = eval_poly(x, c)
+
+            where
+
+        value  = c[:,0]*x^(5) + c[:,1]*x^(4) + ... c[:,4]*x + c[:,5]
+
+        x = the argument(s) of the polynomial to be evaluated; can be a scalar or vector
+        c = array containing the polynomial coefficients:
+                 if x is a scalar, then c is a vector.
+                 if x is a vector, then c is a 2D array, where each row j is a set of
+                                   polynomial coefficients associated with x[j].
+    """
+    # the "c = np.atleast_2d(c)" statement is necessary so that both single and
+    # "vectorized" (in the OOI CI sense) calls to the eval_poly subroutine work.
+    c = np.atleast_2d(c)
+
+    val = c[:, 5] + x * (c[:, 4] + x * (c[:, 3] + x * (c[:, 2] + x * (c[:, 1] + x * c[:, 0]))))
+
+    return val
 
 
 def sfl_trhph_vfltemp(V_ts, V_tc, tc_slope, ts_slope, c0=0.015, c1=0.0024, c2=7.00e-5, c3=-1.00e-6):
