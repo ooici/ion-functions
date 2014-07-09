@@ -5,11 +5,11 @@
 @author Christopher Wingard
 @brief Module containing Hydrophone instrument family related functions
 """
-
 import numexpr as ne
 import numpy as np
 
-def hyd_acoustic_pwaves(wav, gain):
+
+def hyd_bb_acoustic_pwaves(wav, gain):
     """
     Description:
 
@@ -59,3 +59,44 @@ def hyd_acoustic_pwaves(wav, gain):
     # and correct for the gain
     tsv = ne.evaluate("volts / gain")
     return tsv
+
+
+def hyd_lf_acoustic_pwaves(raw, gain=3.2, sensitivity=1.99):
+    """
+    Description:
+
+        Calculates the OOI Level 1 (L1) Low Frequency Acoustic Pressure Waves
+        core data product (HYDAPLF), using data from the Low Frequency
+        Hydrophone (HYDLF) instruments.
+
+    Implemented by:
+
+        2014-07-09: Christopher Wingard. Initial Code.
+
+    Usage:
+
+        hydaplf = obs_acoustic_lfpwaves(counts, gain, sensitivity)
+
+            where
+
+        hydaplf = time-series of low frequency acoustic pressure waves [Pa]
+            (HYDAPLF_L1)
+        raw = raw time-series digitizied in counts [counts] (HYDAPLF_L0)
+        gain = Gurlap DM24 fixed gain bit weight [uV/count]
+        sensitivity = Low frequency hydrophone [mV/Pa]
+
+    References:
+
+        OOI (2013). Data Product Specification for Low Frequency Acoustic
+            Pressure Waves. Document Control Number 1341-00821.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >>
+            OOI >> Controlled >> 1000 System Level >>
+            1341-00821_Data_Product_SPEC_HYDAPLF_OOI.pdf)
+    """
+    # scale the gain and sensitivity ...
+    gain = ne.evaluate("gain * 1.0e-3")
+    sense = ne.evaluate("2. * sensitivity")
+
+    # ... and calculate the low frequency acoustic pressure waves
+    hydaplf = ne.evaluate("raw * (gain / sense)")
+    return hydaplf
