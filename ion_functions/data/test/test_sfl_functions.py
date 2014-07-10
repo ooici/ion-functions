@@ -18,6 +18,203 @@ from ion_functions.utils import fill_value
 @attr('UNIT', group='func')
 class TestSFLFunctionsUnit(BaseUnitTestCase):
 
+    def test_sfl_thsph_L2_products(self):
+        """
+        Test the 6 functions that calculate the THSPH L2 data products:
+            sfl_thsph_hydrogen      : THSPHHC
+            sfl_thsph_sulfide       : THSPHHS
+            sfl_thsph_ph            : THSPHPH-PH
+            sfl_thsph_ph_noref      : THSPHPH-PH-NOREF
+            sfl_thsph_ph_acl        : THSPHPH-PH-ACL
+            sfl_thsph_ph_noref_acl  : THSPHPH-TH-NOREF-ACL
+
+        Test values based on a preliminary version of a spreadsheet supplied with
+        preliminary versions of the DPSs: 1341-00190 (PH), 1341-00200 (HS),
+        1341-00210 (HC). The L2 test values in the spreadsheets were not derived
+        from L0 values, so that a back-calculation had to be made to figure out
+        a set of L0 values that would be consistent with the L2 values.
+
+        Implemented by:
+
+            2014-07-09: Russell Desiderio. Initial Code
+
+        References:
+
+        OOI (2014). Data Product Specification for Vent Fluid pH. Document Control
+            Number 1341-00190. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI>> Controlled >> 1000 System Level >>
+            1341-00190_Data_Product_Spec_THSPHPH_OOI.pdf)
+
+        OOI (2014). Data Product Specification for Vent Fluid Hydrogen Sulfide
+            Concentration. Document Control Number 1341-00200.
+            https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI>> Controlled >> 1000 System Level >>
+            1341-00200_Data_Product_Spec_THSPHHS_OOI.pdf)
+
+        OOI (2014). Data Product Specification for Vent Fluid Hydrogen Concentration.
+            Document Control Number 1341-00210. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI>> Controlled >> 1000 System Level >>
+            1341-00210_Data_Product_Spec_THSPHHC_OOI.pdf)
+
+        Prospective location(s) of data file with unit test values. Note that all L2
+            data product test data will be contained in one excel file (presumably v5).
+
+        OOI (2014). THSPH L2 data product unit test data. 1341-00190_THSPHPH DPS Artifact.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00190_THSPHPH >>
+            THSPHTE Test Data Set v5.xls).   Also see adjoining 1341-00200_THSPHHS and
+            1341-00210_THSPHHC entries.
+        """
+        # calibration polynomial coefficients:
+
+        # electrode engineering to lab calibrated units
+        e2l_h2 = np.array([0.0, 0.0, 0.0, 0.0, 1.0, -0.00375])
+        e2l_hs = np.array([0.0, 0.0, 0.0, 0.0, 1.0, -0.00350])
+        e2l_ysz = np.array([0.0, 0.0, 0.0, 0.0, 1.0, -0.00375])
+        e2l_agcl = np.array([0.0, 0.0, 0.0, 0.0, 1.0, -0.00225])
+        # electrode material response
+        arr_hgo = np.array([0.0, 0.0, 4.38978E-10, -1.88519E-07, -1.88232E-04, 9.23720E-01])
+        arr_agcl = np.array([0.0, -8.61134E-10, 9.21187E-07, -3.7455E-04, 6.6550E-02, -4.30086])
+        # calculated theoretical reference electrode potential
+        arr_agclref = np.array([0.0, 0.0, -2.5E-10, -2.5E-08, -2.5E-06, -9.025E-02])
+        # for calculation of chl activity polynomial coefficients
+        arr_tac = np.array([0.0, 0.0, -2.80979E-09, 2.21477E-06, -5.53586E-04, 5.723E-02])
+        arr_tbc1 = np.array([0.0, 0.0, -6.59572E-08, 4.52831E-05, -1.204E-02, 1.70059])
+        arr_tbc2 = np.array([0.0, 0.0, 8.49102E-08, -6.20293E-05, 1.485E-02, -1.41503])
+        arr_tbc3 = np.array([-1.86747E-12, 2.32877E-09, -1.18318E-06, 3.04753E-04, -3.956E-02, 2.2047])
+        # h2 and h2s fugacity/activity calculations
+        arr_logkfh2g = np.array([0.0, 0.0, -1.51904000E-07, 1.16655E-04, -3.435E-02, 6.32102])
+        arr_eh2sg = np.array([0.0, 0.0, 0.0, 0.0, -4.49477E-05, -1.228E-02])
+        arr_yh2sg = np.array([2.3113E+01, -1.8780E+02, 5.9793E+02, -9.1512E+02, 6.7717E+02, -1.8638E+02])
+
+        # SINGLE-VALUED TESTS
+
+        # hydrogen concentration THSPHHC
+        counts_h2 = 4907.0
+        counts_ysz = 7807.0
+        temperature = 320.0
+        h2_xpctd = 0.02712
+
+        h2_calc = sflfunc.sfl_thsph_hydrogen(counts_h2, counts_ysz, temperature, e2l_h2, e2l_ysz, arr_hgo,
+                                             arr_logkfh2g)
+        np.testing.assert_allclose(h2_calc, h2_xpctd, rtol=0.0, atol=0.0001)
+
+        # sulfide concentration THSPHHS
+        counts_hs = 3806.0
+        counts_ysz = 7007.0
+        temperature = 320.0
+        h2s_xpctd = 0.95744
+
+        h2s_calc = sflfunc.sfl_thsph_sulfide(counts_hs, counts_ysz, temperature, e2l_hs, e2l_ysz, arr_hgo,
+                                             arr_logkfh2g, arr_eh2sg, arr_yh2sg)
+        np.testing.assert_allclose(h2s_calc, h2s_xpctd, rtol=0.0, atol=0.0001)
+
+        # pH: THSPHPH-PH  and  THSPHPH-PH-ACL
+        counts_agcl = 7801.0
+        counts_ysz = 6607.0
+        temperature = 300.0
+        trhphcc = 400.0     # [chloride] from trhphcc data product has units of mmol/kg
+        # THSPHPH-PH
+        pH_xpctd = 5.3857
+        pH_calc = sflfunc.sfl_thsph_ph(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl, arr_hgo,
+                                       arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, trhphcc)
+        np.testing.assert_allclose(pH_calc, pH_xpctd, rtol=0.0, atol=0.001)
+        # THSPHPH-PH-ACL (no chloride measurement supplied)
+        pH_acl_xpctd = 5.2357
+        pH_calc = sflfunc.sfl_thsph_ph_acl(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
+                                           arr_hgo, arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3)
+        np.testing.assert_allclose(pH_calc, pH_acl_xpctd, rtol=0.0, atol=0.001)
+
+        # pH: THSPHPH-PH-NOREF  and  THSPHPH-PH-NOREF-ACL
+        counts_ysz = 6207.0
+        temperature = 300.0
+        # THSPHPH-PH-NOREF
+        pH_noref_xpctd = 4.5064
+        pH_calc = sflfunc.sfl_thsph_ph_noref(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hgo,
+                                             arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, trhphcc)
+        np.testing.assert_allclose(pH_calc, pH_noref_xpctd, rtol=0.0, atol=0.001)
+        # THSPHPH-PH-NOREF-ACL (no chloride measurement supplied)
+        pH_noref_acl_xpctd = 4.3564
+        pH_calc = sflfunc.sfl_thsph_ph_noref_acl(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hgo,
+                                                 arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3)
+        np.testing.assert_allclose(pH_calc, pH_noref_acl_xpctd, rtol=0.0, atol=0.001)
+
+        # VECTORIZED TESTS
+
+        # set up cal coeff arrays.
+        # since i will use 7 sets of L0 values for the pH function inputs,
+        # i'll set up all coeff arrays to be 7x6, and also run 7 values
+        # for the hydrogen and sulfide functions.
+        npackets = 7
+        e2l_h2 = np.tile(e2l_h2, (npackets, 1))
+        e2l_hs = np.tile(e2l_hs, (npackets, 1))
+        e2l_ysz = np.tile(e2l_ysz, (npackets, 1))
+        e2l_agcl = np.tile(e2l_agcl, (npackets, 1))
+        # electrode material response
+        arr_hgo = np.tile(arr_hgo, (npackets, 1))
+        arr_agcl = np.tile(arr_agcl, (npackets, 1))
+        # calculated theoretical reference electrode potential
+        arr_agclref = np.tile(arr_agclref, (npackets, 1))
+        # for calculation of chl activity polynomial coefficients
+        arr_tac = np.tile(arr_tac, (npackets, 1))
+        arr_tbc1 = np.tile(arr_tbc1, (npackets, 1))
+        arr_tbc2 = np.tile(arr_tbc2, (npackets, 1))
+        arr_tbc3 = np.tile(arr_tbc3, (npackets, 1))
+        # h2 and h2s fugacity/activity calculations
+        arr_logkfh2g = np.tile(arr_logkfh2g, (npackets, 1))
+        arr_eh2sg = np.tile(arr_eh2sg, (npackets, 1))
+        arr_yh2sg = np.tile(arr_yh2sg, (npackets, 1))
+
+        # hydrogen concentration THSPHHC
+        counts_h2 = np.array([4907.0, 4207.0, 4907.0, 4207.0, 4907.0, 4207.0, 4907.0])
+        counts_ysz = np.array([7807.0, 7407.0, 7807.0, 7407.0, 7807.0, 7407.0, 7807.0])
+        temperature = np.array([320.0, 250.0, 320.0, 250.0, 320.0, 250.0, 320.0])
+        h2_xpctd = np.array([0.02712, 0.09265, 0.02712, 0.09265, 0.02712, 0.09265, 0.02712])
+
+        h2_calc = sflfunc.sfl_thsph_hydrogen(counts_h2, counts_ysz, temperature, e2l_h2, e2l_ysz, arr_hgo,
+                                             arr_logkfh2g)
+        np.testing.assert_allclose(h2_calc, h2_xpctd, rtol=0.0, atol=0.0001)
+
+        # sulfide concentration THSPHHS
+        counts_hs = np.array([3806.0, 3166.0, 3806.0, 3166.0, 3806.0, 3166.0, 3806.0])
+        counts_ysz = np.array([7007.0, 6607.0, 7007.0, 6607.0, 7007.0, 6607.0, 7007.0])
+        temperature = np.array([320.0, 260.0, 320.0, 260.0, 320.0, 260.0, 320.0])
+        h2s_xpctd = np.array([0.95744, 3.70778, 0.95744, 3.70778, 0.95744, 3.70778, 0.95744])
+
+        h2s_calc = sflfunc.sfl_thsph_sulfide(counts_hs, counts_ysz, temperature, e2l_hs, e2l_ysz, arr_hgo,
+                                             arr_logkfh2g, arr_eh2sg, arr_yh2sg)
+        np.testing.assert_allclose(h2s_calc, h2s_xpctd, rtol=0.0, atol=0.0001)
+
+        # pH: THSPHPH-PH  and  THSPHPH-PH-ACL
+        counts_agcl = np.array([7801, 7001, 7801, 7801, 8201, 7801, 7801])
+        counts_ysz = np.array([7407, 6207, 6607, 6207, 6207, 5407, 8207])
+        temperature = np.tile(300, npackets)
+        trhphcc = np.tile(400.0, npackets)  # [chloride] from trhphcc data product has units of mmol/kg
+        # THSPHPH-PH
+        pH_xpctd = np.array([fill_value, 6.26505, 5.38573, 4.50641, 3.62709, fill_value, fill_value])
+        pH_calc = sflfunc.sfl_thsph_ph(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl, arr_hgo,
+                                       arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, trhphcc)
+        np.testing.assert_allclose(pH_calc, pH_xpctd, rtol=0.0, atol=0.001)
+        # THSPHPH-PH-ACL (no chloride measurement supplied)
+        pH_acl_xpctd = np.array([6.99431, 6.11499, 5.23567, 4.35635, 3.47704, fill_value, fill_value])
+        pH_calc = sflfunc.sfl_thsph_ph_acl(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
+                                           arr_hgo, arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3)
+        np.testing.assert_allclose(pH_calc, pH_acl_xpctd, rtol=0.0, atol=0.001)
+
+        # pH: THSPHPH-PH-NOREF  and  THSPHPH-PH-NOREF-ACL
+        counts_ysz = np.array([7807, 7407, 7007, 6607, 6207, 5807, 5407])
+        temperature = np.tile(300, npackets)
+        # THSPHPH-PH-NOREF
+        pH_noref_xpctd = np.array([fill_value, fill_value, 6.26505, 5.38573, 4.50641, 3.62709, fill_value])
+        pH_calc = sflfunc.sfl_thsph_ph_noref(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hgo,
+                                             arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, trhphcc)
+        np.testing.assert_allclose(pH_calc, pH_noref_xpctd, rtol=0.0, atol=0.001)
+        # THSPHPH-PH-NOREF-ACL (no chloride measurement supplied)
+        pH_noref_acl_xpctd = np.array([fill_value, 6.99431, 6.11499, 5.23567, 4.35635, 3.47704, fill_value])
+        pH_calc = sflfunc.sfl_thsph_ph_noref_acl(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hgo,
+                                                 arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3)
+        np.testing.assert_allclose(pH_calc, pH_noref_acl_xpctd, rtol=0.0, atol=0.001)
+
     def test_sfl_thsph_temp(self):
         """
         Test the 6 functions that calculate the THSPHTE data products:
@@ -28,13 +225,18 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
             sfl_thsph_temp_tch : THSPHTE-TCH
             sfl_thsph_temp_th  : THSPHTE-TH
 
-        Values based on those described in DPS as available on Alfresco:
+        Values based on those described in DPS and DPS artifact as available on Alfresco:
 
         OOI (2014). Data Product Specification for Vent Fluid Temperature from
             TRHPH. Document Control Number 1341-00120.
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
             >> Controlled >> 1000 System Level >>
             1341-00120_Data_Product_Spec_THSPHTE_OOI.pdf)
+
+        OOI (2014). THSPHTE unit test data. 1341-00120_THSPHTE DPS Artifact.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00120_THSPHTE >>
+            THSPHTE Test Data Set v4.xls)
 
         Implemented by:
 

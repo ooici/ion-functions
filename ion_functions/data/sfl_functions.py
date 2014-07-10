@@ -15,6 +15,588 @@ from ion_functions.data.sfl_functions_surface import tdat, sdat, cdat
 from ion_functions.utils import fill_value
 
 
+# .............................................................................
+# THSPH data products: THSPHHC, THSPHHS, THSPHPH (4 PH products) ..............
+# .............................................................................
+
+def sfl_thsph_ph(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
+                 arr_hgo, arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, chl):
+    """
+    Description:
+
+        Calculates the THSPHPH-PH_L2 data product, one of the 4 THSPHPH data
+        products for the THSPH instruments. The PH data product algorithm
+        calculates pH assuming good chloride data is available from
+        TRHPH (TRHPHCC_L2) and a working AgCl reference electrode.
+
+    Implemented by:
+
+        2014-07-08: Russell Desiderio. Initial Code.
+
+    Usage:
+
+        pH = sfl_thsph_ph(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
+                          arr_hgo, arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, chl)
+
+            where
+
+        pH = vent fluid pH: THSPHPH-PH_L2) [unitless]
+        counts_ysz =  raw data recorded by ysz electrode THSPHPH-YSZ_L0 [counts]
+        counts_agcl =  raw data recorded by AgCl electrode THSPHPH-AGCL_L0 [counts]
+        temperature = temperature near sample inlet THSPHTE-TH_L1 [deg_C].
+        e2l_ysz =     array of 5th degree polynomial coefficients to convert the
+                      ysz electrode engineering values to lab calibrated values.
+        e2l_agcl =    array of 5th degree polynomial coefficients to convert the
+                      agcl electrode engineering values to lab calibrated values.
+        arr_hgo =     array of 5th degree polynomial coefficients to calculate the
+                      electrode material response to temperature.
+        arr_agcl =    array of 5th degree polynomial coefficients to calculate the
+                      AgCl electrode material response to temperature.
+        arr_tac = array containing the 5th degree polynomial coefficients to calculate tac (=tbc0).
+        arr_tbc1 = array containing the 5th degree polynomial coefficients to calculate tbc1.
+        arr_tbc2 = array containing the 5th degree polynomial coefficients to calculate tbc2.
+        arr_tbc3 = array containing the 5th degree polynomial coefficients to calculate tbc3.
+        chl = vent fluid chloride concentration from TRHPHCC_L2 [mmol kg-1].
+
+    References:
+
+        OOI (2014). Data Product Specification for Vent Fluid pH. Document Control
+            Number 1341-00190. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI>> Controlled >> 1000 System Level >>
+            1341-00190_Data_Product_Spec_THSPHPH_OOI.pdf)
+    """
+    # calculate lab calibrated electrode response [V]
+    v_labcal_ysz = v_labcal(counts_ysz, e2l_ysz)
+    v_labcal_agcl = v_labcal(counts_agcl, e2l_agcl)
+
+    # calculate intermediate products that depend upon temperature
+    e_nernst = nernst(temperature)
+    e_hgo = eval_poly(temperature, arr_hgo)
+    e_agcl = eval_poly(temperature, arr_agcl)
+    act_chl = chloride_activity(temperature, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, chl)
+
+    # calculate pH potential [V]
+    e_phmeas = v_labcal_ysz - v_labcal_agcl
+    # check for unphysical values as specified in the DPS.
+    # logical indexing with boolean arrays is faster than integer indexing using np.where.
+    # ok to apply mask at end of calculation.
+    bad_eph_mask = np.logical_or(np.less(e_phmeas, -0.7), np.greater(e_phmeas, 0.0))
+
+    # final data product calculation
+    pH = (e_phmeas - e_agcl + e_hgo) / e_nernst + np.log10(act_chl)
+
+    # second check for unphysical values, as specified in the DPS
+    bad_ph_mask = np.logical_or(np.less(pH, 3.0), np.greater(pH, 7.0))
+
+    # set all out-of-range values to fill values
+    pH[np.logical_or(bad_eph_mask, bad_ph_mask)] = fill_value
+
+    return pH
+
+
+def sfl_thsph_ph_acl(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
+                     arr_hgo, arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3):
+    """
+    Description:
+
+        Calculates the THSPHPH-PH-ACL_L2 data product, one of the 4 THSPHPH
+        data products for the THSPH instruments. The PH-ACL data product
+        algorithm calculates pH assuming no good chloride data available from
+        TRHPH (TRHPHCC_L2) (assumes instead a pre-determined chloride concentration
+        which is set in the chloride_activity function). The data from the AgCl
+        reference electrode is also assumed to be good and used in this
+        calculation.
+
+    Implemented by:
+
+        2014-07-08: Russell Desiderio. Initial Code.
+
+    Usage:
+
+        pH = sfl_thsph_ph_acl(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
+                              arr_hgo, arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3)
+
+            where
+
+        pH = vent fluid pH: THSPHPH-PH-ACL_L2) [unitless]
+        counts_ysz =  raw data recorded by ysz electrode THSPHPH-YSZ_L0 [counts]
+        counts_agcl =  raw data recorded by AgCl electrode THSPHPH-AGCL_L0 [counts]
+        temperature = temperature near sample inlet THSPHTE-TH_L1 [deg_C].
+        e2l_ysz =     array of 5th degree polynomial coefficients to convert the
+                      ysz electrode engineering values to lab calibrated values.
+        e2l_agcl =    array of 5th degree polynomial coefficients to convert the
+                      agcl electrode engineering values to lab calibrated values.
+        arr_hgo =     array of 5th degree polynomial coefficients to calculate the
+                      electrode material response to temperature.
+        arr_agcl =    array of 5th degree polynomial coefficients to calculate the
+                      AgCl electrode material response to temperature.
+        arr_tac = array containing the 5th degree polynomial coefficients to calculate tac (=tbc0).
+        arr_tbc1 = array containing the 5th degree polynomial coefficients to calculate tbc1.
+        arr_tbc2 = array containing the 5th degree polynomial coefficients to calculate tbc2.
+        arr_tbc3 = array containing the 5th degree polynomial coefficients to calculate tbc3.
+
+    References:
+
+        OOI (2014). Data Product Specification for Vent Fluid pH. Document Control
+            Number 1341-00190. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI>> Controlled >> 1000 System Level >>
+            1341-00190_Data_Product_Spec_THSPHPH_OOI.pdf)
+    """
+    # calculate lab calibrated electrode response [V]
+    v_labcal_ysz = v_labcal(counts_ysz, e2l_ysz)
+    v_labcal_agcl = v_labcal(counts_agcl, e2l_agcl)
+
+    # calculate intermediate products that depend upon temperature
+    e_nernst = nernst(temperature)
+    e_hgo = eval_poly(temperature, arr_hgo)
+    e_agcl = eval_poly(temperature, arr_agcl)
+    # chloride activity assuming the default value for chloride concentration
+    # set in the subroutine
+    act_chl = chloride_activity(temperature, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3)
+
+    # calculate pH potential [V]
+    e_phmeas = v_labcal_ysz - v_labcal_agcl
+    # check for unphysical values as specified in the DPS.
+    # logical indexing with boolean arrays is faster than integer indexing using np.where.
+    # ok to apply mask at end of calculation.
+    bad_eph_mask = np.logical_or(np.less(e_phmeas, -0.7), np.greater(e_phmeas, 0.0))
+
+    # final data product calculation
+    pH = (e_phmeas - e_agcl + e_hgo) / e_nernst + np.log10(act_chl)
+
+    # second check for unphysical values, as specified in the DPS
+    bad_ph_mask = np.logical_or(np.less(pH, 3.0), np.greater(pH, 7.0))
+
+    # set all out-of-range values to fill values
+    pH[np.logical_or(bad_eph_mask, bad_ph_mask)] = fill_value
+
+    return pH
+
+
+def sfl_thsph_ph_noref(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hgo,
+                       arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, chl):
+    """
+    Description:
+
+        Calculates the THSPHPH-PH-NOREF_L2 data product, one of the 4 THSPHPH
+        data products for the THSPH instruments. The PH-NOREF data product
+        algorithm calculates pH assuming no good reference (AgCl) electrode data
+        (uses instead a theoretical value calculated from vent temperature) and
+        also uses (presumably good) chloride data from TRHPH (TRHPHCC_L2).
+
+    Implemented by:
+
+        2014-07-08: Russell Desiderio. Initial Code.
+
+    Usage:
+
+        pH = sfl_thsph_ph_noref(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hgo,
+                                arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, chl)
+
+            where
+
+        pH = vent fluid pH: THSPHPH-PH-NOREF_L2) [unitless]
+        counts_ysz =  raw data recorded by ysz electrode THSPHPH-YSZ_L0 [counts]
+        temperature = temperature near sample inlet THSPHTE-TH_L1 [deg_C].
+        arr_agclref = array of 5th degree polynomial coefficients to calculate the
+                      theoretical reference electrode potential, replacing measured
+                      reference AgCl electrode potential values.
+        e2l_ysz =     array of 5th degree polynomial coefficients to convert the
+                      ysz electrode engineering values to lab calibrated values.
+        arr_hgo =     array of 5th degree polynomial coefficients to calculate the
+                      electrode material response to temperature.
+        arr_agcl =    array of 5th degree polynomial coefficients to calculate the
+                      AgCl electrode material response to temperature.
+        arr_tac = array containing the 5th degree polynomial coefficients to calculate tac (=tbc0).
+        arr_tbc1 = array containing the 5th degree polynomial coefficients to calculate tbc1.
+        arr_tbc2 = array containing the 5th degree polynomial coefficients to calculate tbc2.
+        arr_tbc3 = array containing the 5th degree polynomial coefficients to calculate tbc3.
+        chl = vent fluid chloride concentration from TRHPHCC_L2 [mmol kg-1].
+
+    References:
+
+        OOI (2014). Data Product Specification for Vent Fluid pH. Document Control
+            Number 1341-00190. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI>> Controlled >> 1000 System Level >>
+            1341-00190_Data_Product_Spec_THSPHPH_OOI.pdf)
+    """
+    # calculate lab calibrated electrode response [V]
+    v_labcal_ysz = v_labcal(counts_ysz, e2l_ysz)
+
+    # calculate intermediate products that depend upon temperature
+    e_refcalc = eval_poly(temperature, arr_agclref)
+    e_nernst = nernst(temperature)
+    e_hgo = eval_poly(temperature, arr_hgo)
+    e_agcl = eval_poly(temperature, arr_agcl)
+    act_chl = chloride_activity(temperature, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, chl)
+
+    # calculate pH potential, using theoretical reference value [V]
+    e_phcalc = v_labcal_ysz - e_refcalc
+    # check for unphysical values as specified in the DPS.
+    # logical indexing with boolean arrays is faster than integer indexing using np.where.
+    # ok to apply mask at end of calculation.
+    bad_eph_mask = np.logical_or(np.less(e_phcalc, -0.7), np.greater(e_phcalc, 0.0))
+
+    # final data product calculation
+    pH = (e_phcalc - e_agcl + e_hgo) / e_nernst + np.log10(act_chl)
+
+    # second check for unphysical values, as specified in the DPS
+    bad_ph_mask = np.logical_or(np.less(pH, 3.0), np.greater(pH, 7.0))
+
+    # set all out-of-range values to fill values
+    pH[np.logical_or(bad_eph_mask, bad_ph_mask)] = fill_value
+
+    return pH
+
+
+def sfl_thsph_ph_noref_acl(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hgo,
+                           arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3):
+    """
+    Description:
+
+        Calculates the THSPHPH-PH-NOREF-ACL_L2 data product, one of the 4 THSPHPH
+        data products for the THSPH instruments. The PH-NOREF-ACL data product
+        algorithm calculates pH assuming no good reference (AgCl) electrode data
+        (uses instead a theoretical value calculated from vent temperature) and
+        assuming no good chloride data from TRHPH (TRHPHCC_L2) (assumes instead a
+        pre-determined chloride concentration which is set in the chloride_activity
+        function).
+
+    Implemented by:
+
+        2014-07-08: Russell Desiderio. Initial Code.
+
+    Usage:
+
+        pH = sfl_thsph_ph_noref_acl(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hgo,
+                                    arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3)
+
+            where
+
+        pH = vent fluid pH: THSPHPH-PH-NOREF-ACL_L2) [unitless]
+        counts_ysz =  raw data recorded by ysz electrode THSPHPH-YSZ_L0 [counts]
+        temperature = temperature near sample inlet THSPHTE-TH_L1 [deg_C].
+        arr_agclref = array of 5th degree polynomial coefficients to calculate the
+                      theoretical reference electrode potential, replacing measured
+                      reference AgCl electrode potential values.
+        e2l_ysz =     array of 5th degree polynomial coefficients to convert the
+                      ysz electrode engineering values to lab calibrated values.
+        arr_hgo =     array of 5th degree polynomial coefficients to calculate the
+                      electrode material response to temperature.
+        arr_agcl =    array of 5th degree polynomial coefficients to calculate the
+                      AgCl electrode material response to temperature.
+        arr_tac = array containing the 5th degree polynomial coefficients to calculate tac (=tbc0).
+        arr_tbc1 = array containing the 5th degree polynomial coefficients to calculate tbc1.
+        arr_tbc2 = array containing the 5th degree polynomial coefficients to calculate tbc2.
+        arr_tbc3 = array containing the 5th degree polynomial coefficients to calculate tbc3.
+
+    References:
+
+        OOI (2014). Data Product Specification for Vent Fluid pH. Document Control
+            Number 1341-00190. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI>> Controlled >> 1000 System Level >>
+            1341-00190_Data_Product_Spec_THSPHPH_OOI.pdf)
+    """
+    # calculate lab calibrated electrode response [V]
+    v_labcal_ysz = v_labcal(counts_ysz, e2l_ysz)
+
+    # calculate intermediate products that depend upon temperature
+    e_refcalc = eval_poly(temperature, arr_agclref)
+    e_nernst = nernst(temperature)
+    e_hgo = eval_poly(temperature, arr_hgo)
+    e_agcl = eval_poly(temperature, arr_agcl)
+    # chloride activity assuming the default value for chloride concentration
+    # set in the subroutine
+    act_chl = chloride_activity(temperature, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3)
+
+    # calculate pH potential, using theoretical reference value [V]
+    e_phcalc = v_labcal_ysz - e_refcalc
+    # check for unphysical values as specified in the DPS.
+    # logical indexing with boolean arrays is faster than integer indexing using np.where.
+    # ok to apply mask at end of calculation.
+    bad_eph_mask = np.logical_or(np.less(e_phcalc, -0.7), np.greater(e_phcalc, 0.0))
+
+    # final data product calculation
+    pH = (e_phcalc - e_agcl + e_hgo) / e_nernst + np.log10(act_chl)
+
+    # second check for unphysical values, as specified in the DPS
+    bad_ph_mask = np.logical_or(np.less(pH, 3.0), np.greater(pH, 7.0))
+
+    # set all out-of-range values to fill values
+    pH[np.logical_or(bad_eph_mask, bad_ph_mask)] = fill_value
+
+    return pH
+
+
+def sfl_thsph_sulfide(counts_hs, counts_ysz, temperature, e2l_hs, e2l_ysz, arr_hgo,
+                      arr_logkfh2g, arr_eh2sg, arr_yh2sg):
+    """
+    Description:
+
+        Calculates the THSPHHS_L2 data product (hydrogen sulfide concentration) for
+        the THSPH instruments from vent temperature and from data from its sulfide
+        and YSZ electrodes. Note that the chemical formula for hydrogen is H2, and
+        that for hydrogen sulfide is H2S; this could lead to confusion in the
+        variable and array names from the DPS if care is not taken. Note also that
+        this hydrogen sulfide DPA does use an intermediate data product and its
+        'calibration' coefficients (hydrogen fugacity) that are also used in the
+        hydrogen concentration DPA.
+
+    Implemented by:
+
+        2014-07-08: Russell Desiderio. Initial Code.
+
+    Usage:
+
+        h2s = sfl_thsph_sulfide(counts_hs, counts_ysz, temperature, e2l_hs, e2l_ysz,
+                                arr_hgo, arr_logkfh2g, arr_eh2sg, arr_yh2sg)
+
+            where
+
+        h2s = hydrogen sulfide concentration at the vent: THSPHHS_L2 [mmol kg-1]
+        counts_hs = raw data recorded by sulfide electrode THSPHHS_L0 [counts]
+        counts_ysz = raw data recorded by ysz electrode THSPHPH-YSZ_L0 [counts]
+        temperature = temperature near sample inlet THSPHTE-TH_L1 [deg_C].
+        e2l_hs  = array of 5th degree polynomial coefficients to convert the
+                  sulfide electrode engineering values to lab calibrated values.
+        e2l_ysz = array of 5th degree polynomial coefficients to convert the
+                  ysz electrode engineering values to lab calibrated values.
+        arr_hgo = array of 5th degree polynomial coefficients to calculate the
+                  electrode material response to temperature.
+        arr_logkfh2g = array of 5th degree polynomial coefficients to calculate the
+                  equilibrium hydrogen fugacity as a function of temperature.
+        arr_eh2sg  = array of 5th degree polynomial coefficients to calculate the
+                  theoretical potential of gas phase hydrogen sulfide to temperature;
+                  in the current DPS, highest degree term is first order, so pad
+                  this array with entries of zero [0., 0., 0., 0., c1, c0].
+        arr_yh2sg  = array of 5th degree polynomial coefficients to calculate the
+                  fugacity/concentration quotient yh2sg from hydrogen fugacity.
+
+    References:
+
+        OOI (2014). Data Product Specification for Vent Fluid Hydrogen Sulfide
+            Concentration. Document Control Number 1341-00200.
+            https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI>> Controlled >> 1000 System Level >>
+            1341-00200_Data_Product_Spec_THSPHHS_OOI.pdf)
+    """
+    # calculate lab calibrated electrode responses [V]
+    v_labcal_hs = v_labcal(counts_hs, e2l_hs)
+    v_labcal_ysz = v_labcal(counts_ysz, e2l_ysz)
+
+    # calculate intermediate products that depend upon temperature
+    e_nernst = nernst(temperature)
+    e_hgo = eval_poly(temperature, arr_hgo)
+    e_h2sg = eval_poly(temperature, arr_eh2sg)
+    log_kfh2g = eval_poly(temperature, arr_logkfh2g)
+    # y_h2sg depends on temperature because hydrogen fugacity depends on temperature
+    y_h2sg = eval_poly(log_kfh2g, arr_yh2sg)
+
+    # explicitly follow the DPS calculation for clarity:
+
+    # measured potential of the sulfide electrode [V]
+    e_h2s = v_labcal_ysz - v_labcal_hs
+
+    # (common) log of measured hydrogen sulfide fugacity
+    log_fh2sg = 2.0 * (e_h2s - e_hgo + e_h2sg) / e_nernst
+
+    # final data product, hydrogen sulfide concentration, [mmol/kg]
+    # in the DPS, this is 1000 * 10^( logfh2sg - log( yh2sg ) )
+    h2s = 1000.0 * (10.0 ** (log_fh2sg)) / y_h2sg
+
+    return h2s
+
+
+def sfl_thsph_hydrogen(counts_h2, counts_ysz, temperature, e2l_h2, e2l_ysz, arr_hgo,
+                       arr_logkfh2g):
+    """
+    Description:
+
+        Calculates the THSPHHC_L2 data product (hydrogen concentration) for the THSPH
+        instruments from vent temperature and from data from its hydrogen and YSZ
+        electrodes.
+
+    Implemented by:
+
+        2014-07-08: Russell Desiderio. Initial Code.
+
+    Usage:
+
+        h2 = sfl_thsph_hydrogen(counts_h2, counts_ysz, temperature, e2l_h2, e2l_ysz, arr_hgo,
+                                arr_logkfh2g)
+
+            where
+
+        h2 = hydrogen concentration at the vent: THSPHHC_L2 [mmol kg-1]
+        counts_h2 = raw data recorded by hydrogen electrode THSPHHC_L0 [counts]
+        counts_ysz = raw data recorded by ysz electrode THSPHPH-YSZ_L0 [counts]
+        temperature = temperature near sample inlet THSPHTE-TH_L1 [deg_C].
+        e2l_h2  = array of 5th degree polynomial coefficients to convert the
+                  hydrogen electrode engineering values to lab calibrated values.
+        e2l_ysz = array of 5th degree polynomial coefficients to convert the
+                  ysz electrode engineering values to lab calibrated values.
+        arr_hgo = array of 5th degree polynomial coefficients to calculate the
+                  electrode material response to temperature.
+        arr_logkfh2g = array of 5th degree polynomial coefficients to calculate the
+                  equilibrium hydrogen fugacity as a function of temperature.
+
+        OOI (2014). Data Product Specification for Vent Fluid Hydrogen Concentration.
+            Document Control Number 1341-00210. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI>> Controlled >> 1000 System Level >>
+            1341-00210_Data_Product_Spec_THSPHHC_OOI.pdf)
+    """
+    # calculate lab calibrated electrode responses [V]
+    v_labcal_h2 = v_labcal(counts_h2, e2l_h2)
+    v_labcal_ysz = v_labcal(counts_ysz, e2l_ysz)
+
+    # calculate intermediate products that depend upon temperature
+    e_nernst = nernst(temperature)
+    e_hgo = eval_poly(temperature, arr_hgo)
+    log_kfh2g = eval_poly(temperature, arr_logkfh2g)
+
+    # explicitly follow the DPS calculation for clarity:
+
+    # measured potential of the h2 electrode [V]
+    e_h2 = v_labcal_ysz - v_labcal_h2
+
+    # (common) log of measured hydrogen fugacity
+    log_fh2g = 2.0 * (e_h2 - e_hgo) / e_nernst
+
+    # final data product, hydrogen concentration, [mmol/kg]
+    h2 = 1000.0 * (10.0 ** (log_fh2g - log_kfh2g))
+
+    return h2
+
+
+def chloride_activity(temperature, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, chloride=250.0):
+    """
+    Description:
+
+        Subfunction to calculate the chloride activity as a function of temperature
+        needed by the THSPHPH_L2 data products for the THSPH instruments. The chloride
+        value can either come from the TRHPHCC_L2 data product or the default value
+        of 250.0 mmol/kg can be used.
+
+    Implemented by:
+
+        2014-07-08: Russell Desiderio. Initial Code.
+
+    Usage:
+
+        act_chl = chloride_activity(temperature, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3[, chloride])
+
+            where
+
+        act_chl = calculated chloride activity.
+        temperature = temperature near sample inlet THSPHTE-TH_L1 [deg_C].
+        arr_tac = array containing the 5th degree polynomial coefficients to calculate tac (=tbc0).
+        arr_tbc1 = array containing the 5th degree polynomial coefficients to calculate tbc1.
+        arr_tbc2 = array containing the 5th degree polynomial coefficients to calculate tbc2.
+        arr_tbc3 = array containing the 5th degree polynomial coefficients to calculate tbc3.
+        chloride [optional] = if specified, vent fluid chloride concentration from TRHPH
+                              (TRHPHCC_L2) [mmol kg-1], else a value of 250.0 mmol/kg will be used.
+    """
+    # find number of data packets to be processed;
+    # this also works if temperature is not an np.array.
+    nvalues = np.array([temperature]).shape[-1]
+
+    # change units of chloride from mmol/kg to mol/kg
+    chloride = chloride/1000.0
+
+    # if chloride is not given in the argument list,
+    # replicate its default value into a vector with
+    # the same number of elements as temperature;
+    # do so without using a conditional
+    nreps = nvalues / np.array([chloride]).shape[-1]
+    chloride = np.tile(chloride, nreps)
+
+    # calculate the 4 coefficients needed to calculate the chloride activity from temperature
+    tbc0 = eval_poly(temperature, arr_tac)
+    tbc1 = eval_poly(temperature, arr_tbc1)
+    tbc2 = eval_poly(temperature, arr_tbc2)
+    tbc3 = eval_poly(temperature, arr_tbc3)
+
+    # form these coeffs into a 2D array for the eval_poly routine.
+    # need to pad the first two columns with zeros
+    zeros = np.array([np.tile(0.0, nvalues)]).T
+    arr_chloride_coeff = np.hstack((zeros, zeros, tbc3[:, np.newaxis], tbc2[:, np.newaxis],
+                                    tbc1[:, np.newaxis], tbc0[:, np.newaxis]))
+
+    # evaluate the activity
+    act_chl = eval_poly(chloride, arr_chloride_coeff)
+
+    return act_chl
+
+
+def v_labcal(counts, array_e2l_coeff):
+    """
+    Description:
+
+        Calculates any one of the 4 "lab calibrated" voltages from electrode sensor
+        (not thermistor nor thermocouple) raw data used in the THSPH instruments.
+        For use with the THSPH L2 data products (THSPHHC, THSPHHS, THSPHPH).
+
+    Implemented by:
+
+        2014-07-08: Russell Desiderio. Initial Code.
+
+    Usage:
+
+        v_labcal_electrode = v_labcal(counts, array_e2l_coeff)
+
+            where
+
+        v_labcal_electrode = lab calibrated value ("V_actual" in DPS) for the electrode [V].
+        counts = L0 output of one of the 4 electrodes:
+                 THSPHPH-YSZ_L0, THSPHPH-AGC_L0, THSPHHC_L0, THSPHHS_L0 [decimal counts].
+        array_e2l_coeff = 6 element array containing the 5th degree polynomial calibration
+                          coefficients for the electrode for which the lab cal values are
+                          desired. The coefficients are assumed to be stored in descending
+                          order.
+    """
+    # transform decimal counts to engineering values [volts]
+    v_eng = (counts * 0.25 - 2048.0) / 1000.0
+
+    # transform engineering values to lab calibrated values [volts]
+    v_labcal_electrode = eval_poly(v_eng, array_e2l_coeff)
+
+    # in the DPSs, these values are designated as "V_actual"
+    return v_labcal_electrode
+
+
+def nernst(temperature):
+    """
+    Description:
+
+        Calculates the value of the temperature dependent term of the Nernst
+        equation to provide the link between measured electrode potentials and
+        concentration. For use with the THSPH L2 data products (THSPHHC, THSPHHS,
+        THSPHPH), all of which use electrodes to provide the raw data. The
+        temperature to be used is specified in the DPSs to be THSPHTE-TH.
+
+    Implemented by:
+
+        2014-07-08: Russell Desiderio. Initial Code.
+
+    Usage:
+
+        e_nernst = nernst(temperature)
+
+            where
+
+        e_nernst = value of the temperature dependent term of the Nernst equation [V]
+        temperature = temperature near sample inlet THSPHTE-TH_L1 [deg_C]
+    """
+    # e_nernst = ln(10) * (gas constant) * (temperature, Kelvin)/(Faraday's constant)
+    #          = 2.30259 * 8.31446 [J/mole/K] / 96485.3 [coulombs/mole] * (T + 273.15)
+    return 1.9842e-4 * (temperature + 273.15)
+
+
+# .............................................................................
+# THSPH data products: THSPHTE -TH, -TL, -TCH, -TCL, -REF, -INT ...............
+# .............................................................................
+
+
 def sfl_thsph_temp_th(tc_rawdec_H, e2l_H, l2s_H, ts_rawdec_r, e2l_r, l2s_r, s2v_r):
     """
     Description:
@@ -436,12 +1018,17 @@ def sfl_thsph_temp_labcal_l(tc_rawdec_L, e2l_L):
     return V_tc_labcal_L
 
 
+# .............................................................................
+# THSPH data products: eval_poly, used for all THSPH data products ............
+# .............................................................................
+
+
 def eval_poly(x, c):
     """
     Description:
 
         Calculates polynomial values for use with THSPH data products using the
-        Horner algorithm. All coefficient sets are 5th order (6 terms), so that
+        Horner algorithm. All coefficient sets are 5th degree (6 terms), so that
         this function is written to be "vectorized" for speed for multiple data
         sets.
 
@@ -451,12 +1038,12 @@ def eval_poly(x, c):
         set of calibration coeffs).
 
         The standard convention of storing polynomial coefficients in an array
-        is used, namely, the highest order coefficient is the first element and
+        is used, namely, the highest degree coefficient is the first element and
         coefficients are stored in descending order.
 
     Implemented by:
 
-        2014-05-01: Russell Desiderio. Initial Code (no arrays, no recursion).
+        2014-05-01: Russell Desiderio. Initial Code (no arrays).
         2014-07-02: Russell Desiderio. 2D calcoeff array implementation.
 
     Usage:
@@ -477,9 +1064,14 @@ def eval_poly(x, c):
     # "vectorized" (in the OOI CI sense) calls to the eval_poly subroutine work.
     c = np.atleast_2d(c)
 
+    # Horner's algorithm
     val = c[:, 5] + x * (c[:, 4] + x * (c[:, 3] + x * (c[:, 2] + x * (c[:, 1] + x * c[:, 0]))))
 
     return val
+
+# .............................................................................
+# TRHPH data products .........................................................
+# .............................................................................
 
 
 def sfl_trhph_vfltemp(V_ts, V_tc, tc_slope, ts_slope, c0=0.015, c1=0.0024, c2=7.00e-5, c3=-1.00e-6):
@@ -661,8 +1253,8 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
 
         Cl = Vent fluid chloride concentration from TRHPH (TRHPHCC_L2) [mmol kg-1]
         V_R1 = Resistivity voltage 1 (TRHPHR1_L0) [volts]
-        V_R2 = Resistivity voltage 1 (TRHPHR2_L0) [volts]
-        V_R3 = Resistivity voltage 1 (TRHPHR3_L0) [volts]
+        V_R2 = Resistivity voltage 2 (TRHPHR2_L0) [volts]
+        V_R3 = Resistivity voltage 3 (TRHPHR3_L0) [volts]
         T = Vent fluid temperature from TRHPH (TRHPHTE_L1) [deg_C]
 
     References:
@@ -718,6 +1310,10 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
     Cl[np.isnan(Cl)] = fill_value
 
     return Cl
+
+# .............................................................................
+# PRESF data products .........................................................
+# .............................................................................
 
 
 def sfl_sflpres_l1(p_psia):

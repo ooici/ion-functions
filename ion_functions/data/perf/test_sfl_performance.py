@@ -9,7 +9,14 @@ from ion_functions.data.sfl_functions import (sfl_trhph_vfltemp,
                                               sfl_thsph_temp_tcl,
                                               sfl_thsph_temp_tch,
                                               sfl_thsph_temp_tl,
-                                              sfl_thsph_temp_th)
+                                              sfl_thsph_temp_th,
+                                              sfl_thsph_hydrogen,
+                                              sfl_thsph_sulfide,
+                                              sfl_thsph_ph,
+                                              sfl_thsph_ph_acl,
+                                              sfl_thsph_ph_noref,
+                                              sfl_thsph_ph_noref_acl,
+                                              )
 import numpy as np
 
 
@@ -17,6 +24,54 @@ class TestSFLPerformance(PerformanceTestCase):
     # Performance tests for seafloor instruments THSPH and TRHPH
 
     def setUp(self):
+
+        ### test inputs for THSPH L2 data products
+        self.counts_h2 = np.tile(4907, a_deca)
+        self.counts_hs = np.tile(3806, a_deca)
+        self.counts_ysz = np.tile(7807, a_deca)
+        self.counts_agcl = np.tile(7801, a_deca)
+        self.temperature = np.tile(300.0, a_deca)
+        self.chloride = np.tile(400.0, a_deca)
+
+        # calibration polynomial coefficients:
+
+        # electrode engineering to lab calibrated units
+        e2l_h2 = np.array([0.0, 0.0, 0.0, 0.0, 1.0, -0.00375])
+        e2l_hs = np.array([0.0, 0.0, 0.0, 0.0, 1.0, -0.00350])
+        e2l_ysz = np.array([0.0, 0.0, 0.0, 0.0, 1.0, -0.00375])
+        e2l_agcl = np.array([0.0, 0.0, 0.0, 0.0, 1.0, -0.00225])
+        # electrode material response
+        arr_hgo = np.array([0.0, 0.0, 4.38978E-10, -1.88519E-07, -1.88232E-04, 9.23720E-01])
+        arr_agcl = np.array([0.0, -8.61134E-10, 9.21187E-07, -3.7455E-04, 6.6550E-02, -4.30086])
+        # calculated theoretical reference electrode potential
+        arr_agclref = np.array([0.0, 0.0, -2.5E-10, -2.5E-08, -2.5E-06, -9.025E-02])
+        # for calculation of chl activity polynomial coefficients
+        arr_tac = np.array([0.0, 0.0, -2.80979E-09, 2.21477E-06, -5.53586E-04, 5.723E-02])
+        arr_tbc1 = np.array([0.0, 0.0, -6.59572E-08, 4.52831E-05, -1.204E-02, 1.70059])
+        arr_tbc2 = np.array([0.0, 0.0, 8.49102E-08, -6.20293E-05, 1.485E-02, -1.41503])
+        arr_tbc3 = np.array([-1.86747E-12, 2.32877E-09, -1.18318E-06, 3.04753E-04, -3.956E-02, 2.2047])
+        # h2 and h2s fugacity/activity calculations
+        arr_logkfh2g = np.array([0.0, 0.0, -1.51904000E-07, 1.16655E-04, -3.435E-02, 6.32102])
+        arr_eh2sg = np.array([0.0, 0.0, 0.0, 0.0, -4.49477E-05, -1.228E-02])
+        arr_yh2sg = np.array([2.3113E+01, -1.8780E+02, 5.9793E+02, -9.1512E+02, 6.7717E+02, -1.8638E+02])
+
+        ### tiled calibration arrays for THSPH L2 products
+        tile_spec = (a_deca, 1)
+        self.e2l_h2 = np.tile(e2l_h2, tile_spec)
+        self.e2l_hs = np.tile(e2l_hs, tile_spec)
+        self.e2l_ysz = np.tile(e2l_ysz, tile_spec)
+        self.e2l_agcl = np.tile(e2l_agcl, tile_spec)
+        self.arr_hgo = np.tile(arr_hgo, tile_spec)
+        self.arr_agcl = np.tile(arr_agcl, tile_spec)
+        self.arr_agclref = np.tile(arr_agclref, tile_spec)
+        self.arr_tac = np.tile(arr_tac, tile_spec)
+        self.arr_tbc1 = np.tile(arr_tbc1, tile_spec)
+        self.arr_tbc2 = np.tile(arr_tbc2, tile_spec)
+        self.arr_tbc3 = np.tile(arr_tbc3, tile_spec)
+        self.arr_logkfh2g = np.tile(arr_logkfh2g, tile_spec)
+        self.arr_eh2sg = np.tile(arr_eh2sg, tile_spec)
+        self.arr_yh2sg = np.tile(arr_yh2sg, tile_spec)
+
         ### test inputs for THSPHTE products
         self.ts_rawdec_b = np.tile(8185.0, a_deca)
         self.ts_rawdec_r = np.tile(8758.0, a_deca)
@@ -64,7 +119,55 @@ class TestSFLPerformance(PerformanceTestCase):
         self.l2s_H = np.tile(l2s_H, tile_spec)
         self.s2v_r = np.tile(s2v_r, tile_spec)
 
-    # Performance tests for seafloor instruments THSPH
+    # Performance tests for seafloor instruments THSPH, L2 data products
+
+    def test_sfl_thsph_hydrogen(self):
+        stats = []
+        # timing test
+        self.profile(stats, sfl_thsph_hydrogen, self.counts_h2, self.counts_ysz,
+                     self.temperature, self.e2l_h2, self.e2l_ysz, self.arr_hgo,
+                     self.arr_logkfh2g)
+
+    def test_sfl_thsph_sulfide(self):
+        stats = []
+        # timing test
+        self.profile(stats, sfl_thsph_sulfide, self.counts_hs, self.counts_ysz,
+                     self.temperature, self.e2l_hs, self.e2l_ysz, self.arr_hgo,
+                     self.arr_logkfh2g, self.arr_eh2sg, self.arr_yh2sg)
+
+    def test_sfl_thsph_ph(self):
+        stats = []
+        # timing test
+        self.profile(stats, sfl_thsph_ph, self.counts_ysz, self.counts_agcl,
+                     self.temperature, self.e2l_ysz, self.e2l_agcl, self.arr_hgo,
+                     self.arr_agcl, self.arr_tac, self.arr_tbc1, self.arr_tbc2,
+                     self.arr_tbc3, self.chloride)
+
+    def test_sfl_thsph_ph_acl(self):
+        stats = []
+        # timing test
+        self.profile(stats, sfl_thsph_ph_acl, self.counts_ysz, self.counts_agcl,
+                     self.temperature, self.e2l_ysz, self.e2l_agcl, self.arr_hgo,
+                     self.arr_agcl, self.arr_tac, self.arr_tbc1, self.arr_tbc2,
+                     self.arr_tbc3)
+
+    def test_sfl_thsph_ph_noref(self):
+        stats = []
+        # timing test
+        self.profile(stats, sfl_thsph_ph_noref, self.counts_ysz, self.temperature,
+                     self.arr_agclref, self.e2l_ysz, self.arr_hgo, self.arr_agcl,
+                     self.arr_tac, self.arr_tbc1, self.arr_tbc2, self.arr_tbc3,
+                     self.chloride)
+
+    def test_sfl_thsph_ph_noref_acl(self):
+        stats = []
+        # timing test
+        self.profile(stats, sfl_thsph_ph_noref_acl, self.counts_ysz, self.temperature,
+                     self.arr_agclref, self.e2l_ysz, self.arr_hgo, self.arr_agcl,
+                     self.arr_tac, self.arr_tbc1, self.arr_tbc2, self.arr_tbc3)
+
+    # Performance tests for seafloor instruments THSPH, 6 THSPHTE data products
+
     def test_sfl_thsph_temp_int(self):
         stats = []
         # timing test
