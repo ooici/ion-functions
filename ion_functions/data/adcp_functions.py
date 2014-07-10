@@ -456,7 +456,7 @@ def adcp_earth_error(e):
 
 
 # Compute the VELTURB_L1 data products for the VADCP instrument deployed by RSN.
-def vadcp_beam_eastward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt):
+def vadcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     """
     Description:
 
@@ -482,7 +482,6 @@ def vadcp_beam_eastward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt):
         b2 = "beam 2" velocity profiles in beam coordinates (VELTURB-B2_L0) [mm s-1]
         b3 = "beam 3" velocity profiles in beam coordinates (VELTURB-B3_L0) [mm s-1]
         b4 = "beam 4" velocity profiles in beam coordinates (VELTURB-B4_L0) [mm s-1]
-        b5 = "beam 5" velocity profiles in beam coordinates (VELTURB-B5_L0) [mm s-1]
         h = instrument's uncorrected magnetic heading [cdegrees]
         p = instrument pitch [cdegrees]
         r = instrument roll [cdegrees]
@@ -498,7 +497,6 @@ def vadcp_beam_eastward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt):
     b2 = np.atleast_2d(b2)
     b3 = np.atleast_2d(b3)
     b4 = np.atleast_2d(b4)
-    b5 = np.atleast_2d(b5)
     h = np.atleast_1d(h) / 100.  # scale cdegrees input to degrees
     p = np.atleast_1d(p) / 100.  # scale cdegrees input to degrees
     r = np.atleast_1d(r) / 100.  # scale cdegrees input to degrees
@@ -510,7 +508,7 @@ def vadcp_beam_eastward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt):
     dt = np.atleast_1d(dt)
 
     # compute the beam to instrument transform
-    u, v, w, _ = vadcp_beam2ins(b1, b2, b3, b4, b5)
+    u, v, w, _ = adcp_beam2ins(b1, b2, b3, b4)
 
     # compute the instrument to earth beam transform
     uu, vv, _ = adcp_ins2earth(u, v, w, h, p, r, vf)
@@ -528,7 +526,7 @@ def vadcp_beam_eastward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt):
     return uu_cor
 
 
-def vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt):
+def vadcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
     """
     Description:
 
@@ -570,7 +568,6 @@ def vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt):
     b2 = np.atleast_2d(b2)
     b3 = np.atleast_2d(b3)
     b4 = np.atleast_2d(b4)
-    b5 = np.atleast_2d(b5)
     h = np.atleast_1d(h) / 100.  # scale cdegrees input to degrees
     p = np.atleast_1d(p) / 100.  # scale cdegrees input to degrees
     r = np.atleast_1d(r) / 100.  # scale cdegrees input to degrees
@@ -582,7 +579,7 @@ def vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt):
     dt = np.atleast_1d(dt)
 
     # compute the beam to instrument transform
-    u, v, w, _ = vadcp_beam2ins(b1, b2, b3, b4, b5)
+    u, v, w, _ = adcp_beam2ins(b1, b2, b3, b4)
 
     # compute the instrument to earth beam transform
     uu, vv, _ = adcp_ins2earth(u, v, w, h, p, r, vf)
@@ -600,14 +597,17 @@ def vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt):
     return vv_cor
 
 
-def vadcp_beam_vertical(b1, b2, b3, b4, b5, h, p, r, vf):
+def vadcp_beam_vertical_est(b1, b2, b3, b4, h, p, r, vf):
     """
     Description:
 
-        Wrapper function to compute the Upward Velocity Profile (VELTURB-VLU)
-        from the beam coordinate transformed velocity profiles as defined in
-        the Data Product Specification for Turbulent Velocity Profile and Echo
-        Intensity - DCN 1341-00760.
+        Wrapper function to compute the "estimated" Upward Velocity Profile
+        (VELTURB-VLU) from the beam coordinate transformed velocity profiles as
+        defined in the Data Product Specification for Turbulent Velocity
+        Profile and Echo Intensity - DCN 1341-00760. This provides the
+        traditional estimate of the vertical velocity component from a 4 beam
+        solution, where each beam is facing outward at an angle (20 degrees)
+        relative to the vertical.
 
     Implemented by:
 
@@ -619,8 +619,64 @@ def vadcp_beam_vertical(b1, b2, b3, b4, b5, h, p, r, vf):
 
             where
 
-        vv_corr = north velocity profiles in Earth coordinates corrected for the
-                  magnetic declination (VELTURB-VLN_L1) [m s-1]
+        ww_corr = vertical velocity profiles in Earth coordinates (VELTURB-W5_L1) [m s-1]
+
+        b1 = "beam 1" velocity profiles in beam coordinates (VELTURB-B1_L0) [mm s-1]
+        b2 = "beam 2" velocity profiles in beam coordinates (VELTURB-B2_L0) [mm s-1]
+        b3 = "beam 3" velocity profiles in beam coordinates (VELTURB-B3_L0) [mm s-1]
+        b4 = "beam 4" velocity profiles in beam coordinates (VELTURB-B4_L0) [mm s-1]
+        h = instrument's uncorrected magnetic heading [cdegrees]
+        p = instrument pitch [cdegrees]
+        r = instrument roll [cdegrees]
+        vf = instrument's vertical orientation (0 = downward looking and
+            1 = upward looking)
+    """
+    # force shapes of inputs to arrays of the correct dimensions
+    b1 = np.atleast_2d(b1)
+    b2 = np.atleast_2d(b2)
+    b3 = np.atleast_2d(b3)
+    b4 = np.atleast_2d(b4)
+    h = np.atleast_1d(h) / 100.  # scale cdegrees input to degrees
+    p = np.atleast_1d(p) / 100.  # scale cdegrees input to degrees
+    r = np.atleast_1d(r) / 100.  # scale cdegrees input to degrees
+    vf = np.atleast_1d(vf)
+
+    # compute the beam to instrument transform
+    u, v, w, _ = adcp_beam2ins(b1, b2, b3, b4)
+
+    # compute the instrument to earth beam transform
+    _, _, ww = adcp_ins2earth(u, v, w, h, p, r, vf)
+
+    # scale upward velocity to m/s
+    ww = ww / 1000.  # mm/s -> m/s
+
+    # return the estimated Upward Velocity Profile
+    return ww
+
+
+def vadcp_beam_vertical_true(b1, b2, b3, b4, b5, h, p, r, vf):
+    """
+    Description:
+
+        Wrapper function to compute the "true" Upward Velocity Profile
+        (VELTURB-W5) from the beam coordinate transformed velocity profiles as
+        defined in the Data Product Specification for Turbulent Velocity
+        Profile and Echo Intensity - DCN 1341-00760. This is assumed to provide
+        a better estimate of the true vertical velocity component, since beam 5
+        is pointing directly up.
+
+    Implemented by:
+
+        2014-06-25: Christopher Wingard. Initial code, based on existing ADCP
+
+    Usage:
+
+        ww_cor = vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf)
+
+            where
+
+        ww_corr = true vertical velocity profiles in Earth coordinates
+            (VELTURB-W5_L1) [m s-1]
 
         b1 = "beam 1" velocity profiles in beam coordinates (VELTURB-B1_L0) [mm s-1]
         b2 = "beam 2" velocity profiles in beam coordinates (VELTURB-B2_L0) [mm s-1]
@@ -645,10 +701,10 @@ def vadcp_beam_vertical(b1, b2, b3, b4, b5, h, p, r, vf):
     vf = np.atleast_1d(vf)
 
     # compute the beam to instrument transform
-    u, v, w, _ = vadcp_beam2ins(b1, b2, b3, b4, b5)
+    u, v, _, _ = adcp_beam2ins(b1, b2, b3, b4)
 
     # compute the instrument to earth beam transform
-    _, _, ww = adcp_ins2earth(u, v, w, h, p, r, vf)
+    _, _, ww = adcp_ins2earth(u, v, b5, h, p, r, vf)
 
     # scale upward velocity to m/s
     ww = ww / 1000.  # mm/s -> m/s
@@ -657,7 +713,7 @@ def vadcp_beam_vertical(b1, b2, b3, b4, b5, h, p, r, vf):
     return ww
 
 
-def vadcp_beam_error(b1, b2, b3, b4, b5):
+def vadcp_beam_error(b1, b2, b3, b4):
     """
     Description:
 
@@ -682,17 +738,15 @@ def vadcp_beam_error(b1, b2, b3, b4, b5):
         b2 = "beam 2" velocity profiles in beam coordinates (VELTURB-B2_L0) [mm s-1]
         b3 = "beam 3" velocity profiles in beam coordinates (VELTURB-B3_L0) [mm s-1]
         b4 = "beam 4" velocity profiles in beam coordinates (VELTURB-B4_L0) [mm s-1]
-        b5 = "beam 5" velocity profiles in beam coordinates (VELTURB-B5_L0) [mm s-1]
     """
     # force input arrays to 2d shape
     b1 = np.atleast_2d(b1)
     b2 = np.atleast_2d(b2)
     b3 = np.atleast_2d(b3)
     b4 = np.atleast_2d(b4)
-    b5 = np.atleast_2d(b5)
 
     # compute the beam to instrument transform
-    _, _, _, e = adcp_beam2ins(b1, b2, b3, b4, b5)
+    _, _, _, e = adcp_beam2ins(b1, b2, b3, b4)
 
     # scale error velocity to m/s
     e = e / 1000.   # mm/s
@@ -789,67 +843,6 @@ def adcp_beam2ins(b1, b2, b3, b4):
     u = c * a * (b1 - b2)
     v = c * a * (b4 - b3)
     w = b * (b1 + b2 + b3 + b4)
-    e = d * (b1 + b2 - b3 - b4)
-
-    return (u, v, w, e)
-
-
-def vadcp_beam2ins(b1, b2, b3, b4, b5):
-    """
-    Description:
-
-        This function converts the 5 Beam Coordinate transformed velocity
-        profiles for the VADCP to the instrument coordinate system. The
-        calculations are defined in the Data Product Specification for
-        Turbulent Velocity Profile and Echo Intensity - DCN 1341-00760.
-
-    Implemented by:
-
-        2014-06-25: Christopher Wingard. Initial code.
-
-    Usage:
-
-        u, v, w, e = vadcp_beam2ins(b1, b2, b3, b4, b5)
-
-            where
-
-        u = "east" velocity profiles in instrument coordinates [mm s-1]
-        v = "north" velocity profiles in instrument coordinates [mm s-1]
-        w = "vertical" velocity profiles in instrument coordinates [mm s-1]
-        e = "error" velocity profiles [mm s-1]
-
-        b1 = "beam 1" velocity profiles in beam coordinates [mm s-1]
-        b2 = "beam 2" velocity profiles in beam coordinates [mm s-1]
-        b3 = "beam 3" velocity profiles in beam coordinates [mm s-1]
-        b4 = "beam 4" velocity profiles in beam coordinates [mm s-1]
-        b5 = "beam 5" velocity profiles in beam coordinates [mm s-1]
-
-    References:
-
-        OOI (2012). Data Product Specification for Velocity Profile and Echo
-            Intensity. Document Control Number 1341-00750.
-            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
-            >> Controlled >> 1000 System Level >>
-            1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
-    """
-    # Setup the transformation matrix based on the following constants
-    theta = 20.0 / 180.0 * np.pi        # fixed at 20 degrees for 4 beam unit
-    a = 1.0 / (2.0 * np.sin(theta))
-    b = 1.0 / (4.0 * np.cos(theta))
-    c = 1.0   # +1.0 for convex transducer head, -1 for concave
-    d = a / np.sqrt(2.0)
-    # for the 5th beam, theta equals 0. Thus, a = 0, d = 0 and b = 0.25
-
-    # The transformation matrix, is applied as follows
-    # u = | c * a -c * a     0      0     0 | * beam 1-5
-    # v = |   0      0    -c * a  c * a   0 | * beam 1-5
-    # w = |   b      b      -b     -b     b | * beam 1-5
-    # e = |   d      d      -d     -d     d | * beam 1-5
-
-    # or, in other words
-    u = c * a * (b1 - b2)
-    v = c * a * (-b3 + b4)
-    w = b * (b1 + b2 + b3 + b4) + 0.25 * b5
     e = d * (b1 + b2 - b3 - b4)
 
     return (u, v, w, e)
