@@ -21,7 +21,7 @@ class TestHYDPerformance(PerformanceTestCase):
         self.wav = np.array([-2.40000, -0.31200, 0.01110, 0.00442])
 
         # setup the test values for HYDAPLF
-        self.raw = np.array([0, 1024, 2048, 3072, 4096])
+        self.raw = np.array([0, 512, 1024, 2048, 3072, 4096])
 
     def test_hyd_bb_acoustic_pwaves(self):
         stats = []

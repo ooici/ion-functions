@@ -17,7 +17,7 @@ class TestOBSPerformance(PerformanceTestCase):
 
     def setUp(self):
         # setup the test values for all the obs tests
-        self.raw = np.array([0, 1024, 2048, 3072, 4096])
+        self.raw = np.array([0, 512, 1024, 2048, 3072, 4096])
 
     def test_obs_bb_ground_velocity(self):
         stats = []

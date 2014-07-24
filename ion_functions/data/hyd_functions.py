@@ -24,7 +24,7 @@ def hyd_bb_acoustic_pwaves(wav, gain):
 
     Usage:
 
-        tsv = hyd_acoustic_pwaves(wav, gain)
+        tsv = hyd_bb_acoustic_pwaves(wav, gain)
 
             where
 
@@ -61,7 +61,7 @@ def hyd_bb_acoustic_pwaves(wav, gain):
     return tsv
 
 
-def hyd_lf_acoustic_pwaves(raw, gain=3.2, sensitivity=1.99):
+def hyd_lf_acoustic_pwaves(raw, gain=3.2):
     """
     Description:
 
@@ -75,15 +75,14 @@ def hyd_lf_acoustic_pwaves(raw, gain=3.2, sensitivity=1.99):
 
     Usage:
 
-        hydaplf = obs_acoustic_lfpwaves(counts, gain, sensitivity)
+        hydaplf = hyd_lf_acoustic_pwaves(counts, gain)
 
             where
 
-        hydaplf = time-series of low frequency acoustic pressure waves [Pa]
+        hydaplf = time-series of low frequency acoustic pressure waves [V]
             (HYDAPLF_L1)
         raw = raw time-series digitizied in counts [counts] (HYDAPLF_L0)
         gain = Gurlap DM24 fixed gain bit weight [uV/count]
-        sensitivity = Low frequency hydrophone [mV/Pa]
 
     References:
 
@@ -93,10 +92,7 @@ def hyd_lf_acoustic_pwaves(raw, gain=3.2, sensitivity=1.99):
             OOI >> Controlled >> 1000 System Level >>
             1341-00821_Data_Product_SPEC_HYDAPLF_OOI.pdf)
     """
-    # scale the gain and sensitivity ...
-    gain = ne.evaluate("gain * 1.0e-3")
-    sense = ne.evaluate("2. * sensitivity")
-
-    # ... and calculate the low frequency acoustic pressure waves
-    hydaplf = ne.evaluate("raw * (gain / sense)")
+    # apply the gain correction to convert the signal from counts to V
+    gain = gain * 1.0e-6
+    hydaplf = ne.evaluate("raw * gain")
     return hydaplf

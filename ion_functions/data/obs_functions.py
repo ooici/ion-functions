@@ -40,8 +40,8 @@ def obs_bb_ground_velocity(raw, gain=3.2, sensitivity=1500.):
             1341-00090_Data_Product_SPEC_GRNDVEL_OOI.pdf)
     """
     # scale the gain and sensitivity ...
-    gain = ne.evaluate("gain * 1.0e-6")
-    sense = ne.evaluate("2. * sensitivity")
+    gain = gain * 1.0e-6
+    sense = 2. * sensitivity
 
     # ... and calculate the broadband ground velocity
     grndvel = ne.evaluate("raw * (gain / sense)")
@@ -80,8 +80,8 @@ def obs_bb_ground_acceleration(raw, gain=3.2, sensitivity=0.508):
             1341-00100_Data_Product_SPEC_GRNDACC_OOI.pdf)
     """
     # scale the gain and sensitivity ...
-    gain = ne.evaluate("gain * 1.0e-6")
-    sense = ne.evaluate("2. * sensitivity")
+    gain = gain * 1.0e-6
+    sense = 2. * sensitivity
 
     # ... and calculate the broadband ground acceleration
     grndacc = ne.evaluate("raw * (gain / sense)")
@@ -120,8 +120,8 @@ def obs_sp_ground_velocity(raw, gain=2.84, sensitivity=1200.):
             1341-00100_Data_Product_SPEC_GRNDACC_OOI.pdf)
     """
     # scale the gain and sensitivity ...
-    gain = ne.evaluate("gain * 1.0e-6")
-    sense = ne.evaluate("2. * sensitivity")
+    gain = gain * 1.0e-6
+    sense = 2. * sensitivity
 
     # ... and calculate the short period ground velocity
     sgrdvel = ne.evaluate("raw * (gain / sense)")
