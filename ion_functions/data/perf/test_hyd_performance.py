@@ -13,18 +13,25 @@ from ion_functions.data import hyd_functions as hy
 
 
 @attr('PERF', group='func')
-class TestADCPPerformance(PerformanceTestCase):
+class TestHYDPerformance(PerformanceTestCase):
 
     def setUp(self):
-        # set test inputs
-        # setup the test values
+        # setup the test values for HYDAPBB
         self.gain = 6.
         self.wav = np.array([-2.40000, -0.31200, 0.01110, 0.00442])
 
-    def test_flo_bback_total(self):
+        # setup the test values for HYDAPLF
+        self.raw = np.array([0, 512, 1024, 2048, 3072, 4096])
+
+    def test_hyd_bb_acoustic_pwaves(self):
         stats = []
 
         gain = np.repeat(self.gain, 10000000)
         wav = np.tile(self.wav, (10000000, 1))
+        self.profile(stats, hy.hyd_bb_acoustic_pwaves, wav, gain)
 
-        self.profile(stats, hy.hyd_acoustic_pwaves, wav, gain)
+    def test_hyd_lf_acoustic_pwaves(self):
+        stats = []
+
+        raw = np.tile(self.raw, (10000000, 1))
+        self.profile(stats, hy.hyd_lf_acoustic_pwaves, raw)
