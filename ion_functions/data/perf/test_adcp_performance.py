@@ -11,6 +11,14 @@ from nose.plugins.attrib import attr
 from ion_functions.data.perf.test_performance import PerformanceTestCase
 from ion_functions.data import adcp_functions as af
 
+# Note, the VADCP related data products use the same internal functions as the
+# family of beam wrapper functions (e.g. adcp_beam_eastward). Thus, those
+# functions won't be added to this test. The only way to really speed this
+# process up any further is to set the wrapper functions to return all the data
+# products for an instrument at once rather than singly. That way the functions
+# only need to be run once rather than 4 times for each instrument (a factor of
+# four improvement in performance).
+
 
 @attr('PERF', group='func')
 class TestADCPPerformance(PerformanceTestCase):

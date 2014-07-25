@@ -489,7 +489,7 @@ def vadcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
             1 = upward looking)
         lat = instrument's deployment latitude [decimal degrees]
         lon = instrument's deployment longitude [decimal degrees]
-        z = instrument's pressure sensor reading (depth) [dm]
+        z = instrument's pressure sensor reading (depth) [daPa]
         dt = sample date and time value [seconds since 1900-01-01]
     """
     # force shapes of inputs to arrays of the correct dimensions
@@ -947,7 +947,8 @@ def adcp_ins2earth(u, v, w, heading, pitch, roll, vertical):
     # the basis set is 3D (E,N,U) so that the middle dimension is sized at 3.
     uvw = np.zeros((n_packets, 3, n_uvw))
 
-    # pack the coordinates (velocities) to be transformed into the appropriate slices.
+    # pack the coordinates (velocities) to be transformed into the appropriate
+    # slices.
     uvw[:, 0, :] = u
     uvw[:, 1, :] = v
     uvw[:, 2, :] = w
