@@ -11,6 +11,14 @@ from nose.plugins.attrib import attr
 from ion_functions.data.perf.test_performance import PerformanceTestCase
 from ion_functions.data import adcp_functions as af
 
+# Note, the VADCP related data products use the same internal functions as the
+# family of beam wrapper functions (e.g. adcp_beam_eastward). Thus, those
+# functions won't be added to this test. The only way to really speed this
+# process up any further is to set the wrapper functions to return all the data
+# products for an instrument at once rather than singly. That way the functions
+# only need to be run once rather than 4 times for each instrument (a factor of
+# four improvement in performance).
+
 
 @attr('PERF', group='func')
 class TestADCPPerformance(PerformanceTestCase):
@@ -27,9 +35,9 @@ class TestADCPPerformance(PerformanceTestCase):
                             -0.0050,  0.3380,  0.1750, -0.0800, -0.5490]) * 1000
         self.echo = np.array([0, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250])
         self.sfactor = 0.45
-        self.heading = 98.4100
-        self.pitch = 0.6900
-        self.roll = -2.5400
+        self.heading = 98.4100 / 100.
+        self.pitch = 0.6900 / 100.
+        self.roll = -2.5400 / 100.
         self.orient = 1
         self.lat = 50.0000
         self.lon = -145.0000
@@ -140,3 +148,11 @@ class TestADCPPerformance(PerformanceTestCase):
         dt = np.repeat(self.ntp, 10000)
 
         self.profile(stats, af.adcp_earth_northward, u, v, z, lat, lon, dt)
+
+    def test_adcp_earth_vertical(self):
+        stats = []
+
+        w = np.tile(self.ww, (10000, 1))
+
+        self.profile(stats, af.adcp_earth_vertical, w)
+        # adcp_earth_error is the same transform, so this test applies to both

@@ -28,9 +28,9 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
                             -0.0050,  0.3380,  0.1750, -0.0800, -0.5490]) * 1000
         self.echo = np.array([0, 25, 50, 75, 100, 125, 150, 175, 200, 225, 250])
         self.sfactor = 0.45
-        self.heading = 98.4100
-        self.pitch = 0.6900
-        self.roll = -2.5400
+        self.heading = 98.4100 * 100.
+        self.pitch = 0.6900 * 100.
+        self.roll = -2.5400 * 100.
         self.orient = 1
         self.lat = 50.0000
         self.lon = -145.0000
@@ -53,7 +53,7 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         self.vv_cor = np.array([-0.3855, -0.0916, -0.9773, -0.9707, -1.2140,
                                 0.3188, -0.9940, -0.0308, -0.3229, -0.2582])
 
-        # set the expecte results -- echo intensity conversion from counts to dB
+        # set the expected results -- echo intensity conversion from counts to dB
         self.dB = np.array([0.00, 11.25, 22.50, 33.75, 45.00, 56.25, 67.50,
                             78.75, 90.00, 101.25, 112.50])
 
@@ -153,8 +153,8 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         u, v, w, e = af.adcp_beam2ins(self.b1, self.b2, self.b3, self.b4)
 
         ### old adcp_ins2earth returned 3 variables
-        uu, vv, ww = af.adcp_ins2earth(u, v, w, self.heading,
-                                       self.pitch, self.roll, self.orient)
+        uu, vv, ww = af.adcp_ins2earth(u, v, w, self.heading / 100.,
+                                       self.pitch / 100., self.roll / 100., self.orient)
 
         # test the magnetic variation correction
         got_uu_cor = af.adcp_earth_eastward(uu, vv, self.depth, self.lat, self.lon, self.ntp)
@@ -210,3 +210,74 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         dB = np.tile(self.dB, (24, 1))
         got = af.adcp_backscatter(raw, sf)
         np.testing.assert_array_almost_equal(got, dB, 4)
+
+    def test_vadcp_beam(self):
+        """
+        Tests vadcp_beam_eastward, vadcp_beam_northward,
+        vadcp_beam_vertical_est and vadcp_beam_vertical_true functions (which
+        call adcp_beam2ins and adcp_ins2earth) for the specialized 5-beam ADCP.
+        Application of the magnetic correction and conversion from mm/s to m/s
+        is not applied.
+
+        Values based on those defined in DPS:
+
+        OOI (2012). Data Product Specification for Turbulent Velocity Profile
+            and Echo Intensity. Document Control Number 1341-00760.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00760_Data_Product_SPEC_VELTURB_OOI.pdf)
+
+        Implemented by:
+
+            2014-07-24: Christopher Wingard. Initial code.
+        """
+        # test inputs
+        b1 = np.ones((10, 10)) * -325
+        b2 = np.ones((10, 10)) * 188
+        b3 = np.ones((10, 10)) * 168
+        b4 = np.ones((10, 10)) * -338
+        b5 = np.ones((10, 10)) * -70
+
+        heading = np.array([30, 30, 30, 30, 30,
+                            32, 32, 32, 32, 32])
+        pitch = np.array([0, 2, 3, 3, 1, 2, 2, 3, 3, 1])
+        roll = np.array([0, 4, 3, 4, 3, 3, 4, 3, 4, 3])
+        orient = np.ones(10)
+
+        # expected outputs
+        vle = np.array([279.6195, 282.6881, 281.8311, 282.7147,
+                        282.1188, 246.2155, 246.9874, 246.1226,
+                        247.0156, 246.4276]).reshape(-1, 1)
+        vle = np.reshape(np.tile(vle, 10), (10, 10))
+
+        vln = np.array([-1015.5964, -1018.0226, -1018.2595, -1017.9765,
+                        -1017.7612, -1027.3264, -1027.2681, -1027.4749,
+                        -1027.2230, -1026.9870]).reshape(-1, 1)
+        vln = np.reshape(np.tile(vln, 10), (10, 10))
+
+        vlu = np.array([81.6756, 3.3916, 3.5950, -9.4974,
+                        29.4154, 16.5077, 3.3916, 3.5950,
+                        -9.4974, 29.4154]).reshape(-1, 1)
+        vlu = np.reshape(np.tile(vlu, 10), (10, 10))
+
+        evl = np.array([34.1128, 34.1128, 34.1128, 34.1128,
+                        34.1128, 34.1128, 34.1128, 34.1128,
+                        34.1128, 34.1128]).reshape(-1, 1)
+        evl = np.reshape(np.tile(evl, 10), (10, 10))
+
+        w5 = np.array([70.0000, -8.2485, -8.0487, -21.1287,
+                       17.7575, 4.8552, -8.2485, -8.0487,
+                       -21.1287, 17.7575]).reshape(-1, 1)
+        w5 = np.reshape(np.tile(w5, 10), (10, 10))
+
+        # test the transformations
+        u, v, w_est, e = af.adcp_beam2ins(b1, b2, b3, b4)
+        uu, vv, ww_est = af.adcp_ins2earth(u, v, w_est, heading, pitch, roll, orient)
+        _, _, ww_true = af.adcp_ins2earth(u, v, b5, heading, pitch, roll, orient)
+
+        # compare the results
+        np.testing.assert_array_almost_equal(uu, vle, 4)
+        np.testing.assert_array_almost_equal(vv, vln, 4)
+        np.testing.assert_array_almost_equal(ww_est, vlu, 4)
+        np.testing.assert_array_almost_equal(e, evl, 4)
+        np.testing.assert_array_almost_equal(ww_true, w5, 4)
