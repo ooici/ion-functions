@@ -1311,39 +1311,42 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
 
     return Cl
 
+
 # .............................................................................
 # PRESF data products .........................................................
 # .............................................................................
-
-
-def sfl_sflpres_l1(p_psia):
+def sfl_sflpres_rtime(p_psia):
     """
     Description:
 
         The OOI Level 1 Seafloor Pressure core data products, SFLPRES and
         sub-parameters SFLPRES-RTIME, SFLPRES-TIDE, and SFLPRES-WAVE, are
-        created from the Sea-Bird Electronics SBE 26plus member of the Pressure
-        SF (PRESF) family of instruments by either a) polling, in real-time,
-        for L0 ASCII text format data output and converting from psia to
-        decibar units or b) converting, after instrument recovery, L0
+        created from the Sea-Bird Electronics SBE 26plus member of the Seafloor
+        Pressure (SFL, PRESF) family of instruments by either a) polling, in
+        real-time, for L0 ASCII text format data output and converting from
+        psia to decibar units or b) converting, after instrument recovery, L0
         hexadecimal pressure data into decimal format and the resulting tide
         and wave pressure data in psia to decibar units.
+
+        This code creates the SFLPRES-RTIME data product.
 
     Implemented by:
 
         2014-01-31: Craig Risien. Initial Code
+        2014-09-23: Christopher Wingard. Minor edits and adds code for -TIDE
+                    and -WAVE.
 
     Usage:
 
-        sflpres_l1 = sfl_sflpres_l1(p_psia):
+        rtime = sfl_sflpres_rtime(p_psia):
 
         Scaling: To convert from psia to dbar, use the Sea-Bird-specified
         conversion: p_dbar = 0.689475728 * (p_psia)
 
             where
 
-        p_dbar = pressure (sflpres_L1) [dbar]
-        p_psia = pressure (sflpres_L0) [psi].
+        p_dbar = pressure (SFLPRES-RTIME_L1) [dbar]
+        p_psia = pressure (SFLPRES-RTIME_L0) [psi].
 
     References:
 
@@ -1353,7 +1356,123 @@ def sfl_sflpres_l1(p_psia):
         >> Controlled >> 1000 System Level >>
         1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
     """
+    rtime = ne.evaluate('p_psia * 0.689475728')
+    return rtime
 
-    sflpres_l1 = ne.evaluate('p_psia * 0.689475728')
 
-    return sflpres_l1
+def sfl_sflpres_tide(p_dec_tide, b, m, slope=1.0, offset=0.0):
+    """
+    Description:
+
+        The OOI Level 1 Seafloor Pressure core data products, SFLPRES and
+        sub-parameters SFLPRES-RTIME, SFLPRES-TIDE, and SFLPRES-WAVE, are
+        created from the Sea-Bird Electronics SBE 26plus member of the Seafloor
+        Pressure (SFL, PRESF) family of instruments by either a) polling, in
+        real-time, for L0 ASCII text format data output and converting from
+        psia to decibar units or b) converting, after instrument recovery, L0
+        hexadecimal pressure data into decimal format and the resulting tide
+        and wave pressure data in psia to decibar units.
+
+        This code creates the SFLPRES-TIDE data product.
+
+    Implemented by:
+
+        2014-09-23: Christopher Wingard. Initial code
+
+    Usage:
+
+        tide = sfl_sflpres_tide(p_dec_tide, b, m, slope, offset):
+
+            where
+
+        tide = tidal pressure (SFLPRES-TIDE_L1) [dbar]
+        p_dec_tide = tidal pressure (SFLPRES-TIDE_L0) [].
+        b = calibration coefficient.
+        m = calibration coefficient.
+        slope = slope correction factor, 1.0 by default
+        offset = offset correction factor, 0.0 by default
+
+    References:
+
+        OOI (2013). Data Product Specification for Seafloor Pressure from
+        Sea-Bird SBE 26PLUS. Document Control Number 1341-00230.
+        https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+        >> Controlled >> 1000 System Level >>
+        1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
+    """
+    psia = ne.evaluate('slope * ((p_dec_tide - b) / m) + offset')
+    tide = ne.evaluate('0.689475728 * psia')
+    return tide
+
+
+def sfl_sflpres_wave(ptcn, p_dec_wave, u0, y1, y2, y3, c1, c2, c3, d1, d2,
+                     t1, t2, t3, t4, poff, slope=1.0, offset=0.0):
+    """
+    Description:
+
+        The OOI Level 1 Seafloor Pressure core data products, SFLPRES and
+        sub-parameters SFLPRES-RTIME, SFLPRES-TIDE, and SFLPRES-WAVE, are
+        created from the Sea-Bird Electronics SBE 26plus member of the Seafloor
+        Pressure (SFL, PRESF) family of instruments by either a) polling, in
+        real-time, for L0 ASCII text format data output and converting from
+        psia to decibar units or b) converting, after instrument recovery, L0
+        hexadecimal pressure data into decimal format and the resulting tide
+        and wave pressure data in psia to decibar units.
+
+        This code creates the SFLPRES-WAVE data product.
+
+    Implemented by:
+
+        2014-09-23: Christopher Wingard. Initial code
+
+    Usage:
+
+        wave = sfl_sflpres_wave(ptcn, p_dec_wave, u0, y1, y2, y3, c1, c2, c3,
+                                d1, d2, t1, t2, t3, t4, slope, offset)
+
+            where
+
+        wave = wave burst pressure (SFLPRES-WAVE_L1) [dbar]
+        ptcn = pressure temperature compensation number
+        p_dec_wave = wave burst pressure (SFLPRES-WAVE_L0) [].
+        u0 = calibration coefficient.
+        y1 = calibration coefficient.
+        y2 = calibration coefficient.
+        y3 = calibration coefficient.
+        c1 = calibration coefficient.
+        c2 = calibration coefficient.
+        c3 = calibration coefficient.
+        d1 = calibration coefficient.
+        d2 = calibration coefficient.
+        t1 = calibration coefficient.
+        t2 = calibration coefficient.
+        t3 = calibration coefficient.
+        t4 = calibration coefficient.
+        poff = pressure offset calibration coefficient
+        slope = slope correction factor, 1.0 by default
+        offset = offset correction factor, 0.0 by default
+
+    References:
+
+        OOI (2013). Data Product Specification for Seafloor Pressure from
+        Sea-Bird SBE 26PLUS. Document Control Number 1341-00230.
+        https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+        >> Controlled >> 1000 System Level >>
+        1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
+    """
+    # compute the pressure temperature compensation frequency (PTCF) and
+    # pressure frequency (PF) from raw inputs
+    PTCF = ne.evaluate('ptcn / 256.0')
+    PF = ne.evaluate('p_dec_wave / 256.0')
+
+    # use calibration coefficients to compute scale factors.
+    U = ne.evaluate('((1.0 / PTCF) * 1000000) - u0')
+    C = ne.evaluate('c1 + (c2 * U) + (c3 * U**2)')
+    D = ne.evaluate('d1 + d2')
+    T0 = ne.evaluate('(t1 + t2 * U + t3 * U**2 + t4 * U**3) / 1000000')
+    W = ne.evaluate('1.0 - (T0**2 * PF**2)')
+
+    # compute the wave pressure data in dbar
+    psia = ne.evaluate('slope * ((C * W * (1.0 - D * W)) + poff) + offset')
+    wave = ne.evaluate('0.689475728 * psia')
+    return wave

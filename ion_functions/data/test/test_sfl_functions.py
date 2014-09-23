@@ -649,9 +649,9 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_allclose(Clout, Cl, rtol=0, atol=0)
         ###########################################################################
 
-    def test_sfl_sflpres_l1(self):
+    def test_sfl_sflpres_rtime(self):
                 """
-        Test the sfl_sflpres_l1 function.
+        Test the sfl_sflpres_rtime function.
 
         Value based on that described in DPS as available on Alfresco:
 
@@ -673,7 +673,79 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
     # compute values
     pressure_calc = np.zeros(1)
     for i in range(0, 1):
-        pressure_calc[i] = sflfunc.sfl_sflpres_l1(pressure_output[i])
+        pressure_calc[i] = sflfunc.sfl_sflpres_rtime(pressure_output[i])
 
     # compare calculated results to expected
     np.testing.assert_allclose(pressure_calc, pressure_expected, rtol=0.0001, atol=0.0001)
+
+    def test_sfl_sflpres_tide(self):
+                """
+        Test the sfl_sflpres_tide function.
+
+        Value based on that described in DPS as available on Alfresco:
+
+        OOI (2013). Data Product Specification for Seafloor Pressure from
+        Sea-Bird SBE 26PLUS. Document Control Number 1341-00230.
+        https://alfresco.oceanobservatories.org/
+        (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+        1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
+
+        Implemented by Craig Risien, February 2014
+        """
+
+    # test inputs
+    p_dec_tide = 4175754
+    m = 279620.2
+    b = 18641.3
+
+    # expected outputs
+    tide = 10.2504
+
+    # compute values
+    out = sflfunc.sfl_sflpres_tide(p_dec_tide, b, m)
+
+    # compare calculated results to expected
+    np.testing.assert_allclose(out, tide, rtol=0.0001, atol=0.0001)
+
+    def test_sfl_sflpres_wave(self):
+                """
+        Test the sfl_sflpres_wave function.
+
+        Value based on that described in DPS as available on Alfresco:
+
+        OOI (2013). Data Product Specification for Seafloor Pressure from
+        Sea-Bird SBE 26PLUS. Document Control Number 1341-00230.
+        https://alfresco.oceanobservatories.org/
+        (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+        1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
+
+        Implemented by Craig Risien, February 2014
+        """
+
+    # test inputs
+    ptcn = 43746280
+    p_dec_wave = 8900312
+    u0 =  5.856409e+00
+    y1 = -3.987838e+03
+    y2 = -1.049603e+04
+    y3 =  0.000000e+00
+    c1 =  2.305367e+02
+    c2 =  1.198422e+01
+    c3 = -2.401512e+02
+    d1 =  4.095400e-02
+    d2 =  0.000000e+00
+    t1 =  2.781994e+01
+    t2 =  6.760780e-01
+    t3 =  1.761829e+01
+    t4 =  6.000932e+00
+    poff = 0.0
+
+    # expected outputs
+    wave = 10.2511
+
+    # compute values
+    out = sflfunc.sfl_sflpres_wave(ptcn, p_dec_wave, u0, y1, y2, y3, c1,
+                                   c2, c3, d1, d2, t1, t2, t3, t4, poff)
+
+    # compare calculated results to expected
+    np.testing.assert_allclose(out, wave, rtol=0.0001, atol=0.0001)
