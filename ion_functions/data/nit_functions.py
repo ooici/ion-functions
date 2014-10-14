@@ -114,7 +114,7 @@ def ts_corrected_nitrate(wllower, wlupper, cal_temp, wl, eno3, eswa, di,
 
     for i in range(0, data_array_size[0]):
 
-        if frame_type[i] == 'SDB':
+        if frame_type[i] == 'SDB' or frame_type[i] == 'SDF' or frame_type[i] == "NDF":
 
             # Ignore and fill dark frame measurements
             NO3_conc[i] = -9999999.0
