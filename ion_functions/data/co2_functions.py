@@ -314,6 +314,46 @@ def pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
     return sp.real(pco2)
 
 
+def pco2_ppressure(xco2, p, std=1013.25):
+    """
+    Description:
+
+        OOI Level 1 Partial Pressure of CO2 in Air (PCO2ATM) or Surface
+        Seawater (PCO2SSW) core date product is computed by using an
+        equation that incorporates the Gas Stream Pressure (PRESAIR) and the
+        CO2 Mole Fraction in Air or Surface Seawater (XCO2ATM or XCO2SSW,
+        respectively). It is computed using data from the pCO2 air-sea (PCO2A)
+        family of instruments.
+
+    Implemented by:
+
+        2014-10-27: Christopher Wingard. Initial python code.
+
+    Usage:
+
+        ppres = pco2_ppressure(xco2, p, std)
+
+            where
+
+        ppres = partial pressure of CO2 in air or surface seawater [uatm]
+                (PCO2ATM_L1 or PCO2SSW_L1)
+        xco2 = CO2 mole fraction in air or surface seawater [ppm] (XCO2ATM_LO
+               or XCO2SSW_L0)
+        p = gas stream pressure [mbar] (PRESAIR_L0)
+        std = standard atmospheric pressure set to default of 1013.25 [mbar/atm]
+
+    References:
+
+        OOI (2012). Data Product Specification for Partial Pressure of CO2 in
+            Air and Surface Seawater. Document Control Number 1341-00260.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >>
+            OOI >> Controlled >> 1000 System Level >>
+            1341-00260_Data_Product_SPEC_PCO2ATM_PCO2SSW_OOI.pdf)
+    """
+    ppres = ne.evaluate('xco2 * p / std')
+    return ppres
+
+
 def pco2_co2flux(pco2w, pco2a, u10, t, s):
     """
     Description:

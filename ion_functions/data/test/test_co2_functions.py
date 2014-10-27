@@ -119,6 +119,40 @@ class Testpco2FunctionsUnit(BaseUnitTestCase):
 
             indx += 1
 
+    def test_pco2_ppressure(self):
+        """
+        Test pco2_ppressure function.
+
+        Values based on those described in DPS as available on Alfresco:
+
+        OOI (2012). Data Product Specification for Partial Pressure of CO2 in
+            Air and Surface Seawater. Document Control Number 1341-00260.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00260_Data_Product_SPEC_PCO2ATM_PCO2SSW_OOI.pdf)
+
+        Implemented by Christopher Wingard, October 2014
+        """
+        test_data = np.array([
+            [674, 1000, 665.19],
+            [619, 1000, 610.91],
+            [822, 1000, 811.25],
+            [973, 1000, 960.28],
+            [941, 1000, 928.69],
+            [863, 1000, 851.71],
+            [854, 1000, 842.83],
+            [833, 1000, 822.11],
+            [826, 1000, 815.20],
+            [814, 1000, 803.36],
+            [797, 1000, 786.58],
+            [782, 1000, 771.77],
+            [768, 1000, 757.96],
+            [754, 1000, 744.14],
+            [740, 1000, 730.32]
+        ])
+        ppres = co2func.pco2_ppressure(test_data[:, 0], test_data[:, 1])
+        np.testing.assert_allclose(ppres, test_data[:, 2], rtol=1e-2, atol=1e-2)
+
     def test_pco2_co2flux(self):
         """
         Test pco2_co2flux function.
