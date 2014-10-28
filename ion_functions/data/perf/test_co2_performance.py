@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from ion_functions.data.perf.test_performance import PerformanceTestCase, a_deca
-from ion_functions.data.co2_functions import pco2_thermistor, pco2_blank, pco2_pco2wat, pco2_co2flux
+from ion_functions.data.co2_functions import pco2_thermistor, pco2_blank, pco2_pco2wat, pco2_co2flux, pco2_ppressure
 import numpy as np
 
 
@@ -31,6 +31,25 @@ class TestCO2Performance(PerformanceTestCase):
         self.a434blnk = pco2_blank(self.a434braw)
         self.a620braw = self.light[7]
         self.a620blnk = pco2_blank(self.a620braw)
+
+        ### test data for the PCO2A Partial Pressure calculations
+        self.ppres_data = np.array([
+            [674, 1000, 665.19],
+            [619, 1000, 610.91],
+            [822, 1000, 811.25],
+            [973, 1000, 960.28],
+            [941, 1000, 928.69],
+            [863, 1000, 851.71],
+            [854, 1000, 842.83],
+            [833, 1000, 822.11],
+            [826, 1000, 815.20],
+            [814, 1000, 803.36],
+            [797, 1000, 786.58],
+            [782, 1000, 771.77],
+            [768, 1000, 757.96],
+            [754, 1000, 744.14],
+            [740, 1000, 730.32]
+        ])
 
         ### test data for the PCO2A CO2FLUX calculations
         self.flux_data = np.array([
@@ -131,6 +150,16 @@ class TestCO2Performance(PerformanceTestCase):
 
         self.profile(stats, pco2_pco2wat, mtype, light, tout, ea434, eb434,
                      ea620, eb620, calt, cala, calb, calc, a434blnk, a620blnk)
+
+    def test_pco2_ppressure(self):
+        stats = []
+
+        # generate 10000 data points from input array
+        nPts = np.round(a_deca / self.ppres_data.shape[0])
+        xco2 = np.repeat(self.ppres_data[:, 0], nPts)
+        p = np.repeat(self.ppres_data[:, 1], nPts)
+
+        self.profile(stats, pco2_ppressure, xco2, p)
 
     def test_pco2_co2flux(self):
         stats = []
