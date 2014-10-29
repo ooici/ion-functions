@@ -13,6 +13,8 @@ import numpy as np
 import pdb
 from ion_functions.data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north
 from ion_functions.data.vel_functions import nortek_mag_corr_east, nortek_mag_corr_north
+from ion_functions.data.vel_functions import velpt_mag_corr_east, velpt_mag_corr_north
+from ion_functions.data.vel_functions import velpt_up_vel
 from ion_functions.data.vel_functions import vel3dk_east, vel3dk_north
 from ion_functions.data.vel_functions import vel3dk_up
 from ion_functions.data.vel_functions import valid_lat, valid_lon
@@ -38,6 +40,9 @@ VU_NOBSKA = np.array([-1.1, -0.6, -1.4, -2, -1.7, -2, 1.3, -1.6, -1.1, -4.5])
 VE_NORTEK = VE_NOBSKA / 100.
 VN_NORTEK = VN_NOBSKA / 100.
 VU_NORTEK = VU_NOBSKA / 100.
+VE_VELPT = VE_NOBSKA * 10.
+VN_VELPT = VN_NOBSKA * 10.
+VU_VELPT = VU_NOBSKA * 10.
 
 # expected output velocities in m/s
 VE_EXPECTED = np.array([
@@ -116,6 +121,38 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
             VE_NORTEK, VN_NORTEK, LAT, LON, TS, DEPTH)
         vn_cor = nortek_mag_corr_north(
             VE_NORTEK, VN_NORTEK, LAT, LON, TS, DEPTH)
+
+        np.testing.assert_array_almost_equal(ve_cor, VE_EXPECTED)
+        np.testing.assert_array_almost_equal(vn_cor, VN_EXPECTED)
+
+    def test_velpt(self):
+        """
+        Tests functions velpt_mag_corr_east and velpt_mag_corr_north
+        from the ion_functions.data.vel_functions module using test data
+        from the VELPTMN DPS.
+
+        Implemented by:
+
+        2013-04-17: Stuart Pearce. Initial code.
+        2013-04-24: Stuart Pearce. Changed to be general for all velocity
+                    instruments.
+        2014-02-05: Christopher Wingard. Edited to use magnetic corrections in
+                    the generic_functions module.
+        2014-10-29: Stuart Pearce. Adds the velpt functions.
+
+        References:
+
+            OOI (2012). Data Product Specification for Mean Point Water
+                Velocity. Document Control Number 1341-00790.
+                https://alfresco.oceanobservatories.org/ (See: Company Home
+                >> OOI >> Controlled >> 1000 System Level >>
+                1341-00790_Data_Product_SPEC_VELPTMN_OOI.pdf)
+        """
+
+        ve_cor = velpt_mag_corr_east(
+            VE_VELPT, VN_VELPT, LAT, LON, TS, DEPTH)
+        vn_cor = velpt_mag_corr_north(
+            VE_VELPT, VN_VELPT, LAT, LON, TS, DEPTH)
 
         np.testing.assert_array_almost_equal(ve_cor, VE_EXPECTED)
         np.testing.assert_array_almost_equal(vn_cor, VN_EXPECTED)
