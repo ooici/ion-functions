@@ -470,8 +470,8 @@ def vel3dk_east(
 
     Usage:
         u_cor = vel3dk_east(
-            vel0, vel1, vel2, heading, pitch, roll, beam1, beam2, beam3,
-            beam4, lat, lon, timestamp, z, Vscale, vel3=0)
+            vel0, vel1, vel2, heading, pitch, roll, beams, lat, lon,
+            timestamp, z, Vscale, vel3=0)
 
             where
 
@@ -484,8 +484,8 @@ def vel3dk_east(
             [scaled integer distance/s]
         heading, pitch, roll = attitude data obtained from the
             AquadoppII.  [degrees]
-        beams = the beam configuration array listing the physical beams
-            used that correspond to velocities vel0-3
+        beams = the beam configuration 4 element array listing the
+            physical beams used that correspond to velocities vel0-3
         lat = latitude of the instrument [decimal degrees].  East is
             positive, West negative.
         lon = longitude of the instrument [decimal degrees]. North
@@ -585,8 +585,8 @@ def vel3dk_north(
             [scaled integer distance/s]
         heading, pitch, roll = attitude data obtained from the
             AquadoppII.  [degrees]
-        beams = the beam configuration array listing the physical beams
-            used that correspond to velocities vel0-3
+        beams = the beam configuration 4 element array listing the
+            physical beams used that correspond to velocities vel0-3
         lat = latitude of the instrument [decimal degrees].  East is
             positive, West negative.
         lon = longitude of the instrument [decimal degrees]. North
