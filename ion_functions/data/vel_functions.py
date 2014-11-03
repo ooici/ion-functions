@@ -484,8 +484,12 @@ def vel3dk_east(
             [scaled integer distance/s]
         heading, pitch, roll = attitude data obtained from the
             AquadoppII.  [degrees]
-        beams = the beam configuration 4 element array listing the
-            physical beams used that correspond to velocities vel0-3
+        beams = beam configuration as an Nx5 array listing the
+            physical beams used that correspond to velocities vel0-3.
+            The 5th beam will always be zero since there is not a 5th
+            transducer and the 5th column will be ignored. Should be
+            configured as [beam1,beam2,beam3,beam4,beam5] where beam#
+            corresponds to vel#-1 (e.g. beam1 to vel0).
         lat = latitude of the instrument [decimal degrees].  East is
             positive, West negative.
         lon = longitude of the instrument [decimal degrees]. North
@@ -585,8 +589,12 @@ def vel3dk_north(
             [scaled integer distance/s]
         heading, pitch, roll = attitude data obtained from the
             AquadoppII.  [degrees]
-        beams = the beam configuration 4 element array listing the
-            physical beams used that correspond to velocities vel0-3
+        beams = beam configuration as an Nx5 array listing the
+            physical beams used that correspond to velocities vel0-3.
+            The 5th beam will always be zero since there is not a 5th
+            transducer and the 5th column will be ignored. Should be
+            configured as [beam1,beam2,beam3,beam4,beam5] where beam#
+            corresponds to vel#-1 (e.g. beam1 to vel0).
         lat = latitude of the instrument [decimal degrees].  East is
             positive, West negative.
         lon = longitude of the instrument [decimal degrees]. North
@@ -667,8 +675,12 @@ def vel3dk_up(
             [scaled integer distance/s]
         Vscale = velocity scaling exponent factor.
         heading, pitch, roll = the attitude information from the instrument
-        beam1, 2, 3, 4 = beam configuration describes the physical beam
-                used for vel0-3
+        beams = beam configuration as an Nx5 array listing the
+            physical beams used that correspond to velocities vel0-3.
+            The 5th beam will always be zero since there is not a 5th
+            transducer and the 5th column will be ignored. Should be
+            configured as [beam1,beam2,beam3,beam4,beam5] where beam#
+            corresponds to vel#-1 (e.g. beam1 to vel0).
 
     References:
 
@@ -1006,8 +1018,12 @@ def vel3dk_transform(
             [scaled integer distance/s]
         heading, pitch, roll = attitude data obtained from the
             AquadoppII.  [degrees]
-        beams = the beam configuration array listing the physical beams
-            used that correspond to velocities vel0-3
+        beams = beam configuration as an Nx5 array listing the
+            physical beams used that correspond to velocities vel0-3.
+            The 5th beam will always be zero since there is not a 5th
+            transducer and the 5th column will be ignored. Should be
+            configured as [beam1,beam2,beam3,beam4,beam5] where beam#
+            corresponds to vel#-1 (e.g. beam1 to vel0).
 
     Implemented by:
         2014-05-13: Stuart Pearce. Reimplementation of code from P.J.
@@ -1021,6 +1037,17 @@ def vel3dk_transform(
     if vel3 != 0:
         data[4, :] = vel3
 
+    # if the beams array has 5 beams, drop the 5th one since there is
+    # not a 5th transducer.
+    rows, cols = beams.shape
+    if cols == 5:
+        beams = np.delete(beams, 4, 1)
+    else:
+        raise ValueError(
+            "the VEL3D-K algorithm inputs expect a Nx5 beam array," +
+            "instead got a %dx%d array" % (rows, cols))
+
+    # Now grab the first beam configuration and the transform to start
     beams_used = list(beams[0, :])
     t_beam2XYZ = get_XYZ_transform(beams_used)
 
