@@ -732,6 +732,54 @@ def opt_par_satlantic(counts_output, a0, a1, Im):
     return OPTPARW_L1
 
 
+def opt_par_wetlabs(counts_output, a0, a1, Im):
+    """
+    Description:
+
+        The OOI Level 1 Photosynthetically Active Radiation (PAR)
+        (OPTPARW) core data product is the spectral range
+        (wavelength) of solar radiation from 400 to 700 nanometers
+        that photosynthetic organisms are able to use in the process
+        of photosynthesis.
+
+    Implemented by:
+
+        2014-12-10: Craig Risien. Initial Code
+
+    Usage:
+
+        OPTPARW_L1 = opt_par_satlantic(counts_output, a0, a1, Im):
+
+        Calculates the L1 OPTPARW from the WET Labs instrument on the CSPP:
+
+        PAR (umol photons m^-2 s^-1) = Im * 10**((counts_output - a0) / a1)
+
+            where
+
+        counts_output is the OPTPARW L0 output [ADC counts]
+        a0 is the voltage offset [counts]
+        a1 is the scaling factor [umol photons per m^2 per second per count]
+        Im = immersion coefficient
+
+    References:
+
+        OOI (2014). Data Product Specification for DATA PRODUCT SPECIFICATION
+        FOR PHOTOSYNTHETICALLY ACTIVE RADIATION (PAR) FROM WET LABS INSTRUMENT
+        ON COASTAL SURFACE PIERCING PROFILER Document Control Number 1341-00722.
+        https://alfresco.oceanobservatories.org/
+        (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+        1341-00722_Data_Product_SPEC_OPTPARW_WETLabs_OOI.pdf)
+    """
+
+    counts_output = float(counts_output)
+    a0 = float(a0)
+    a1 = float(a1)
+
+    OPTPARW_L1 = Im * 10**((counts_output - a0) / a1)
+
+    return OPTPARW_L1
+
+
 def opt_par_biospherical_mobile(output, dark_offset, scale_wet):
     """
     Description:

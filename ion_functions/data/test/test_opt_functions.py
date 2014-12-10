@@ -599,6 +599,46 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
     # compare calculated results to expected
     np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
 
+    def test_opt_par_wetlabs(self):
+        """
+        Test the opt_par_wetlabs function.
+
+        Values based on that described in DPS as available on Alfresco:
+
+        OOI (2014). Data Product Specification for DATA PRODUCT SPECIFICATION
+        FOR PHOTOSYNTHETICALLY ACTIVE RADIATION (PAR) FROM WET LABS INSTRUMENT
+        ON COASTAL SURFACE PIERCING PROFILER Document Control Number 1341-00722.
+        https://alfresco.oceanobservatories.org/
+        (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+        1341-00722_Data_Product_SPEC_OPTPARW_WETLabs_OOI.pdf)
+
+        Implemented by Craig Risien, December 2014
+        """
+
+    # test inputs
+    Im = 1.3589
+    a0 = 4381
+    a1 = 2904
+
+    par_count = np.array([4975, 4999, 5077, 5230, 5413, 5483, 5427, 5344, 5285, 5284,
+                          5344, 5470, 5649, 5835, 6007, 11824, 4975, 4999, 5077, 5230,
+                          5413, 11824])
+
+    # expected outputs
+    par_expected = np.array([2.176371115, 2.218183222, 2.359700693, 2.664053061, 3.08006158,
+                             3.255847708, 3.114442636, 2.916077547, 2.782801729, 2.780596116,
+                             2.916077547, 3.222459729, 3.713869311, 4.304039059, 4.932928879,
+                             496.8256708, 2.176371115, 2.218183222, 2.359700693, 2.664053061,
+                             3.08006158, 496.8256708])
+
+    # compute par values
+    par_calc = np.zeros(22)
+    for i in range(0, 22):
+        par_calc[i] = optfunc.opt_par_wetlabs(par_count[i], a0, a1, Im)
+
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
+
     def opt_par_biospherical_mobile(self):
                 """
         Test the opt_par_biospherical_mobile function.
@@ -665,7 +705,7 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
 
     # compare calculated results to expected
     np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
-    
+
     def test_opt_ocr507_irradiance(self):
         """
         Test opt_ocr507_irradiance function.
