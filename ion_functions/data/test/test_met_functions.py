@@ -11,6 +11,7 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 import datetime as dt
+import os
 
 import ion_functions.data.met_functions as mb
 
@@ -242,39 +243,22 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         self.vln_water = self.vle_water + 0.3
 
     """
+    Tests for data products requiring coolskin and warmlayer corrections.
+
     Description
 
-        Tests for data products requiring coolskin and warmlayer corrections.
-
-        The matlab program WarmCoolLayer_OOI_DPA_calculation.m was written to generate
-        unit test data for these data products. The program compares values calculated
-        from reference coare version 3.5 matlab code and my (Desiderio) refactored matlab
-        code. The refactored code calculates two versions of the data products: (1) 'old',
-        which are calculated the same as in the reference code; and (2) 'new', where the
-        matlab code incorporated the changes to be made in the OOI DPA implementation in
-        python (for example, the celsius to kelvin conversion constant was corrected from
-        273.16 to 273.15). For each of these data products, the reference values generated
+        Matlab programs were written to generate unit test data for these data products.
+        The programs compared values calculated from reference coare version 3.5 matlab code
+        and a refactored matlab code. The refactored code calculates two versions of the
+        data products: (1) 'old', which are calculated the same as in the reference code;
+        and (2) 'new', where the matlab code incorporated the changes to be made in the OOI
+        DPA implementation in python (examples: the celsius to kelvin conversion constant was
+        corrected from 273.16 to 273.15; more significantly, the rain heat flux calculation
+        was corrected). For each of these data products, the reference values generated
         by the original unchanged code were checked against the 'old' values given by the
         refactored code to make sure they were identical. The 'new' values calculated by
         the refactored code were then incorporated as the target test values for the python
         code to calculate.
-
-        The code is available in the data product specification artifact section of
-        alfresco referenced below.
-
-            Main (calling) code:
-                WarmCoolLayer_OOI_DPA_calculation_hourlydata_v5.m
-
-            Code to generate sub-hourly dataset to match hourly test values in Main
-                make_hourly_dataset_for_metbk.m
-
-            Reference code:
-                coare35vnWarm_edson.m
-                coare35vn_edson.m
-
-            Refactored code:
-                coare35vnWarm_rad_v5.m
-                coare35vn_rad_v5.m
 
     Implemented by:
 
@@ -283,6 +267,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         2014-10-28: Russell Desiderio. New derivation of rain heat flux coded.
         2014-10-29: Russell Desiderio. Incorporated new unit test values for all data products
                                        using warmlayer algorithm (which uses rain heat flux).
+        2014-12-29: Russell Desiderio. Incorporated tests on Irminger METBK data.
 
     References
 
@@ -996,3 +981,124 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         calc = mb.rain_heat_flux(rainrate, Tsea, Tair, RH, Pr)
         np.testing.assert_allclose(calc, xpctd, rtol=0, atol=1.e-12)
 
+    def test_time_calcs_with_actual_metbk_data(self):
+        """
+            Test manipulation of date and time by running a flux algorithm with actual
+            raw (each_minute) METBK data (from Irminger Sea deployment).
+
+            This code also provides a template on how to calculate L2 METBK data products
+            requiring the warmlayer and coolskin algorithms.
+
+            NOTE: These PRECIPM_L0 data exhibit systematic spiking. The repeating cycle
+            is a spike of 3 points followed by 12 points of unaliased data. This pattern
+            is evident when plots of these precipm data v. time are zoomed in.
+
+            2014-12-19: Russell Desiderio. Initial code.
+            2014-12-29: Russell Desiderio. Extended tests.
+        """
+        # read in the input L0 test data ...
+        file = os.path.join(os.getcwd(),
+                            'ion_functions/data/matlab_scripts/metbk/metbk_test_dat.txt')
+        with open(file, 'r') as f:
+            lines = f.readlines()
+
+        # ... parse it into a data array
+        txtdata = []
+        for ii in lines:
+            txtdata.append((ii.strip().split(",")))
+        data = np.array(txtdata, dtype=float)
+
+        # to ensure no loss of precision, the OOI CI timestamps were broken up into a
+        # more significant and a less significant field; a timestamp of 3619382459.096
+        # is represented by the fields 3619382 and 459.096.
+        #
+        # reconstitute OOI CI timestamps [sec since 1900-01-01; UT]
+        timstmp = data[:, 0] * 1000 + data[:, 1]
+
+        # document input L0 data by assigning DPS variable names to the data columns
+        barpres = data[:, 2]
+        relhumi = data[:, 3]
+        tempair = data[:, 4]
+        longirr = data[:, 5]
+        precipm = data[:, 6]
+        tempsrf = data[:, 7]
+        condsrf = data[:, 8]    # not used in any METBK DPA algorithms
+        shrtirr = data[:, 9]
+        wndrawE = data[:, 10]
+        wndrawN = data[:, 11]
+
+        # the test data came from the Irminger Sea deployment, so
+        lon = np.copy(barpres)
+        lon[:] = -39.
+        lat = np.copy(barpres)
+        lat[:] = 60.
+
+        # sensor heights
+        ztmpwat = 1.5
+        zwindsp = 8.0
+        ztmpair = 5.0
+        zhumair = 4.0
+
+        # correct wind components for magnetic variation; this is necessary in the
+        # general case because the L1 VELPT current data product values, required for
+        # the relative wind calculation, have themselves been magnetically corrected.
+        ve_cor = mb.met_windavg_mag_corr_east(wndrawE, wndrawN, lat, lon, timstmp)
+        vn_cor = mb.met_windavg_mag_corr_north(wndrawE, wndrawN, lat, lon, timstmp)
+        # for this test, however, assume there is no current.
+        rel_wnd_spd = mb.met_relwind_speed(ve_cor, vn_cor, 0.0, 0.0)
+
+        # construct argument tuple for flux data products
+        args = (tempsrf, rel_wnd_spd, tempair, relhumi, timstmp, lon, ztmpwat, zwindsp,
+                ztmpair, zhumair, lat, barpres, shrtirr, longirr, precipm)
+
+        # latent heat flux, an hourly data product
+        latnflx = mb.met_latnflx(*args)
+
+        # calculate time base for latnflx (and all hourly data products)
+        hourly_time_base = mb.met_timeflx(timstmp)
+
+        # TESTS:
+        # (1) verify that the first and last ooici timestamps correlate with
+        #     the datetimes in the raw METBK text files.
+        #
+        #     to convert ooi ci timestamps to readable datetime strings, first
+        #     convert them to posix (unix) time by subtracting the difference in
+        #     epochs, then use a function from the datetime module.
+        epoch_offset = 2208988800  # number of seconds between 1900 and 1970 epochs
+        utc_rawdata_first = dt.datetime.utcfromtimestamp(timstmp[0] - epoch_offset)
+        xpctd_first = '2014-09-11 00:00:59.096000'
+        np.testing.assert_equal(utc_rawdata_first.isoformat(' '), xpctd_first)
+
+        utc_rawdata_last = dt.datetime.utcfromtimestamp(timstmp[-1] - epoch_offset)
+        xpctd_last = '2014-09-17 23:59:38.992000'
+        np.testing.assert_equal(utc_rawdata_last.isoformat(' '), xpctd_last)
+
+        # (2) there should be 168 hourly timestamps, because the rawdata spans 7 complete days.
+        np.testing.assert_equal(hourly_time_base.shape[0], 168)
+
+        # (3a) the 1st hourly timestamp will be 30 minutes later than the first rawstamp.
+        utc_hourly_first = dt.datetime.utcfromtimestamp(hourly_time_base[0] - epoch_offset)
+        xpctd_first = '2014-09-11 00:30:59.096000'
+        np.testing.assert_equal(utc_hourly_first.isoformat(' '), xpctd_first)
+
+        # (3b) the last hourly timestamp will be (168-1) hours later than the first hourly stamp.
+        utc_hourly_last = dt.datetime.utcfromtimestamp(hourly_time_base[-1] - epoch_offset)
+        xpctd_last = '2014-09-17 23:30:59.096000'
+        np.testing.assert_equal(utc_hourly_last.isoformat(' '), xpctd_last)
+
+        # (4) Local time check: because the longitude is 39 West, Irminger local time
+        #     is 39 * 240 seconds = 156 minutes earlier than UTC. Therefore, the
+        #     first 4 hourly timestamps are:
+        #
+        #         UTC           local
+        #     00:30:59.096   21:54:59.096
+        #     01:30:59.096   22:54:59.096
+        #     02:30:59.096   23:54:59.096
+        #     03:30:59.096   00:54:59.096
+        #
+        #     The test is that the first non-NaN data value should be the 4th, because the
+        #     previous day's data did not start before 6:00 AM local as required by the
+        #     warmlayer algorithm.
+        calc = np.isnan(latnflx[0:4])
+        xpctd = np.array([True, True, True, False])
+        np.testing.assert_equal(calc, xpctd)

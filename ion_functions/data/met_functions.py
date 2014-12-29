@@ -492,7 +492,7 @@ def met_timeflx(timestamp):
     """
     Description:
 
-        Calculates TIMEFLX-AUX, the timestamps corresponding to the hourly averaged
+        Calculates TIMEFLX-AUX, the UTC timestamps corresponding to the hourly averaged
         METBK data products. The units of the timestamps are seconds since 01-01-1900.
 
         The timestamp values are selected to be at the midpoint of the bin intervals,
@@ -513,7 +513,7 @@ def met_timeflx(timestamp):
             where
 
         fluxtime_hourly = UTC timestamp for hourly data [seconds since 01-01-1900]
-        timestamp = seconds since 01-01-1900
+        timestamp = seconds since 01-01-1900 [UTC]
 
     References:
 
@@ -549,8 +549,8 @@ def met_netsirr(shortwave_down):
     Description:
 
         Calculates NETSIRR_L2, the OOI core data product net shortwave radiation
-        in the downward direction, for the METBK instrument. This data product may
-        have been misclassified (it looks like L1).
+        (wavelengths between 0.3 and 3.0 um) in the downward direction, for the METBK
+        instrument. This data product may have been misclassified (it looks like L1).
 
     Implemented by:
 
@@ -3446,7 +3446,7 @@ def make_hourly_data(*args):
 
         Calculates hourly averaged data for the variables passed in the
         argument list based on timestamp. This routine will work for
-        sporadicly spaced data and for data with time gaps; in the latter
+        sporadically spaced data and for data with time gaps; in the latter
         case, no records are produced for the missing time bins.
 
         The timestamp for each hour of data is calculated as the midpoint
@@ -3458,7 +3458,7 @@ def make_hourly_data(*args):
         Note also that the first hourly timestamp will be one half hour after
         the timestamp of the first datum in, so that in the general case the
         hourly timestamps will not correspond to times at the top of the hour
-        (ie, the hourly timestamps will correspond to 6:00, 7:00, 8:00, etc).
+        (ie, the hourly timestamps will not correspond to 6:00, 7:00, 8:00, etc).
 
     Implemented by:
 
@@ -3605,8 +3605,9 @@ def warmlayer_time_keys(localdate):
         the first hourly timestamp will be 6:15 AM, in which case the warmlayer routine
         would not be run on that day's data.
 
-        The threshold is set here at 6:00 AM, because the point is that the first day's data
-        should start at no upper ocean heating.
+        The threshold is set here at 6:00 AM local just as it is in the original code. The
+        rationale is that the first day's data should start before sunrise at the beginning
+        of the daily heating cycle.
 
         If the timestamp assigned to the hourly intervals is changed to either the first or
         last time of the binning interval, it may be desirable to also change the warmlayer
