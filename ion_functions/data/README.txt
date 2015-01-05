@@ -76,7 +76,14 @@ Hydrophone (HYD)
       
       hyd_bb_acoustic_pwaves -- calculates HYDAPBB_L1 from the HYDBB
       hyd_lf_acoustic_pwaves -- calculates HYDAPLF_L1 from the HYDLF
-      
+
+Dissolved Gas Mass Spectrometer (MSP)
+
+    * msp_functions.py -- calculates all of the L1 and L2 data products associated
+      with the MASSP instrument. In addition, it includes all of the functions
+      needed to calculate the necessary auxiliary data products including timestamp
+      and calibration range information.
+
 Meteorology (MET)
 
     * met_functions.py -- Covers calculation of the L1 WINDAVG Eastward
@@ -85,6 +92,11 @@ Meteorology (MET)
       
       windavg_mag_corr_east -- calculates WINDAVG-VLE_L1 from METBKs
       windavg_mag_corr_north -- calculates WINDAVG-VLN_L1 from METBKs
+
+Nitrate Concentration (NIT)
+
+    * nit_functions.py -- calculates the L2 temperature and salinity corrected
+      dissolved nitrate concentration (NITRTSC) data product.
 
 Ocean Bottom Seismometer (OBS)
 
@@ -135,6 +147,8 @@ Optical Properties (OPT)
                 acquired from a Biospherical QSP-2100.
             opt_par_biospherical_wfp -- computes OPTPARW_L1 from data acquired
                 from a Biospherical QSP-2200
+            opt_par_wetlabs -- computes OPTPARW_L1 from data acquired from a
+                WET Labs ECO PAR sensor on CSPPs
        
             opt_ocr507_irradiance -- computes the downwelling spectral
                 irradiance SPECTIR_L1 data product.
@@ -190,13 +204,17 @@ Seafloor Pressure (PRS)
 Seafloor Properties (SFL)
 
     * sfl_functions.py -- Covers calculation of L1 data products collected
-      from the TRHPH instrument (TRHPHTE, TRHPHCC, TRHPHEH)
+      from the TRHPH (TRHPHTE, TRHPHCC, TRHPHEH) and PRESF instruments
       
       sfl_trhph_vfltemp -- computes the TRHPHTE_L1 data product
       sfl_trhph_chloride -- computes the TRHPHCC_L2 data product
       sfl_trhph_vflorp -- computes the TRHPHEH_L1 data product
       sfl_trhph_vfl_thermistor_temp -- computes a diagnostic data product,
           which, however, is not a core data product.
+  
+      sfl_sflpres_rtime -- computes the SFLPRES-RTIME_L1 data product
+      sfl_sflpres_tide -- computes the SFLPRES-TIDE_L1 data product
+      sfl_sflpres_wave -- computes the SFLPRES-WAVE_L1 data product
         
     * sfl_functions_surface.py -- Recreates the 3 arrays of temperature
       (tdat), conductivty (sdat) and chloride (cdat) from the Larson et al
