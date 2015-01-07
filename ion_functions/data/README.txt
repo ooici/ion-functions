@@ -3,10 +3,7 @@ and the functions therein, represent the transforms and calculations applied
 to parameters uploaded to the system via either dataset or instrument agents,
 and are used to determine various OOI data products. A brief description of the
 modules and their contents are provided below. Each set of modules is grouped
-according to its Instrument Family as defined in SAF. Note that the functions
-calculating SFLPRES data products have been misclassified, and will be found
-in the Seafloor Properties (SFL) module instead of the Seafloor Pressure (PRS)
-module.
+according to its Instrument Family as defined in SAF.
         
 Alphabetical by instrument family Public ID.
 
@@ -251,10 +248,6 @@ PHS: pH
             data product [PHWATER_L1].
 
 PRS: Seafloor Pressure
-
-      NOTE: the SFLPRES data products from the PRESF class of instruments are
-      classified in SAF as belonging to the PRS family. However, the functions
-      calculating the SLFPRES data products are contained in the SFL module.
 
     * prs_functions -- Covers calculation of the L1 (BOTTILT) and L2 (BOTSFLU)
       data products collected from the BOTPT instruments. No DPA function is
