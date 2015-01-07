@@ -1154,8 +1154,8 @@ def sfl_trhph_vfl_thermistor_temp(V_ts):
     """
     Description:
 
-        Calculates T_S, which is an intermediate data product (not a core data
-        product) requested by the authors of the TRHPHTE DPS. It is the
+        Calculates TRHPHTE-T_TS-AUX, which is an auxiliary data product (not a
+        core data product) requested by the authors of the TRHPHTE DPS. It is the
         instrument's thermistor temperature, useful as an important instrument
         diagnostic. It is the same variable as T_ts in the function
         sfl_trhph_vfltemp.
@@ -1163,6 +1163,8 @@ def sfl_trhph_vfl_thermistor_temp(V_ts):
     Implemented by:
 
         2014-02-28: Russell Desiderio. Initial Code
+        2015-01-06: Russell Desiderio. Documented this product as TRHPHTE-T_TS-AUX,
+                    following convention established after initial coding.
 
     Usage:
 
@@ -1170,7 +1172,7 @@ def sfl_trhph_vfl_thermistor_temp(V_ts):
 
             where
 
-        T_ts = Thermistor reference temperature [deg_C]
+        T_ts = TRHPHTE-T_TS-AUX, thermistor reference temperature [deg_C]
         V_ts = Thermistor voltage (TRHPHVS_L0) [volts]
 
     References:
