@@ -253,6 +253,8 @@ PRS: Seafloor Pressure
       data products collected from the BOTPT instruments. No DPA function is
       required for the BOTPRES_L1 data product ("L0=L1").
       
+      BOTTILT:
+
       prs_bottilt_ccmp -- computes the BOTTILT-CCMP_L1 data product
       prs_bottilt_tmag -- computes the BOTTILT-TMAG_L1 data product
       prs_bottilt_tdir -- computes the BOTTILT-TDIR_L1 data product
@@ -265,7 +267,31 @@ PRS: Seafloor Pressure
                                currently commented out within the prs_bottilt_ccmp
                                code.
 
-      BOTSFLU data products: in development.
+      BOTSFLU: only functions calculating data products are listed; these function
+               names all start with 'prs', and are listed in the order encountered
+               in this module.
+               
+
+      prs_botsflu_time15s -- computes the TIME15S-AUX auxiliary data product
+      prs_botsflu_meanpres -- computes the BOTSFLU-MEANPRES_L2 data product
+      prs_botsflu_predtide -- computes the BOTSFLU-PREDTIDE_L2 data product
+      prs_botsflu_meandepth -- computes the BOTSFLU-MEANDEPTH_L2 data product
+      prs_botsflu_5minrate -- computes the BOTSFLU-5MINRATE_L2 data product
+      prs_botsflu_10minrate -- computes the BOTSFLU-10MINRATE_L2 data product
+      prs_botsflu_time24h -- computes the TIME24H-AUX auxiliary data product
+      prs_botsflu_daydepth -- computes the BOTSFLU-DAYDEPTH_L2 data product
+      prs_botsflu_4wkrate -- computes the BOTSFLU-4WKRATE_L2 data product
+      prs_botsflu_8wkrate -- computes the BOTSFLU-8WKRATE_L2 data product
+
+      BOTSFLU: functions calculating event notifications; they return either True or False.
+
+      prs_tsunami_detection -- event notification specified by DPS     
+      prs_eruption_imminent -- event notification specified by DPS 
+      prs_eruption_occurred -- event notification specified by DPS
+
+    * prs_functions_tides_2014_thru_2019.mat -- binary v7 matlab savefile of tide values
+                                                used by BOTSFLU functions.
+
 
 SFL: Seafloor Properties
 
