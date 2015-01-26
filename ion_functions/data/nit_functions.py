@@ -9,8 +9,8 @@
 import numpy as np
 
 
-def ts_corrected_nitrate(wllower, wlupper, cal_temp, wl, eno3, eswa, di,
-                         dark_value, ctd_t, ctd_sp, data_in, frame_type):
+def ts_corrected_nitrate(cal_temp, wl, eno3, eswa, di, dark_value, ctd_t,
+                         ctd_sp, data_in, frame_type, wllower=217, wlupper=240):
     """
     Description:
 
