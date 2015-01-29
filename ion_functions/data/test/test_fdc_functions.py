@@ -195,7 +195,7 @@ class TestFdcFunctionsUnit(BaseUnitTestCase):
             if ii < 3:  # single datasets
                 calc_flux = fd.fdc_fluxmom_alongwind(timestamps,
                                                      windX, windY, windZ,
-                                                     sound, heading,
+                                                     heading,
                                                      rateX, rateY, rateZ,
                                                      accelX, accelY, accelZ, lat)
                 np.testing.assert_allclose(calc_flux, xpctd_fluxes[ii, 0],
@@ -203,7 +203,7 @@ class TestFdcFunctionsUnit(BaseUnitTestCase):
 
                 calc_flux = fd.fdc_fluxmom_crosswind(timestamps,
                                                      windX, windY, windZ,
-                                                     sound, heading,
+                                                     heading,
                                                      rateX, rateY, rateZ,
                                                      accelX, accelY, accelZ, lat)
                 np.testing.assert_allclose(calc_flux, xpctd_fluxes[ii, 1],
@@ -223,7 +223,7 @@ class TestFdcFunctionsUnit(BaseUnitTestCase):
             if ii == 3:  # multiple
                 calc_flux = fd.fdc_fluxmom_alongwind(timestamps,
                                                      windX, windY, windZ,
-                                                     sound, heading,
+                                                     heading,
                                                      rateX, rateY, rateZ,
                                                      accelX, accelY, accelZ, lat)
 
@@ -232,7 +232,7 @@ class TestFdcFunctionsUnit(BaseUnitTestCase):
 
                 calc_flux = fd.fdc_fluxmom_crosswind(timestamps,
                                                      windX, windY, windZ,
-                                                     sound, heading,
+                                                     heading,
                                                      rateX, rateY, rateZ,
                                                      accelX, accelY, accelZ, lat)
                 np.testing.assert_allclose(calc_flux, xpctd_fluxes[:, 1],
@@ -268,7 +268,7 @@ class TestFdcFunctionsUnit(BaseUnitTestCase):
             timestamps = array[:, 0]
             sound = array[:, 4]  # (temperature proxy)
             sonic = sound / 100.0
-            sonic = sonic * sonic / 403.0
+            sonic = sonic * sonic / 403.0 - 273.15
 
             if ii < 3:  # single datasets
                 tmpatur = fd.fdc_tmpatur(timestamps, sound)
@@ -350,7 +350,7 @@ class TestFdcFunctionsUnit(BaseUnitTestCase):
             if ii < 3:  # single datasets
                 calc_wind = fd.fdc_windtur_north(timestamps,
                                                  windX, windY, windZ,
-                                                 sound, heading,
+                                                 heading,
                                                  rateX, rateY, rateZ,
                                                  accelX, accelY, accelZ, lat)
                 calc_stats = np.array([np.mean(calc_wind), np.std(calc_wind, ddof=0)])
@@ -360,7 +360,7 @@ class TestFdcFunctionsUnit(BaseUnitTestCase):
 
                 calc_wind = fd.fdc_windtur_west(timestamps,
                                                 windX, windY, windZ,
-                                                sound, heading,
+                                                heading,
                                                 rateX, rateY, rateZ,
                                                 accelX, accelY, accelZ, lat)
                 calc_stats = np.array([np.mean(calc_wind), np.std(calc_wind, ddof=0)])
@@ -370,7 +370,7 @@ class TestFdcFunctionsUnit(BaseUnitTestCase):
 
                 calc_wind = fd.fdc_windtur_up(timestamps,
                                               windX, windY, windZ,
-                                              sound, heading,
+                                              heading,
                                               rateX, rateY, rateZ,
                                               accelX, accelY, accelZ, lat)
                 calc_stats = np.array([np.mean(calc_wind), np.std(calc_wind, ddof=0)])
@@ -381,7 +381,7 @@ class TestFdcFunctionsUnit(BaseUnitTestCase):
             if ii == 3:  # multiple
                 calc_wind = fd.fdc_windtur_north(timestamps,
                                                  windX, windY, windZ,
-                                                 sound, heading,
+                                                 heading,
                                                  rateX, rateY, rateZ,
                                                  accelX, accelY, accelZ, lat)
                 calc_stats = np.array([np.mean(calc_wind), np.std(calc_wind, ddof=0)])
@@ -392,7 +392,7 @@ class TestFdcFunctionsUnit(BaseUnitTestCase):
 
                 calc_wind = fd.fdc_windtur_west(timestamps,
                                                 windX, windY, windZ,
-                                                sound, heading,
+                                                heading,
                                                 rateX, rateY, rateZ,
                                                 accelX, accelY, accelZ, lat)
                 calc_stats = np.array([np.mean(calc_wind), np.std(calc_wind, ddof=0)])
@@ -403,7 +403,7 @@ class TestFdcFunctionsUnit(BaseUnitTestCase):
 
                 calc_wind = fd.fdc_windtur_up(timestamps,
                                               windX, windY, windZ,
-                                              sound, heading,
+                                              heading,
                                               rateX, rateY, rateZ,
                                               accelX, accelY, accelZ, lat)
                 calc_stats = np.array([np.mean(calc_wind), np.std(calc_wind, ddof=0)])
