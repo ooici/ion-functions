@@ -281,3 +281,97 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_array_almost_equal(ww_est, vlu, 4)
         np.testing.assert_array_almost_equal(e, evl, 4)
         np.testing.assert_array_almost_equal(ww_true, w5, 4)
+
+    def test_adcp_bin_depths(self):
+                """
+        Test the adcp_bin_depths function.
+
+        Values based on that described in DPS as available on Alfresco:
+
+        OOI (2012). Data Product Specification for Velocity Profile and Echo
+            Intensity. Document Control Number 1341-00750.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
+
+        Implemented by Craig Risien, January 2015
+        """
+
+    # test inputs
+    adcp_orientation = 1
+    bin_size = 400
+    dist_first_bin = 900
+    latitude = 45
+    num_bins = 29
+    pressure = 453.18107174009884
+    # expected outputs
+    expected_bins = np.array([441., 437., 433., 429., 425., 421., 417., 413., 409., 405., 401., 397., 393., 389.,
+                              385., 381., 377., 373., 369., 365., 361., 357., 353., 349., 345., 341., 337., 333.,
+                              329.])
+     # calculate bin depths
+    calculated_bins = af.adcp_bin_depths(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
+
+    # compare calculated results to expected results
+    np.testing.assert_allclose(calculated_bins, expected_bins, rtol=0.000001, atol=0.000001)
+
+    # test inputs
+    adcp_orientation = 0
+    bin_size = 400
+    dist_first_bin = 900
+    latitude = 45
+    num_bins = 29
+    pressure = 7.0571553792780017
+    # expected outputs
+    expected_bins = np.array([16., 20., 24., 28., 32., 36., 40., 44., 48., 52., 56., 60., 64., 68., 72., 76., 80., 84.,
+                             88., 92., 96., 100., 104., 108., 112., 116., 120., 124., 128.])
+     # calculate bin depths
+    calculated_bins = af.adcp_bin_depths(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
+
+    # compare calculated results to expected results
+    np.testing.assert_allclose(calculated_bins, expected_bins, rtol=0.000001, atol=0.000001)
+
+    def test_adcp_bin_depths_pd8(self):
+                """
+        Test the adcp_bin_depths_pd8 function.
+
+        Values based on that described in DPS as available on Alfresco:
+
+        OOI (2012). Data Product Specification for Velocity Profile and Echo
+            Intensity. Document Control Number 1341-00750.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
+
+        Implemented by Craig Risien, January 2015
+        """
+
+    # test inputs
+    adcp_orientation = 1
+    bin_size = 400
+    dist_first_bin = 900
+    num_bins = 29
+    sensor_depth = 450
+    # expected outputs
+    expected_bins = np.array([441., 437., 433., 429., 425., 421., 417., 413., 409., 405., 401., 397., 393., 389.,
+                              385., 381., 377., 373., 369., 365., 361., 357., 353., 349., 345., 341., 337., 333.,
+                              329.])
+     # calculate bin depths
+    calculated_bins = af.adcp_bin_depths_pd8(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
+
+    # compare calculated results to expected results
+    np.testing.assert_allclose(calculated_bins, expected_bins, rtol=0.000001, atol=0.000001)
+
+    # test inputs
+    adcp_orientation = 0
+    bin_size = 400
+    dist_first_bin = 900
+    num_bins = 29
+    sensor_depth = 7
+    # expected outputs
+    expected_bins = np.array([16., 20., 24., 28., 32., 36., 40., 44., 48., 52., 56., 60., 64., 68., 72., 76., 80., 84.,
+                             88., 92., 96., 100., 104., 108., 112., 116., 120., 124., 128.])
+    # calculate bin depths
+    calculated_bins = af.adcp_bin_depths_pd8(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
+
+    # compare calculated results to expected results
+    np.testing.assert_allclose(calculated_bins, expected_bins, rtol=0.000001, atol=0.000001)
