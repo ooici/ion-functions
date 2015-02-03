@@ -110,6 +110,7 @@ def fdc_tmpatur(timestamp, sonicT):
     Implemented by:
 
         2014-11-17: Russell Desiderio. Initial Code
+        2015-01-29: Russell Desiderio. Changed units from kelvin to degrees Celsius.
 
     Usage:
 
@@ -117,9 +118,9 @@ def fdc_tmpatur(timestamp, sonicT):
 
             where
 
-        Ts = sonic temperature [K]
+        Ts = sonic temperature [degrees Celsius]
         timestamp = data date and time values [seconds since 1900-01-01]
-        sonicT = TMPATUR_L0 [counts]; speed of sound measured by the sonic anemometer
+        sonicT = TMPATUR_L0 [counts = cm/s]; speed of sound measured by the sonic anemometer
 
     References:
 
@@ -150,13 +151,13 @@ def fdc_tmpatur(timestamp, sonicT):
 
     # process L0 temperature data
     Ts = 0.01 * sonicT
-    Ts = Ts * Ts / 403.0
+    Ts = Ts * Ts / 403.0 - 273.15
     Ts = Ts.flatten()
 
     return Ts
 
 
-def fdc_windtur_north(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
+def fdc_windtur_north(timestamp, sonicU, sonicV, sonicW, heading,
                       rateX, rateY, rateZ, accX, accY, accZ, lat):
     """
     Description:
@@ -169,10 +170,11 @@ def fdc_windtur_north(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
     Implemented by:
 
         2014-11-17: Russell Desiderio. Initial Code
+        2015-01-29: Russell Desiderio. Removed temperature from calling arguments.
 
     Usage:
 
-        wind_north = fdc_windtur_north(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
+        wind_north = fdc_windtur_north(timestamp, sonicU, sonicV, sonicW, heading,
                                        rateX, rateY, rateZ, accX, accY, accZ, lat)
 
             where
@@ -185,7 +187,6 @@ def fdc_windtur_north(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
                  frame of reference
         sonicW = WINDTUR-W_L0 [cm/s]; w-component of windspeed measured in the buoy
                  frame of reference
-        sonicT = TMPATUR_L0 [counts]; speed of sound measured by the sonic anemometer
         heading = MOTFLUX-YAW_L0 [radians] measured by the magnetometer (NOT msrd by the gyro).
         ***NOT USED*** roll: MOTFLUX-ROLL_L0 [radians] ***NOT USED***
         ***NOT USED*** pitch: MOTFLUX-PITCH_L0 [radians] ***NOT USED***
@@ -204,6 +205,8 @@ def fdc_windtur_north(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00280_Data_Product_Spec_FDCHP_OOI.pdf)
     """
+    # this data product is temperature independent
+    sonicT = sonicW * np.nan
     _, windspeeds = fdc_flux_and_wind(timestamp, sonicU, sonicV, sonicW, sonicT,
                                       heading, rateX, rateY, rateZ, accX, accY,
                                       accZ, lat)
@@ -213,7 +216,7 @@ def fdc_windtur_north(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
     return wind_north
 
 
-def fdc_windtur_up(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
+def fdc_windtur_up(timestamp, sonicU, sonicV, sonicW, heading,
                    rateX, rateY, rateZ, accX, accY, accZ, lat):
     """
     Description:
@@ -226,10 +229,11 @@ def fdc_windtur_up(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
     Implemented by:
 
         2014-11-17: Russell Desiderio. Initial Code
+        2015-01-29: Russell Desiderio. Removed temperature from calling arguments.
 
     Usage:
 
-        wind_up = fdc_windtur_up(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
+        wind_up = fdc_windtur_up(timestamp, sonicU, sonicV, sonicW, heading,
                                  rateX, rateY, rateZ, accX, accY, accZ, lat)
 
             where
@@ -242,7 +246,6 @@ def fdc_windtur_up(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
                  frame of reference
         sonicW = WINDTUR-W_L0 [cm/s]; w-component of windspeed measured in the buoy
                  frame of reference
-        sonicT = TMPATUR_L0 [counts]; speed of sound measured by the sonic anemometer
         heading = MOTFLUX-YAW_L0 [radians] measured by the magnetometer (NOT msrd by the gyro).
         ***NOT USED*** roll: MOTFLUX-ROLL_L0 [radians] ***NOT USED***
         ***NOT USED*** pitch: MOTFLUX-PITCH_L0 [radians] ***NOT USED***
@@ -261,6 +264,8 @@ def fdc_windtur_up(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00280_Data_Product_Spec_FDCHP_OOI.pdf)
     """
+    # this data product is temperature independent
+    sonicT = sonicW * np.nan
     _, windspeeds = fdc_flux_and_wind(timestamp, sonicU, sonicV, sonicW, sonicT,
                                       heading, rateX, rateY, rateZ, accX, accY,
                                       accZ, lat)
@@ -270,7 +275,7 @@ def fdc_windtur_up(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
     return wind_up
 
 
-def fdc_windtur_west(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
+def fdc_windtur_west(timestamp, sonicU, sonicV, sonicW, heading,
                      rateX, rateY, rateZ, accX, accY, accZ, lat):
     """
     Description:
@@ -283,10 +288,11 @@ def fdc_windtur_west(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
     Implemented by:
 
         2014-11-17: Russell Desiderio. Initial Code
+        2015-01-29: Russell Desiderio. Removed temperature from calling arguments.
 
     Usage:
 
-        wind_west = fdc_windtur_west(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
+        wind_west = fdc_windtur_west(timestamp, sonicU, sonicV, sonicW, heading,
                                      rateX, rateY, rateZ, accX, accY, accZ, lat)
 
             where
@@ -299,7 +305,6 @@ def fdc_windtur_west(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
                  frame of reference
         sonicW = WINDTUR-W_L0 [cm/s]; w-component of windspeed measured in the buoy
                  frame of reference
-        sonicT = TMPATUR_L0 [counts]; speed of sound measured by the sonic anemometer
         heading = MOTFLUX-YAW_L0 [radians] measured by the magnetometer (NOT msrd by the gyro).
         ***NOT USED*** roll: MOTFLUX-ROLL_L0 [radians] ***NOT USED***
         ***NOT USED*** pitch: MOTFLUX-PITCH_L0 [radians] ***NOT USED***
@@ -318,6 +323,8 @@ def fdc_windtur_west(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00280_Data_Product_Spec_FDCHP_OOI.pdf)
     """
+    # this data product is temperature independent
+    sonicT = sonicW * np.nan
     _, windspeeds = fdc_flux_and_wind(timestamp, sonicU, sonicV, sonicW, sonicT,
                                       heading, rateX, rateY, rateZ, accX, accY,
                                       accZ, lat)
@@ -397,7 +404,7 @@ def fdc_fluxhot(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
     return fluxhot
 
 
-def fdc_fluxmom_alongwind(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
+def fdc_fluxmom_alongwind(timestamp, sonicU, sonicV, sonicW, heading,
                           rateX, rateY, rateZ, accX, accY, accZ, lat):
     """
     Description:
@@ -409,10 +416,11 @@ def fdc_fluxmom_alongwind(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
     Implemented by:
 
         2014-11-17: Russell Desiderio. Initial Code
+        2015-01-29: Russell Desiderio. Removed temperature from calling arguments.
 
     Usage:
 
-        fluxmom_along = fdc_fluxmom_alongwind(timestamp, sonicU, sonicV, sonicW, sonicT,
+        fluxmom_along = fdc_fluxmom_alongwind(timestamp, sonicU, sonicV, sonicW,
                                               heading, rateX, rateY, rateZ, accX, accY,
                                               accZ, lat)
 
@@ -426,7 +434,6 @@ def fdc_fluxmom_alongwind(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
                  frame of reference
         sonicW = WINDTUR-W_L0 [cm/s]; w-component of windspeed measured in the buoy
                  frame of reference
-        sonicT = TMPATUR_L0 [counts]; speed of sound measured by the sonic anemometer
         heading = MOTFLUX-YAW_L0 [radians] measured by the magnetometer (NOT msrd by the gyro).
         ***NOT USED*** roll: MOTFLUX-ROLL_L0 [radians] ***NOT USED***
         ***NOT USED*** pitch: MOTFLUX-PITCH_L0 [radians] ***NOT USED***
@@ -445,6 +452,8 @@ def fdc_fluxmom_alongwind(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00280_Data_Product_Spec_FDCHP_OOI.pdf)
     """
+    # this data product is temperature independent
+    sonicT = sonicW * np.nan
     fluxes, _ = fdc_flux_and_wind(timestamp, sonicU, sonicV, sonicW, sonicT,
                                   heading, rateX, rateY, rateZ, accX, accY,
                                   accZ, lat)
@@ -454,7 +463,7 @@ def fdc_fluxmom_alongwind(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
     return fluxmom_along
 
 
-def fdc_fluxmom_crosswind(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
+def fdc_fluxmom_crosswind(timestamp, sonicU, sonicV, sonicW, heading,
                           rateX, rateY, rateZ, accX, accY, accZ, lat):
     """
     Description:
@@ -466,10 +475,11 @@ def fdc_fluxmom_crosswind(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
     Implemented by:
 
         2014-11-17: Russell Desiderio. Initial Code
+        2015-01-29: Russell Desiderio. Removed temperature from calling arguments.
 
     Usage:
 
-        fluxmom_cross = fdc_fluxmom_crosswind(timestamp, sonicU, sonicV, sonicW, sonicT,
+        fluxmom_cross = fdc_fluxmom_crosswind(timestamp, sonicU, sonicV, sonicW,
                                               heading, rateX, rateY, rateZ, accX, accY,
                                               accZ, lat)
 
@@ -483,7 +493,6 @@ def fdc_fluxmom_crosswind(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
                  frame of reference
         sonicW = WINDTUR-W_L0 [cm/s]; w-component of windspeed measured in the buoy
                  frame of reference
-        sonicT = TMPATUR_L0 [counts]; speed of sound measured by the sonic anemometer
         heading = MOTFLUX-YAW_L0 [radians] measured by the magnetometer (NOT msrd by the gyro).
         ***NOT USED*** roll: MOTFLUX-ROLL_L0 [radians] ***NOT USED***
         ***NOT USED*** pitch: MOTFLUX-PITCH_L0 [radians] ***NOT USED***
@@ -502,6 +511,8 @@ def fdc_fluxmom_crosswind(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00280_Data_Product_Spec_FDCHP_OOI.pdf)
     """
+    # this data product is temperature independent
+    sonicT = sonicW * np.nan
     fluxes, _ = fdc_flux_and_wind(timestamp, sonicU, sonicV, sonicW, sonicT,
                                   heading, rateX, rateY, rateZ, accX, accY,
                                   accZ, lat)
