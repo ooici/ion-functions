@@ -9,6 +9,7 @@
 import numpy as np
 import numexpr as ne
 from numpy import sin, cos, radians
+import pdb
 
 from ion_functions.data.generic_functions import magnetic_declination, magnetic_correction
 
@@ -445,7 +446,7 @@ def velpt_up_vel(w):
 
 def vel3dk_east(
         vel0, vel1, vel2, heading, pitch, roll, beams, lat, lon,
-        timestamp, z, Vscale, vel3=0):
+        timestamp, Vscale, z=0, vel3=0):
     """Eastward Velocity L1 VELPTTU-VLE in True Earth coordinates
 
     Transforms beam velocities to Earth coordinate velocities and then
@@ -471,7 +472,7 @@ def vel3dk_east(
     Usage:
         u_cor = vel3dk_east(
             vel0, vel1, vel2, heading, pitch, roll, beams, lat, lon,
-            timestamp, z, Vscale, vel3=0)
+            timestamp, Vscale, z=0, vel3=0)
 
             where
 
@@ -483,7 +484,7 @@ def vel3dk_east(
             number of beams used as listed in beams.
             [scaled integer distance/s]
         heading, pitch, roll = attitude data obtained from the
-            AquadoppII.  [degrees]
+            AquadoppII.  [deci-degrees, i.e. 0.1degrees]
         beams = beam configuration as an Nx5 array listing the
             physical beams used that correspond to velocities vel0-3.
             The 5th beam will always be zero since there is not a 5th
@@ -496,9 +497,9 @@ def vel3dk_east(
             is positive, South negative.
         ntp_timestamp = NTP time stamp from a data particle
             [secs since 1900-01-01].
+        Vscale = velocity scaling exponent factor.
         z = depth of instrument relative to sealevel [meters].
             Positive values only. Default value is 0.
-        Vscale = velocity scaling exponent factor.
 
     References:
 
@@ -515,11 +516,19 @@ def vel3dk_east(
     # convert from scaled, integer distance/s (as received from the
     # binary data file) to floating point m/s using the Vscale parameter
     # from the MMP binary data file A#####.DEC
-    vel0 = vel0 * 10**Vscale
-    vel1 = vel1 * 10**Vscale
-    vel2 = vel2 * 10**Vscale
+    vel0 = vel0 * 10.**Vscale
+    vel1 = vel1 * 10.**Vscale
+    vel2 = vel2 * 10.**Vscale
     if vel3 != 0:
-        vel3 = vel3 * 10**Vscale
+        vel3 = vel3 * 10.**Vscale
+
+    # attitude variables are in deci-degrees (i.e. 0.1 degrees) and need
+    # to be converted back to degrees.  I believe this is only true if
+    # parsing the binary data file (as opposed to the ascii produced by
+    # McLane's software)  Source: Aquadopp2 Integrators guide.
+    heading = 0.1 * heading
+    roll = 0.1 * roll
+    pitch = 0.1 * pitch
 
    # check for valid latitudes & longitudes
     if not valid_lat(lat) or not valid_lon(lon):
@@ -550,7 +559,7 @@ def vel3dk_east(
 
 def vel3dk_north(
         vel0, vel1, vel2, heading, pitch, roll, beams, lat, lon,
-        timestamp, z, Vscale, vel3=0):
+        timestamp, Vscale, z=0, vel3=0):
     """Northward Velocity L1 VELPTTU-VLN in True Earth coordinates
 
     Transforms beam velocities to Earth coordinate velocities and then
@@ -576,7 +585,7 @@ def vel3dk_north(
     Usage:
         v_cor = vel3dk_north(
             vel0, vel1, vel2, heading, pitch, roll, beams, lat, lon,
-            ntp_timestamp, z, Vscale, vel3=0)
+            ntp_timestamp, Vscale, z=0, vel3=0)
 
             where
 
@@ -588,7 +597,7 @@ def vel3dk_north(
             number of beams used as listed in beams.
             [scaled integer distance/s]
         heading, pitch, roll = attitude data obtained from the
-            AquadoppII.  [degrees]
+            AquadoppII.  [deci-degrees, i.e. 0.1degrees]
         beams = beam configuration as an Nx5 array listing the
             physical beams used that correspond to velocities vel0-3.
             The 5th beam will always be zero since there is not a 5th
@@ -601,9 +610,9 @@ def vel3dk_north(
             is positive, South negative.
         ntp_timestamp = NTP time stamp from a data particle
             [secs since 1900-01-01].
+        Vscale = velocity scaling exponent factor.
         z = depth of instrument relative to sealevel [meters].
             Positive values only. Default value is 0.
-        Vscale = velocity scaling exponent factor.
 
     References:
 
@@ -620,11 +629,19 @@ def vel3dk_north(
     # convert from scaled, integer distance/s (as received from the
     # binary data file) to floating point m/s using the Vscale parameter
     # from the MMP binary data file A#####.DEC
-    vel0 = vel0 * 10**Vscale
-    vel1 = vel1 * 10**Vscale
-    vel2 = vel2 * 10**Vscale
+    vel0 = vel0 * 10.**Vscale
+    vel1 = vel1 * 10.**Vscale
+    vel2 = vel2 * 10.**Vscale
     if vel3 != 0:
-        vel3 = vel3 * 10**Vscale
+        vel3 = vel3 * 10.**Vscale
+
+    # attitude variables are in deci-degrees (i.e. 0.1 degrees) and need
+    # to be converted back to degrees.  I believe this is only true if
+    # parsing the binary data file (as opposed to the ascii produced by
+    # McLane's software)  Source: Aquadopp2 Integrators guide.
+    heading = 0.1 * heading
+    roll = 0.1 * roll
+    pitch = 0.1 * pitch
 
    # check for valid latitudes & longitudes
     if not valid_lat(lat) or not valid_lon(lon):
@@ -673,14 +690,15 @@ def vel3dk_up(
             scaled by 10^Vscale. vel3 is optional depending on the
             number of beams used as listed in beams.
             [scaled integer distance/s]
-        Vscale = velocity scaling exponent factor.
-        heading, pitch, roll = the attitude information from the instrument
+        heading, pitch, roll = attitude data obtained from the
+            AquadoppII.  [deci-degrees, i.e. 0.1degrees]
         beams = beam configuration as an Nx5 array listing the
             physical beams used that correspond to velocities vel0-3.
             The 5th beam will always be zero since there is not a 5th
             transducer and the 5th column will be ignored. Should be
             configured as [beam1,beam2,beam3,beam4,beam5] where beam#
             corresponds to vel#-1 (e.g. beam1 to vel0).
+        Vscale = velocity scaling exponent factor.
 
     References:
 
@@ -691,11 +709,19 @@ def vel3dk_up(
     # convert from scaled, integer distance/s (as received from the
     # binary data file) to floating point m/s using the Vscale parameter
     # from the MMP binary data file A#####.DEC
-    vel0 = vel0 * 10**Vscale
-    vel1 = vel1 * 10**Vscale
-    vel2 = vel2 * 10**Vscale
+    vel0 = vel0 * 10.**Vscale
+    vel1 = vel1 * 10.**Vscale
+    vel2 = vel2 * 10.**Vscale
     if vel3 != 0:
-        vel3 = vel3 * 10**Vscale
+        vel3 = vel3 * 10.**Vscale
+
+    # attitude variables are in deci-degrees (i.e. 0.1 degrees) and need
+    # to be converted back to degrees.  I believe this is only true if
+    # parsing the binary data file (as opposed to the ascii produced by
+    # McLane's software)  Source: Aquadopp2 Integrators guide.
+    heading = 0.1 * heading
+    roll = 0.1 * roll
+    pitch = 0.1 * pitch
 
     # transform the beam velocities to Earth coordinates
     if vel3 != 0:
@@ -706,7 +732,7 @@ def vel3dk_up(
             vel0, vel1, vel2, heading, pitch, roll, beams)
 
     # seperate out the components from the
-    w = ENU[2, :]
+    w = np.array(ENU[2, :])[0]
 
     # return vertical velocity in m/s
     return w
@@ -1033,8 +1059,34 @@ def vel3dk_transform(
         Lengthy discussions with Nortek and McLane representatives.  No
         DPS as of yet.
     """
+    # Ensure that the variables are in the right condition
+    heading = np.atleast_1d(heading)
+    roll = np.atleast_1d(roll)
+    pitch = np.atleast_1d(pitch)
+    beams = np.atleast_2d(beams)
+
+    # if the array dimension of the vels are greater than 1, it will
+    # break the call to np.matrix below.
+    vel0 = np.atleast_1d(vel0)
+    if vel0.ndim > 1:
+        vel0 = np.reshape(vel0, -1)  # -1 auto-reshapes to 1 dimension
+    vel1 = np.atleast_1d(vel1)
+    if vel1.ndim > 1:
+        vel1 = np.reshape(vel1, -1)
+    vel2 = np.atleast_1d(vel2)
+    if vel2.ndim > 1:
+        vel2 = np.reshape(vel2, -1)
+
+    # build the vels into a data matrix for matrix math coming up.
+    # Each velocity is a row in this case so that later a 3x1 column
+    # vector is produced for each record
     data = np.matrix([vel0, vel1, vel2])
+
+    # Not likely to happen, but if a 4th beam is ever added,
     if vel3 != 0:
+        vel3 = np.atleast_1d(vel3)
+        if vel3.ndim > 1:
+            vel3 = np.reshape(vel3, -1)
         data[4, :] = vel3
 
     # if the beams array has 5 beams, drop the 5th one since there is
@@ -1055,7 +1107,8 @@ def vel3dk_transform(
 
     # need a transformation matrix for each measurement
     # because Heading Pitch & Roll will change with each record
-    for ii in range(len(heading)):
+    #pdb.set_trace()
+    for ii in range(np.size(heading)):
         if list(beams[ii, :]) != beams_used:
             beams_used = list(beams[ii, :])
             t_beam2XYZ = get_XYZ_transform(beams_used)

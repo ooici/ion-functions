@@ -192,12 +192,13 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
             [2, 3, 4, 0, 0],
             [2, 3, 4, 0, 0]])
 
-        hdg = np.array([0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
+        hdg = 10. * np.array(
+            [0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
 
-        ptch = np.array([
+        ptch = 10. * np.array([
             -20.10, -5.82, 0.0, -10.26, -8.09, -1.36, 5.33, 9.96, 13.68, 26.77])
 
-        rll = np.array([
+        rll = 10. * np.array([
             -15.0, -11.67, -8.33, -5.0, 0.0, 1.67, 5.0, 8.33, 11.67, 15.0])
 
         vel0 = np.array([
@@ -209,12 +210,12 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         vel2 = np.array([
             7628, 0, 4974, -4204, 4896, 5937, 6480, -6376, -7271, -7576])
 
-        Vscale = -4
+        Vscale = np.array([-4])
 
         ve_cor = vel3dk_east(
-            vel0, vel1, vel2, hdg, ptch, rll, beams, LAT, LON, TS, DEPTH, Vscale)
+            vel0, vel1, vel2, hdg, ptch, rll, beams, LAT, LON, TS, Vscale, DEPTH)
         vn_cor = vel3dk_north(
-            vel0, vel1, vel2, hdg, ptch, rll, beams, LAT, LON, TS, DEPTH, Vscale)
+            vel0, vel1, vel2, hdg, ptch, rll, beams, LAT, LON, TS, Vscale, DEPTH)
 
         VE_expected = np.array([
             0.34404501, -0.01039404,  0.64049184, -0.17489265, -0.0739631,
@@ -255,13 +256,13 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
             [2, 3, 4, 0, 0],
             [2, 3, 4, 0, 0]])
 
-        hdg = np.array([0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
+        hdg = 10. * np.array([0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
 
-        ptch = np.array([
-            -20.10, -5.82, 0.0, -10.26, -8.09, -1.36, 5.33, 9.96, 13.68, 26.77])
+        ptch = 10. * np.array([
+            -20.10, -5.82, 0.0, -10.26, -8.09, -1.36, 5.33, 9.96, 13.68, 26.77])/0.1
 
-        rll = np.array([
-            -15.0, -11.67, -8.33, -5.0, 0.0, 1.67, 5.0, 8.33, 11.67, 15.0])
+        rll = 10. * np.array([
+            -15.0, -11.67, -8.33, -5.0, 0.0, 1.67, 5.0, 8.33, 11.67, 15.0])/0.1
 
         vel0 = np.array([
             0, 6305, 6000, 7810, 10048, 11440, -10341, -10597, 9123, -12657])
