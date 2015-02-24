@@ -372,10 +372,17 @@ VEL: Water Velocity
       adcp_ins2earth -- applies the instrument to Earth transform for all
             instruments originally programmed in beam coordinates.
     
-    * vel_functions.py -- Covers calculation of the L1 VEL3D Eastward
-    and Northward component data products from the VEL3D-B, VEL3D-CD,
-    VEL3D-K, and VELPT instruments.  This module includes
+    * vel_functions.py -- Covers calculation of the L1 VEL3D Eastward, Northward,
+    and Upward component data products from the VEL3D-A, VEL3D-B, VEL3D-CD,
+    VEL3D-K, VEL3D-L, and VELPT instruments.  This module includes
     
+      fsi_acm_rsn_east -- calculates VELPTMN-VLE_L1 from VEL3D-A
+      fsi_acm_rsn_north -- calculates VELPTMN-VLN_L1 from VEL3D-A
+      fsi_acm_sio_east -- calculates VELPTMN-VLE_L1 from VEL3D-L
+      fsi_acm_sio_north -- calculates VELPTMN-VLN_L1 from VEL3D-L
+      fsi_acm_up_profiler_ascending -- calculates VELPTMN-VLU-ASC_L1 from VEL3D-AL
+      fsi_acm_up_profiler_descending -- calculates VELPTMN-VLU-DSC_L1 from VEL3D-AL
+
       nobska_mag_corr_east -- calculates VELPTTU-VLE_L1 from VEL3D-B
       nobska_mag_corr_north -- calculates VELPTTU-VLN_L1 from VEL3D-B
       nobska_scale_up_vel -- calculates VELPTTU-VLU_L0 from VEL3D-B
