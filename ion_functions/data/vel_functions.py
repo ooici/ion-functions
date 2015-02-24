@@ -2,7 +2,7 @@
 """
 @package ion_functions.data.vel_functions
 @file ion_functions/data/vel_functions.py
-@author Stuart Pearce
+@author Stuart Pearce, Russell Desiderio
 @brief Module containing velocity family instrument related functions
 """
 
@@ -36,6 +36,436 @@ from exceptions import ValueError
 
 
 # wrapper functions for use in ION
+def fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat, lon, timestamp):
+    """
+    Description:
+
+        Calculates the VEL3D Series A eastwards velocity data product VELPTMN-VLE_L1
+        for the Falmouth Scientific (FSI) Acoustic Current Meter (ACM) mounted on a McLane
+        profiler as deployed by RSN. The horizontal velocities are corrected for magnetic
+        declination.
+
+    Usage:
+
+        u = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat, lon, timestamp)
+
+            where
+
+        u = eastwards velocity VELPTMN-VLE_L1 [m/s]
+        vp1 = raw beam velocity from the port stinger finger; VELPTMN-VP1_L0 [cm/s]
+        vp3 = raw beam velocity from the starboard stinger finger; VELPTMN-VP3_L0 [cm/s]
+        hx = direction cosine of magnetic field projected onto the instrument x-axis;
+            VELPTMN-HXX_L0
+        hy = direction cosine of magnetic field projected onto the instrument y-axis;
+            VELPTMN-HYY_L0
+        hdg_cal = 8-element vector of reference ACM headings from a compass calibration
+            spin test. heading convention: nautical [degrees clockwise from magnetic north].
+            see Notes.
+        hx_cal = 8-element vector of direction cosines of the magnetic field projected along
+            the instrument x-axis acquired during a compass calibration spin test.
+        hy_cal = 8-element vector of direction cosines of the magnetic field projected along
+            the instrument y-axis acquired during a compass calibration spin test.
+        lat = latitude of the instrument [decimal degrees].  East is positive, West negative.
+        lon = longitude of the instrument [decimal degrees]. North is positive, South negative.
+        timestamp = NTP time stamp from a data particle [secs since 1900-01-01].
+
+    Implemented by:
+
+        2015-02-13: Russell Desiderio. Initial code.
+
+    Notes:
+
+        The VEL3D series A and L instruments are FSI current meters modified for use on a
+        McLane profiler. The FSI ACM has 4 raw beam velocities. The correspondences between
+        the MMP manual designations and the IDD designations are:
+
+        (Xplus, Yplus, Xminus, Yminus)     (MMP manual, page G-22)
+        (va   , vb   , vc    , vd    )     (IDD, VEL3D series A)
+        (vp1  , vp2  , vp3   , vp4   )     (IDD, VEL3D series L)
+        (left , down , right , up    )     (spatial orientation)
+
+        This is also the ordering of these parameters in telemetered and recovered data.
+
+        SERIES A instruments are deployed by RSN. Compass calibrations from a spin test as
+        described in the MMP manual are used to correct field compass direction cosine
+        measurements so that headings can be calculated for the field data.
+
+        For more information see the Notes to worker function fsi_acm_horz_vel.
+
+    References:
+
+        OOI (2015). Data Product Specification for Mean Point Water Velocity
+            Data from FSI Acoustic Current Meters. Document Control Number
+            1341-00792. https://alfresco.oceanobservatories.org/  (See:
+            Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00792_Data_Product_SPEC_VELPTMN_ACM_OOI.pdf)
+
+        OOI (2015). 1341-00792_VELPTMN Artifact: McLane Moored Profiler User Manual.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
+            MMP-User Manual-Rev-E-WEB.pdf)
+    """
+    # before calculating headings, make sure that the cal vectors are sized correctly.
+    lFlag = len(hdg_cal) != 8 or len(hx_cal) != 8 or len(hy_cal) != 8
+    if lFlag:
+        raise ValueError('Compass calibration vectors hdg_cal, hx_cal, and hy_cal must '
+                         'each contain 8 elements.')
+
+    # calculate the headings from the field direction cosines hx and hy and the cal data.
+    hdg = fsi_acm_nautical_heading(hx, hy, hdg_cal, hx_cal, hy_cal)
+
+    # call the worker function which calculates both the east and north data products
+    (u, _) = fsi_acm_horz_vel(vp1, vp3, hdg, lat, lon, timestamp)
+    return u
+
+
+def fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat, lon, timestamp):
+    """
+    Description:
+
+        Calculates the VEL3D Series A northwards velocity data product VELPTMN-VLN_L1
+        for the Falmouth Scientific (FSI) Acoustic Current Meter (ACM) mounted on a McLane
+        profiler as deployed by RSN. The horizontal velocities are corrected for magnetic
+        declination.
+
+    Usage:
+
+        v = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat, lon, timestamp)
+
+            where
+
+        v = northwards velocity VELPTMN-VLN_L1 [m/s]
+        vp1 = raw beam velocity from the port stinger finger; VELPTMN-VP1_L0 [cm/s]
+        vp3 = raw beam velocity from the starboard stinger finger; VELPTMN-VP3_L0 [cm/s]
+        hx = direction cosine of magnetic field projected onto the instrument x-axis;
+            VELPTMN-HXX_L0
+        hy = direction cosine of magnetic field projected onto the instrument y-axis;
+            VELPTMN-HYY_L0
+        hdg_cal = 8-element vector of reference ACM headings from a compass calibration
+            spin test. heading convention: nautical [degrees clockwise from magnetic north].
+            see Notes.
+        hx_cal = 8-element vector of direction cosines of the magnetic field projected along
+            the instrument x-axis acquired during a compass calibration spin test.
+        hy_cal = 8-element vector of direction cosines of the magnetic field projected along
+            the instrument y-axis acquired during a compass calibration spin test.
+        lat = latitude of the instrument [decimal degrees].  East is positive, West negative.
+        lon = longitude of the instrument [decimal degrees]. North is positive, South negative.
+        timestamp = NTP time stamp from a data particle [secs since 1900-01-01].
+
+    Implemented by:
+
+        2015-02-13: Russell Desiderio. Initial code.
+
+    Notes:
+
+        The VEL3D series A and L instruments are FSI current meters modified for use on a
+        McLane profiler. The FSI ACM has 4 raw beam velocities. The correspondences between
+        the MMP manual designations and the IDD designations are:
+
+        (Xplus, Yplus, Xminus, Yminus)     (MMP manual, page G-22)
+        (va   , vb   , vc    , vd    )     (IDD, VEL3D series A)
+        (vp1  , vp2  , vp3   , vp4   )     (IDD, VEL3D series L)
+        (left , down , right , up    )     (spatial orientation)
+
+        This is also the ordering of these parameters in telemetered and recovered data.
+
+        SERIES A instruments are deployed by RSN. Compass calibrations from a spin test as
+        described in the MMP manual are used to correct field compass direction cosine
+        measurements so that headings can be calculated for the field data.
+
+        For more information see the Notes to worker function fsi_acm_horz_vel.
+
+    References:
+
+        OOI (2015). Data Product Specification for Mean Point Water Velocity
+            Data from FSI Acoustic Current Meters. Document Control Number
+            1341-00792. https://alfresco.oceanobservatories.org/  (See:
+            Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00792_Data_Product_SPEC_VELPTMN_ACM_OOI.pdf)
+
+        OOI (2015). 1341-00792_VELPTMN Artifact: McLane Moored Profiler User Manual.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
+            MMP-User Manual-Rev-E-WEB.pdf)
+    """
+    # before calculating headings, make sure that the cal vectors are sized correctly.
+    lFlag = len(hdg_cal) != 8 or len(hx_cal) != 8 or len(hy_cal) != 8
+    if lFlag:
+        raise ValueError('Compass calibration vectors hdg_cal, hx_cal, and hy_cal must '
+                         'each contain 8 elements.')
+
+    # calculate the headings from the field direction cosines hx and hy and the cal data.
+    hdg = fsi_acm_nautical_heading(hx, hy, hdg_cal, hx_cal, hy_cal)
+
+    # call the worker function which calculates both the east and north data products
+    (_, v) = fsi_acm_horz_vel(vp1, vp3, hdg, lat, lon, timestamp)
+    return v
+
+
+def fsi_acm_sio_east(vp1, vp3, hdg, lat, lon, timestamp):
+    """
+    Description:
+
+        Calculates the VEL3D Series L eastwards velocity data product VELPTMN-VLE_L1
+        for the Falmouth Scientific (FSI) Acoustic Current Meter (ACM) mounted on a McLane
+        profiler as deployed by Scripps. Horizontal velocities are corrected for magnetic
+        variation.
+
+    Usage:
+
+        u = fsi_acm_sio_east(vp1, vp3, hdg, lat, lon, timestamp)
+
+            where
+
+        u = eastwards velocity VELPTMN-VLE_L1 [m/s]
+        vp1 = raw beam velocity from the port stinger finger; VELPTMN-VP1_L0 [cm/s]
+        vp3 = raw beam velocity from the starboard stinger finger; VELPTMN-VP3_L0 [cm/s]
+        hdg = ACM heading as reported by the instrument [degrees clockwise from
+            magnetic north]; VELPTMN-HDG_L0. see Notes.
+        lat = latitude of the instrument [decimal degrees].  East is positive, West negative.
+        lon = longitude of the instrument [decimal degrees]. North is positive, South negative.
+        timestamp = NTP time stamp from a data particle [secs since 1900-01-01].
+
+    Implemented by:
+
+        2015-02-18: Russell Desiderio. Initial code.
+
+    Notes:
+
+        The VEL3D series A and L instruments are FSI current meters modified for use on a
+        McLane profiler. The FSI ACM has 4 raw beam velocities. The correspondences between
+        the MMP manual designations and the IDD designations are:
+
+        (Xplus, Yplus, Xminus, Yminus)     (MMP manual, page G-22)
+        (va   , vb   , vc    , vd    )     (IDD, VEL3D series A)
+        (vp1  , vp2  , vp3   , vp4   )     (IDD, VEL3D series L)
+        (left , down , right , up    )     (spatial orientation)
+
+        This is also the ordering of these parameters in telemetered and recovered data.
+
+        SERIES L instruments are deployed by Scripps. Compass calibrations are not used to
+        correct field compass measurements from these instruments.
+
+        For more information see the Notes to worker function fsi_acm_horz_vel.
+
+    References:
+
+        OOI (2015). Data Product Specification for Mean Point Water Velocity
+            Data from FSI Acoustic Current Meters. Document Control Number
+            1341-00792. https://alfresco.oceanobservatories.org/  (See:
+            Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00792_Data_Product_SPEC_VELPTMN_ACM_OOI.pdf)
+
+        OOI (2015). 1341-00792_VELPTMN Artifact: McLane Moored Profiler User Manual.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
+            MMP-User Manual-Rev-E-WEB.pdf)
+    """
+    # call the worker function which calculates both the east and north data products
+    (u, _) = fsi_acm_horz_vel(vp1, vp3, hdg, lat, lon, timestamp)
+    return u
+
+
+def fsi_acm_sio_north(vp1, vp3, hdg, lat, lon, timestamp):
+    """
+    Description:
+
+        Calculates the VEL3D Series L northwards velocity data product VELPTMN-VLN_L1
+        for the Falmouth Scientific (FSI) Acoustic Current Meter (ACM) mounted on a McLane
+        profiler as deployed by Scripps. Horizontal velocities are corrected for magnetic
+        variation.
+
+    Usage:
+
+        v = fsi_acm_sio_north(vp1, vp3, hdg, lat, lon, timestamp)
+
+            where
+
+        v = northwards velocity VELPTMN-VLN_L1 [m/s]
+        vp1 = raw beam velocity from the port stinger finger; VELPTMN-VP1_L0 [cm/s]
+        vp3 = raw beam velocity from the starboard stinger finger; VELPTMN-VP3_L0 [cm/s]
+        hdg = ACM heading as reported by the instrument [degrees clockwise from
+            magnetic north]; VELPTMN-HDG_L0. see Notes.
+        lat = latitude of the instrument [decimal degrees].  East is positive, West negative.
+        lon = longitude of the instrument [decimal degrees]. North is positive, South negative.
+        timestamp = NTP time stamp from a data particle [secs since 1900-01-01].
+
+    Implemented by:
+
+        2015-02-18: Russell Desiderio. Initial code.
+
+    Notes:
+
+        The VEL3D series A and L instruments are FSI current meters modified for use on a
+        McLane profiler. The FSI ACM has 4 raw beam velocities. The correspondences between
+        the MMP manual designations and the IDD designations are:
+
+        (Xplus, Yplus, Xminus, Yminus)     (MMP manual, page G-22)
+        (va   , vb   , vc    , vd    )     (IDD, VEL3D series A)
+        (vp1  , vp2  , vp3   , vp4   )     (IDD, VEL3D series L)
+        (left , down , right , up    )     (spatial orientation)
+
+        This is also the ordering of these parameters in telemetered and recovered data.
+
+        SERIES L instruments are deployed by Scripps. Compass calibrations are not used to
+        correct field compass measurements from these instruments.
+
+        For more information see the Notes to worker function fsi_acm_horz_vel.
+
+    References:
+
+        OOI (2015). Data Product Specification for Mean Point Water Velocity
+            Data from FSI Acoustic Current Meters. Document Control Number
+            1341-00792. https://alfresco.oceanobservatories.org/  (See:
+            Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00792_Data_Product_SPEC_VELPTMN_ACM_OOI.pdf)
+
+        OOI (2015). 1341-00792_VELPTMN Artifact: McLane Moored Profiler User Manual.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
+            MMP-User Manual-Rev-E-WEB.pdf)
+    """
+    # call the worker function which calculates both the east and north data products
+    (_, v) = fsi_acm_horz_vel(vp1, vp3, hdg, lat, lon, timestamp)
+    return v
+
+
+def fsi_acm_up_profiler_ascending(vp1, vp3, vp4):
+    """
+    Description:
+
+        Calculates the VEL3D Series A and L upward velocity data product VELPTMN-VLU-ASC_L1
+        for the Falmouth Scientific (FSI) Acoustic Current Meter (ACM) mounted on a McLane
+        profiler.
+
+        Because of the orientation of the ACM stinger fingers (see Notes) upward
+        current velocity can be calculated in several different ways. This function
+        calculates the vertical velocity to be used when the profiler is ascending,
+        avoiding the use of data from vp2 which will be contaminated by the sheet-flow
+        wake of the stinger's central post.
+
+    Usage:
+
+        w_fsi_asc = fsi_acm_up_profiler_ascending(vp1, vp3, vp4)
+
+            where
+
+        w_fsi_asc = velocity up; VELPTMN-VLU-ASC_L1 [m/s]
+        vp1 = raw beam velocity from the port stinger finger; VELPTMN-VP1_L0 [cm/s]
+        vp3 = raw beam velocity from the starboard stinger finger; VELPTMN-VP3_L0 [cm/s]
+        vp4 = raw beam velocity from the upper stinger finger; VELPTMN-VP4_L0 [cm/s]
+
+    Implemented by:
+
+        2015-02-13: Russell Desiderio. Initial code.
+
+    Notes:
+
+        The VEL3D series A and L instruments are FSI current meters modified for use on a
+        McLane profiler. The FSI ACM has 4 raw beam velocities. The correspondences between
+        the MMP manual designations and the IDD designations are:
+
+        (Xplus, Yplus, Xminus, Yminus)     (MMP manual, page G-22)
+        (va   , vb   , vc    , vd    )     (IDD, VEL3D series A)
+        (vp1  , vp2  , vp3   , vp4   )     (IDD, VEL3D series L)
+        (left , down , right , up    )     (spatial orientation)
+
+        This is also the ordering of these parameters in telemetered and recovered data.
+
+        The MMP manual Rev E, page 8-30, incorrectly calculates the upward velocities wU and wD.
+
+        For more information see the Notes to worker function fsi_acm_horz_vel.
+
+    References:
+
+        OOI (2015). Data Product Specification for Mean Point Water Velocity
+            Data from FSI Acoustic Current Meters. Document Control Number
+            1341-00792. https://alfresco.oceanobservatories.org/  (See:
+            Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00792_Data_Product_SPEC_VELPTMN_ACM_OOI.pdf)
+
+        OOI (2015). 1341-00792_VELPTMN Artifact: McLane Moored Profiler User Manual.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
+            MMP-User Manual-Rev-E-WEB.pdf)
+    """
+    # find the x-velocity in the instrument coordinate system
+    x = -(vp1 + vp3) / np.sqrt(2.0)
+    # the z-velocity in the instrument coordinate system is also the w velocity in the
+    # earth coordinate system because the effects of pitch and roll are negligible.
+    w = x - np.sqrt(2.0) * vp4
+    # change units from cm/s to m/s
+    return w / 100.0
+
+
+def fsi_acm_up_profiler_descending(vp1, vp2, vp3):
+    """
+    Description:
+
+        Calculates the VEL3D Series A and L upwards velocity data product VELPTMN-VLU-DSC_L1
+        for the Falmouth Scientific (FSI) Acoustic Current Meter (ACM) mounted on a McLane
+        profiler.
+
+        Because of the orientation of the ACM stinger fingers (see Notes) upward
+        current velocity can be calculated in several different ways. This function
+        calculates the vertical velocity to be used when the profiler is descending,
+        avoiding the use of data from vp4 which will be contaminated by the sheet-flow
+        wake of the stinger's central post.
+
+    Usage:
+
+        w_fsi_dsc = fsi_acm_up_profiler_descending(vp1, vp2, vp3)
+
+            where
+
+        w_fsi_dsc = velocity up; VELPTMN-VLU-DSC_L1 [m/s]
+        vp1 = raw beam velocity from the port stinger finger; VELPTMN-VP1_L0 [cm/s]
+        vp2 = raw beam velocity from the lower stinger finger; VELPTMN-VP2_L0 [cm/s]
+        vp3 = raw beam velocity from the starboard stinger finger; VELPTMN-VP3_L0 [cm/s]
+
+    Implemented by:
+
+        2015-02-13: Russell Desiderio. Initial code.
+
+    Notes:
+
+        The VEL3D series A and L instruments are FSI current meters modified for use on a
+        McLane profiler. The FSI ACM has 4 raw beam velocities. The correspondences between
+        the MMP manual designations and the IDD designations are:
+
+        (Xplus, Yplus, Xminus, Yminus)     (MMP manual, page G-22)
+        (va   , vb   , vc    , vd    )     (IDD, VEL3D series A)
+        (vp1  , vp2  , vp3   , vp4   )     (IDD, VEL3D series L)
+        (left , down , right , up    )     (spatial orientation)
+
+        This is also the ordering of these parameters in telemetered and recovered data.
+
+        The MMP manual Rev E, page 8-30, incorrectly calculates the upward velocities wU and wD.
+
+        For more information see the Notes to worker function fsi_acm_horz_vel.
+
+    References:
+
+        OOI (2015). Data Product Specification for Mean Point Water Velocity
+            Data from FSI Acoustic Current Meters. Document Control Number
+            1341-00792. https://alfresco.oceanobservatories.org/  (See:
+            Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00792_Data_Product_SPEC_VELPTMN_ACM_OOI.pdf)
+
+        OOI (2015). 1341-00792_VELPTMN Artifact: McLane Moored Profiler User Manual.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
+            MMP-User Manual-Rev-E-WEB.pdf)
+    """
+    # find the x-velocity in the instrument coordinate system
+    x = -(vp1 + vp3) / np.sqrt(2.0)
+    # the z-velocity in the instrument coordinate system is also the w velocity in the
+    # earth coordinate system because the effects of pitch and roll are negligible.
+    w = -x + np.sqrt(2.0) * vp2
+    # change units from cm/s to m/s
+    return w / 100.0
+
+
 def nobska_mag_corr_east(u, v, lat, lon, timestamp, z=0):
     """
     Corrects the eastward velocity from a VEL3D-B Nobska MAVS 4
@@ -1146,3 +1576,302 @@ def valid_lon(lon):
         return True
     else:
         return -180 <= lon and lon <= 180
+
+
+def fsi_acm_horz_vel(vp1, vp3, hdg, lat, lon, timestamp):
+    """
+    Description:
+
+        Worker function which calculates eastward and northward velocities
+        corrected for magnetic declination for VEL3D series A and L instruments.
+
+    Usage:
+
+        (u, v) = fsi_acm_horz_vel(vp1, vp3, hdg, lat, lon, timestamp)
+
+            where
+
+        u = eastwards velocity [m/s]
+        v = northwards velocity [m/s]
+        vp1 = raw beam velocity from the port stinger finger; VELPTMN-VP1_L0 [cm/s]
+        vp3 = raw beam velocity from the starboard stinger finger; VELPTMN-VP3_L0 [cm/s]
+        hdg = ACM nautical heading [degrees clockwise from magnetic north to the instrument's
+            x-axis]
+        lat = latitude of the instrument [decimal degrees].  East is positive, West negative.
+        lon = longitude of the instrument [decimal degrees]. North is positive, South negative.
+        timestamp = NTP time stamp from a data particle [secs since 1900-01-01].
+
+    Implemented by:
+
+        2015-02-18: Russell Desiderio. Initial code.
+
+    Notes:
+
+        The VEL3D series A and L instruments are FSI current meters modified for use
+        on a McLane profiler. The FSI ACM manuals do *not* show the sensor used on the
+        McLane. The modified horizontal-looking configuration used on the McLane is
+        called the stinger configuration, a picture of which is on page 2-1 of the McLane
+        Moored Profiler (MMP) User Manual Rev E. There are 4 stinger 'fingers' oriented
+        at 45 degrees from a central post such that their tips describe a square.
+
+        The FSI ACM has 4 raw beam velocities. The correspondences between the MMP manual
+        designations and the IDD designations are:
+
+        (Xplus, Yplus, Xminus, Yminus)     (MMP manual, page G-22)
+        (va   , vb   , vc    , vd    )     (IDD, VEL3D series A)
+        (vp1  , vp2  , vp3   , vp4   )     (IDD, VEL3D series L)
+        (left , down , right , up    )     (spatial orientation)
+
+        This is also the ordering of these parameters in telemetered and recovered data.
+
+        The instrument coordinate system is defined as: the x-axis is along the central post
+        moving away from the profiler. The y-axis is to port of the x-axis and the z-axis is
+        up. Headings are defined with respect to the orientation of the x-axis with respect
+        to clockwise from North (for nautical headings) or counterclockwise from East (for
+        cartesian headings).
+
+        Raw vp1 and vp3 beam velocities are positive for flow along the acoustic path from the
+        central post towards the finger. Raw vp2 and vp4 beam velocities are positive for flow
+        along the acoustic path from the finger towards the central post.
+
+        The spatial orientation of these fingers is (left, down, right, up). Because vp1
+        and vp3 lie in the horizontal plane and vp2 and vp4 lie in the orthogonal vertical
+        plane, transformation from beam to instrument coordinates is particularly simple. In
+        addition, because the ACM is mounted on the profiler, the pitch and roll angles are
+        considered to be small and negligible, so that the transformation from instrument
+        to earth coordinates involves only heading corrections.
+
+        For series A, the hdg values are calculated from field (hx,hy) direction cosine
+        data and correction parameters computed from a compass calibration. For series L,
+        the hdg values are directly output by the ACM.
+
+    References:
+
+        OOI (2015). Data Product Specification for Mean Point Water Velocity
+            Data from FSI Acoustic Current Meters. Document Control Number
+            1341-00792. https://alfresco.oceanobservatories.org/  (See:
+            Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00792_Data_Product_SPEC_VELPTMN_ACM_OOI.pdf)
+
+        OOI (2015). 1341-00792_VELPTMN Artifact: McLane Moored Profiler User Manual.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
+            MMP-User Manual-Rev-E-WEB.pdf)
+    """
+    # convert from beam coordinates to instrument coordinates
+    Vx = (-vp1 - vp3) / np.sqrt(2.0)
+    Vy = (vp1 - vp3) / np.sqrt(2.0)
+
+    # find the speed; change units from cm/s to m/s
+    speed = 0.01 * np.sqrt(Vx*Vx + Vy*Vy)
+
+    # get the magnetic variation:
+    # degrees clockwise from geographic north to magnetic north are positive.
+    # degrees counter-clockwise from geographic north to magnetic north are negative.
+    magvar = magnetic_declination(lat, lon, timestamp)
+
+    # figure out the cartesian heading theta of the velocity vector (Vx, Vy) in the earth frame,
+    # which is the angle defined as radians ccw from geographic east to the velocity vector.
+    #    (1) in instrument coordinates the cartesian heading is atan2(Vy/Vx) [radians ccw from x-axis]
+    #    (2) the nautical (magnetic) heading of the instrument's x-axis is converted to cartesian.
+    #    (3) the magnetic variation corrections for nautical headings change sign when correcting
+    #        cartesian headings because nautical headings become more positive in the clockwise
+    #        direction, cartesian headings are more positive moving counterclockwise.
+    theta_cartesian = np.arctan2(Vy, Vx) + np.deg2rad((90.0 - hdg) - magvar)
+
+    #    (4) the MMP manual defines magvar using the opposite of the standard sign convention as
+    #        described above. the manual adds their mdev (=magvar) to the cartesian heading, which
+    #        is correct given their sign convention.
+    #    (5) note: the version of the Scripps code I saw adds nautical heading values supplied by
+    #        the ACM to the cartesian angle of the velocity vector (Vx, Vy), which is incorrect.
+
+    # calculate the eastward (u) and northward (v) velocities
+    u = speed * np.cos(theta_cartesian)
+    v = speed * np.sin(theta_cartesian)
+
+    return u, v
+
+
+def fsi_acm_nautical_heading(hx, hy, hdg_cal, hx_cal, hy_cal):
+    """
+    Description:
+
+        Calculates ACM compass headings from field direction cosine data (hx,hy) and a spin
+        test compass calibration as described in the MMP manual. Used only for VEL3D series
+        A instruments (FSI ACMs deployed by RSN on a McLane profiler).
+
+    Usage:
+
+        hdg = fsi_acm_nautical_heading(hx, hy, hdg_cal, hx_cal, hy_cal)
+
+
+            where
+
+        hdg = heading values associated with field data [degrees clockwise from magnetic north to
+            the instrument's x-axis].
+        hx = the direction cosine of the local magnetic field projected onto the instrument x-axis.
+        hy = the direction cosine of the local magnetic field projected onto the instrument y-axis.
+        hdg_cal = 8-element vector of reference stinger headings from a compass calibration spin test.
+            heading convention: nautical [degrees clockwise from magnetic north to the instrument's
+            x-axis]
+        hx_cal = 8-element vector of direction cosines of the magnetic field projected along
+            the instrument x-axis acquired during a compass calibration spin test.
+        hy_cal = 8-element vector of direction cosines of the magnetic field projected along
+            the instrument y-axis acquired during a compass calibration spin test.
+
+    Implemented by:
+
+        2015-02-18: Russell Desiderio. Initial code.
+
+    Notes:
+
+        See Notes for the function fsi_acm_compass_cal.
+
+    References:
+
+        OOI (2015). Data Product Specification for Mean Point Water Velocity
+            Data from FSI Acoustic Current Meters. Document Control Number
+            1341-00792. https://alfresco.oceanobservatories.org/  (See:
+            Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00792_Data_Product_SPEC_VELPTMN_ACM_OOI.pdf)
+
+        OOI (2015). 1341-00792_VELPTMN Artifact: McLane Moored Profiler User Manual.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
+            MMP-User Manual-Rev-E-WEB.pdf). see p. 8-18 and Appendix D.
+    """
+    # calculate the compass cal correction values
+    (hx_offset, hy_offset, hx_scale, hy_scale, compass_bias) = fsi_acm_compass_cal(
+        hdg_cal, hx_cal, hy_cal)
+
+    # correct the field direction cosine data.
+    hxcorr = (hx-hx_offset)/hx_scale
+    hycorr = (hy-hy_offset)/hy_scale
+
+    # calculate cartesian heading as per manual: atan2(hxcorr/hycorr) and not as y/x.
+    # this heading is the orientation of the instrument x-axis in degrees ccw from
+    # magnetic east. using this convention, the compass bias correction is added to
+    # the cartesian heading.
+    hdg_cartesian = np.rad2deg(np.arctan2(hxcorr, hycorr)) + compass_bias
+
+    # convert to the nautical heading convention
+    hdg_nautical = 90.0 - hdg_cartesian
+    # and make sure values lie in [0 360)
+    hdg_nautical = np.mod(360.0 + hdg_nautical, 360.0)
+
+    return hdg_nautical
+
+
+def fsi_acm_compass_cal(hdg_cal, hx_cal, hy_cal):
+    """
+    Description:
+
+        Calculates compass calibration correction parameters based on an 8-point spin test
+        for field data acquired from FSI acoustic current meters. Used only for VEL3D series
+        A instruments (FSI ACMs deployed by RSN on a McLane profiler).
+
+    Usage:
+
+        (hx_offset, hy_offset, hx_scale, hy_scale, compass_bias) = fsi_acm_compass_cal(
+                                                                   hdg_cal, hx_cal, hy_cal)
+
+            where
+
+        hx_offset = subtractive correction offset to the direction cosine hx of the local
+            magnetic field projected onto the instrument x-axis.
+        hy_offset = subtractive correction offset to hy.
+        hx_scale = multiplicative scaling factor correction to the direction cosine hx of the
+            local magnetic field projected onto the instrument x-axis.
+        hy_scale = multiplicative scaling factor correction to hy.
+        compass_bias = additive correction to derived cartesian heading values [degrees]
+        hdg_cal = 8-element vector of reference stinger headings from a compass calibration
+            spin test. heading convention: nautical (0 degrees is North, positive angles are cw)
+            heading units: degrees
+        hx_cal = 8-element vector of direction cosines of the magnetic field projected along
+            the instrument x-axis acquired during a compass calibration spin test.
+        hy_cal = 8-element vector of direction cosines of the magnetic field projected along
+            the instrument y-axis acquired during a compass calibration spin test.
+
+    Implemented by:
+
+        2015-02-16: Russell Desiderio. Initial code.
+
+    Notes:
+
+        The 8-compass-point spin test involves acquiring hx_cal and hy_cal direction cosine
+        measurements from the FSI ACM as a function of the independently known and recorded
+        rotational orientation (hdg_cal) of the ACM instrument's x-axis in degrees clockwise
+        relative to magnetic North. The spacing of the compass points should be 45 degrees.
+        Because of the way the RSN ACMs are mounted on the McLane profiler it is anticipated
+        that these values will be:
+
+        RSN ACM CAL HEADINGS:  335, 20, 65, 110, 155, 200, 245, 290.
+
+        However, the order is unimportant, as are the actual compass directions used, as long
+        as the heading of the x-axis of the ACM is used and the compass points are equi-distantly
+        spaced out around a circle.
+
+        Note that the procedure in the MMP manual works in a cartesian heading system (defined
+        as the bearing of the instrument's x-asis in degrees counter-clockwise from magnetic east).
+        The DPA converts the nautical calibration heading values to cartesian when calculating
+        direction cosine and compass corrections.
+
+        If no cal is available, the following compass cal entries can be used to give offsets and
+        biases of 0 and scaling factors of 1:
+
+        hdg_cal  hx_cal   hy_cal
+           0      1.0      0.0
+          45      1.0      1.0
+          90      0.0      1.0
+         135     -1.0      1.0
+         180     -1.0      0.0
+         225     -1.0     -1.0
+         270      0.0     -1.0
+         315      1.0     -1.0
+
+    References:
+
+        OOI (2015). Data Product Specification for Mean Point Water Velocity
+            Data from FSI Acoustic Current Meters. Document Control Number
+            1341-00792. https://alfresco.oceanobservatories.org/  (See:
+            Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-00792_Data_Product_SPEC_VELPTMN_ACM_OOI.pdf)
+
+        OOI (2015). 1341-00792_VELPTMN Artifact: McLane Moored Profiler User Manual.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+            >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
+            MMP-User Manual-Rev-E-WEB.pdf). see p. 8-18 and Appendix D.
+    """
+    # make sure that the cal vectors are sized correctly.
+    lFlag = len(hdg_cal) != 8 or len(hx_cal) != 8 or len(hy_cal) != 8
+    if lFlag:
+        raise ValueError('Compass calibration vectors hdg_cal, hx_cal, and hy_cal must '
+                         'each contain 8 elements.')
+
+    # the offsets are found by taking the vector average.
+    hx_offset = np.mean(hx_cal)
+    hy_offset = np.mean(hy_cal)
+
+    # the scaling factors are calculated as
+    hx_scale = np.max(np.abs(hx_cal - hx_offset))
+    hy_scale = np.max(np.abs(hy_cal - hy_offset))
+
+    # the x and y offsets and scaling factors will be used to correct the field data.
+
+    # they are also used to find the average compass bias (BT in the MMP manual);
+    # first correct the cal direction cosines (same procedure as is used to correct the
+    # field data).
+    hxcalcorr = (hx_cal-hx_offset)/hx_scale
+    hycalcorr = (hy_cal-hy_offset)/hy_scale
+    # convert nautical heading to cartesian
+    hdg_cal_cartesian = 90.0 - hdg_cal
+    # arctan(hx/hy) is correct because of the instrument axes and heading conventions.
+    # the np.arctan2 function takes the 'y' coordinate first, which in this case is hx.
+    compass_bias = hdg_cal_cartesian - np.rad2deg(np.arctan2(hxcalcorr, hycalcorr))
+    # correct compass differences resulting from the wrap-around discontinuity
+    mask = np.abs(compass_bias) > 180.0
+    compass_bias[mask] = compass_bias[mask] - np.sign(compass_bias[mask]) * 360.0
+    # and take the mean, final answer
+    compass_bias = np.mean(compass_bias)
+
+    return hx_offset, hy_offset, hx_scale, hy_scale, compass_bias

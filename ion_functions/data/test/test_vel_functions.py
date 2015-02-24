@@ -2,7 +2,7 @@
 """
 @package ion_functions.test.vel_functions
 @file ion_functions/test/vel_functions.py
-@author Stuart Pearce
+@author Stuart Pearce, Russell Desiderio
 @brief Unit tests for vel_functions module
 """
 
@@ -19,6 +19,11 @@ from ion_functions.data.vel_functions import vel3dk_east, vel3dk_north
 from ion_functions.data.vel_functions import vel3dk_up
 from ion_functions.data.vel_functions import valid_lat, valid_lon
 from ion_functions.data.vel_functions import vel_mag_correction
+from ion_functions.data.vel_functions import fsi_acm_rsn_east, fsi_acm_rsn_north
+from ion_functions.data.vel_functions import fsi_acm_sio_east, fsi_acm_sio_north
+from ion_functions.data.vel_functions import fsi_acm_up_profiler_ascending
+from ion_functions.data.vel_functions import fsi_acm_up_profiler_descending
+from ion_functions.data.vel_functions import fsi_acm_nautical_heading, fsi_acm_compass_cal
 from exceptions import ValueError
 
 # these test data definitions are used in the test methods
@@ -343,3 +348,271 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         self.assertRaises(ValueError, nobska_mag_corr_north, VE_NOBSKA[0], VN_NOBSKA[0], 45.0, -180.1, TS[0], DEPTH)
         self.assertRaises(ValueError, nortek_mag_corr_east, VE_NOBSKA[0], VN_NOBSKA[0], 45.0, -210.0, TS[0], DEPTH)
         self.assertRaises(ValueError, nortek_mag_corr_north, VE_NOBSKA[0], VN_NOBSKA[0], 45.0, 200.0, TS[0], DEPTH)
+
+    # vel3d-a,l unit tests
+    def test_fsi_acm(self):
+        """
+        Description:
+
+            Tests fsi_acm functions which calculate velptmn data products from vel3d series A
+            and L instruments. No velocity data for unit tests were provided. I constructed
+            these unit tests with reference to the definitions and conventions regarding beam
+            and instrument coordinates and heading designations so that the test results could
+            be visualized and predicted geometrically.
+
+        Implemented by:
+
+            2015-02-20: Russell Desiderio. Initial code.
+
+        References:
+
+            OOI (2015). Data Product Specification for Mean Point Water Velocity
+                Data from FSI Acoustic Current Meters. Document Control Number
+                1341-00792. https://alfresco.oceanobservatories.org/  (See:
+                Company Home >> OOI >> Controlled >> 1000 System Level >>
+                1341-00792_Data_Product_SPEC_VELPTMN_ACM_OOI.pdf)
+
+            OOI (2015). 1341-00792_VELPTMN Artifact: McLane Moored Profiler User Manual.
+                https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
+                >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
+                MMP-User Manual-Rev-E-WEB.pdf)
+        """
+        ###
+        ### test upwards velocity functions
+        ###
+        # for these tests the ascending and descending velocities will not always agree,
+        # because w_asc uses vp4 and not vp2, w_dsc vp2 and not vp4.
+        # the expected values have units of [m/s]
+        xpctd_asc = np.array([-2.83, 0.00, -1.41, 1.41, -2.83, 0.00, -1.41, 1.41,
+                              -1.41, 1.41, -0.00, 2.83, -1.41, 1.41, -0.00, 2.83])
+        xpctd_dsc = np.array([2.83,  2.83,  1.41,  1.41, -0.00, -0.00, -1.41, -1.41,
+                              1.41,  1.41,  0.00,  0.00, -1.41, -1.41, -2.83, -2.83])
+        # the raw beam values have units of [cm/s]
+        vp1 = 100.0 * np.array([+1, +1, +1, +1, +1, +1, +1, +1, -1, -1, -1, -1, -1, -1, -1, -1])
+        vp2 = 100.0 * np.array([+1, +1, +1, +1, -1, -1, -1, -1, +1, +1, +1, +1, -1, -1, -1, -1])
+        vp3 = 100.0 * np.array([+1, +1, -1, -1, +1, +1, -1, -1, +1, +1, -1, -1, +1, +1, -1, -1])
+        vp4 = 100.0 * np.array([+1, -1, +1, -1, +1, -1, +1, -1, +1, -1, +1, -1, +1, -1, +1, -1])
+        calc = fsi_acm_up_profiler_ascending(vp1, vp3, vp4)
+        np.testing.assert_allclose(calc, xpctd_asc, rtol=0.0, atol=1.e-2)
+        calc = fsi_acm_up_profiler_descending(vp1, vp2, vp3)
+        np.testing.assert_allclose(calc, xpctd_dsc, rtol=0.0, atol=1.e-2)
+
+        ###
+        ### fsi_acm_compass_cal test
+        ###
+        # (a)  trivial perfect cal case
+        xpctd = np.array([0.0, 0.0, 1.0, 1.0, 0.0])  # offsets are zero, scale factors are 1, bias is 0
+        hdg_percal = np.array([0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0])
+        hx_percal = np.array([1.0, 1.0, 0.0, -1.0, -1.0, -1.0, +0.0, +1.0])
+        hy_percal = np.array([0.0, 1.0, 1.0, +1.0, +0.0, -1.0, -1.0, -1.0])
+        calc = fsi_acm_compass_cal(hdg_percal, hx_percal, hy_percal)
+        np.testing.assert_allclose(calc, xpctd, rtol=0.0, atol=1.e-12)
+        # (b)  using MMP manual example (p 8-19)
+        # the expected values are hx and hy offsets, hx and hy scaling factors, and compass bias.
+        xpctd_MMP_cal = np.array([0.01763750, -0.04673750, 0.34686250, 0.33813750, 7.46424566])
+        # convert the manual's cartesian reference directions to nautical
+        hdg_cal = np.array([0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0])
+        hx_cal = np.array([0.3645, 0.2383, -0.0246, -0.2508, -0.3212, -0.1979, 0.0511, 0.2817])
+        hy_cal = np.array([0.0008, 0.2321, 0.2914, 0.1515, -0.1064, -0.3218, -0.3652, -0.2563])
+        calc = fsi_acm_compass_cal(hdg_cal, hx_cal, hy_cal)
+        np.testing.assert_allclose(calc, xpctd_MMP_cal, rtol=0.0, atol=1.e-6)
+
+        ###
+        ### fsi_acm_nautical_heading test
+        ###
+        rt3 = np.sqrt(3.0)
+        # pick a point in each quadrant.
+        #
+        # heading values given are of the direction of the x-axis in the instrument coordinate
+        # system, before cal correction, ccw relative to magnetic east (cartesian) or cw relative
+        # to magnetic north (nautical).
+        #
+        # note that hx and hy define the direction of magnetic north so that for (hx, hy) =
+        # (rt3, 1), magnetic north lies in the 1st quadrant of the instrument coordinate system
+        # 30 degrees ccw from the positive x-axis; therefore the positive x-axis lies 30 degrees
+        # cw from magnetic north, which is the nautical heading, and 60 degrees ccw from magnetic
+        # east, which is the cartesian heading.
+        #
+        # the 4 (hx,hy) values track in 90 degree steps ccw in the instrument coordinate system,
+        # which means that magnetic north is also tracking ccw relative to the x-axis. the result is
+        # that the nautical heading of the x-axis tracks cw in +90 steps, cartesian ccw in -90 steps.
+        # cartesian      60   -30  -120   150
+        # nautical       30   120   210   300
+        hx = np.array([+rt3, -1.0, -rt3, +1.0])
+        hy = np.array([+1.0, +rt3, -1.0, -rt3])
+        # note: for this test these values are not normalized to lie on the unit circle.
+        #
+        #       the perfect cal unit test results are independent of scaling because the
+        #       relevant calculation involves the atan2 of the ratio of the direction cosines
+        #       so that any scaling of the raw (hx, hy) values divides out to 1.
+        #
+        #       real calibrations result in corrections to hx and hy which will change the
+        #       value of the direction cosine ratio resulting in answers dependent on the
+        #       scaling of the raw test values.
+        #
+        # (a)  trivial perfect cal case
+        xpctd = np.array([30.0, 120.0, 210.0, 300.0])
+        calc = fsi_acm_nautical_heading(hx, hy, hdg_percal, hx_percal, hy_percal)
+        np.testing.assert_allclose(calc, xpctd, rtol=0.0, atol=1.e-12)
+        # (b)  using calibration data from the example in the MMP manual
+        xpctd_MMP_hdg = np.array([24.59490, 111.68440, 201.73555, 292.14246])
+        calc = fsi_acm_nautical_heading(hx, hy, hdg_cal, hx_cal, hy_cal)
+        np.testing.assert_allclose(calc, xpctd_MMP_hdg, rtol=0.0, atol=1.e-4)
+
+        ###
+        ### fsi_acm_sio east and north tests
+        ###
+        # figure out OOI timestamp for Feb 1, 2011 at midnight [sec since 1900_01_01]
+        ts_unix_time = 1296518400.0  # midnight, Feb 1, 2011, sec since 1970_01_01
+        delta_epoch = 2208988800.0  # OOI time for midnight 1970_01_01 [sec since 1900_01_01]
+        ref_ts = ts_unix_time + delta_epoch
+        # pick a test lat and lon which with this timestamp gives a magnetic variation of
+        # close to 15 degrees.
+        ref_lat = 37.768812
+        ref_lon = -135.0
+        # this will give a magnetic variation value of magvar = 15.000000171 (WMM).
+
+        # the standard convention is that a positive magnetic variation delta indicates that
+        # magnetic north lies delta degrees to the east (clockwise) of true north. this means
+        # that a magnetic (nautical) heading of 0 degrees is at a true geographic (nautical)
+        # heading of +delta degrees. therefore, to correct nautical headings, the magnetic
+        # declination value magvar is added.
+        #
+        # because cartesian headings are defined as positive in the ccw direction, correcting
+        # cartesian headings for magnetic declination involves subtracting the magvar value.
+
+        # the MMP manual uses the opposite sign convention in their definition of magnetic variation.
+
+        # set up 4 test raw beam velocity pairs (vp1,vp3) with water speeds of
+        # sqrt(vp1*vp1 + vp3*vp3) = 100 cm/s = 1 m/s.
+        # these correlate with the following cartesian angles from positive x-axis ccw to water
+        # velocity vector in instrument coordinates:
+        # ccw from x:           165   255   345    75
+        vp1 = 100.0 * np.array([rt3, -1.0, -rt3, +1.0]) / 2.0
+        vp3 = 100.0 * np.array([1.0, +rt3, -1.0, -rt3]) / 2.0
+        # note that the v1 and vp3 beam paths are oriented at 45 degrees to the x-axis, so that
+        # when a water velocity vector has 30 and/or 60 degree components in the (vp1,vp3)
+        # beam coordinate system (so, sqrt(3)/2 and 1/2) this will result in 15 degree offsets
+        # in the instrument coordinate system above [165 255 345 75] which also sets the choice
+        # of value of magnetic variation for these tests (15 degrees) so that the corrected
+        # heading values will be integral multiples of 30 degrees.
+
+        # construct lat, lon, and ts vectors
+        lat = np.zeros(4) + ref_lat
+        lon = np.zeros(4) + ref_lon
+        ts = np.zeros(4) + ref_ts
+
+        # (a) test when x-axis is always at magnetic north
+        hdg = np.array([0., 0., 0., 0.])
+        # because magvar = +15 degrees, the x-axis is 15 degrees cw from true (geographic)
+        # north and 75 degrees ccw from true east.
+        # therefore the xpctd (u,v) ENU cartesian directions are 75 + [165, 255, 345, 75]
+        xpctd_angles = np.array([240.0, 330.0, 60.0, 150.0])
+        # knowing these angles, the velocity component magnitudes can be calculated because
+        # the raw beam velocities were set up to have water velocity speeds of 1 m/s.
+        # the units of the data product velocities are m/s, so:
+        u_xpctd_hdg_0 = np.cos(np.deg2rad(xpctd_angles))
+        v_xpctd_hdg_0 = np.sin(np.deg2rad(xpctd_angles))
+        # which should equal
+        u_xpctd = np.array([-1.0, +rt3, 1.0, -rt3]) / 2.0
+        v_xpctd = np.array([-rt3, -1.0, rt3, +1.0]) / 2.0
+        # make sure
+        np.testing.assert_allclose(u_xpctd_hdg_0, u_xpctd, rtol=0.0, atol=1.e-8)
+        np.testing.assert_allclose(v_xpctd_hdg_0, v_xpctd, rtol=0.0, atol=1.e-8)
+        # unit test:
+        u_calc = fsi_acm_sio_east(vp1, vp3, hdg, lat, lon, ts)
+        v_calc = fsi_acm_sio_north(vp1, vp3, hdg, lat, lon, ts)
+        calc_angles = np.mod(360.0 + np.rad2deg(np.arctan2(v_calc, u_calc)), 360.0)
+        np.testing.assert_allclose(calc_angles, xpctd_angles, rtol=0.0, atol=1.e-4)
+        np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
+        np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
+        # (b) non-zero hdg test
+        # pick the heading which should rotate the instrument coordinate system so that the
+        # water velocity vectors will lie along the cardinal compass points N, W, S, E.
+        hdg = np.array([150., 150., 150., 150])
+        # this should result in ENU angles of 90, 180, 270, 360. so:
+        u_xpctd = np.array([0.0, -1.0, +0.0, 1.0])  # cos(angle)
+        v_xpctd = np.array([1.0, +0.0, -1.0, 0.0])  # sin(angle)
+        u_calc = fsi_acm_sio_east(vp1, vp3, hdg, lat, lon, ts)
+        v_calc = fsi_acm_sio_north(vp1, vp3, hdg, lat, lon, ts)
+        np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
+        np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
+
+        ###
+        ### fsi_acm_rsn east and north tests
+        ###
+        # (a) use fsi_acm_compass_cal and fsi_acm_nautical_heading test set-up along with sio
+        #     vp1 and vp3 values and a perfect cal so that the expected values can be predicted
+        #     on geometrical grounds.
+        #
+        #     the 4 (vp1, vp3) pairs have cartesian angles from the x-axis of [165, 255,  345,  75]
+        #     the 4 (hx, hy) pairs result in cartesian headings of            [ 60, -30, -120, 150]
+        #     the magnetic variation is 15 degrees, so subtract (cartesian)   [-15, -15,  -15, -15]
+        #     add columns; so, all 4 angles should be 210 degrees             [210, 210,  210, 210]
+        u_xpctd = np.zeros(4) - rt3/2.0  # cos(210)
+        v_xpctd = np.zeros(4) - 0.5      # sin(210)
+        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
+        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
+        np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
+        np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
+        # (b) fix (vp1, vp3) and vary (hx, hy), perfect cal case
+        # ccw from x:           165  165  165  165
+        vp1 = 100.0 * np.array([rt3, rt3, rt3, rt3]) / 2.0
+        vp3 = 100.0 * np.array([1.0, 1.0, 1.0, 1.0]) / 2.0
+        # cartesian     90    0,  -90,  180
+        # nautical       0,  90,  180,  270
+        hx = np.array([1.0, 0.0, -1.0, +0.0])
+        hy = np.array([0.0, 1.0, +0.0, -1.0])
+        # predicted angles:
+        #     (vp1, vp3) cartesian angles: [ 165, 165, 165, 165]
+        #     ( hx,  hy) cartesian angles: [  90,   0, -90, 180]
+        #     subtract magnetic variation: [ -15, -15, -15, -15]
+        #     predicted:                   [-120, 150,  60, -30]
+        u_xpctd = np.array([-1.0, -rt3, 1.0, +rt3]) / 2.0
+        v_xpctd = np.array([-rt3, +1.0, rt3, -1.0]) / 2.0
+        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
+        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
+        np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
+        np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
+        # (c) fix (hx, hy) and vary (vp1, vp3), perfect cal
+        # ccw from x:           165   255   345    75
+        vp1 = 100.0 * np.array([rt3, -1.0, -rt3, +1.0]) / 2.0
+        vp3 = 100.0 * np.array([1.0, +rt3, -1.0, -rt3]) / 2.0
+        # cartesian   -120 -120, -120, -120
+        # nautical     210, 210,  210,  210
+        hx = np.zeros(4) - rt3
+        hy = np.zeros(4) - 1.0
+        # predicted angles:
+        #     (vp1, vp3) cartesian angles: [ 165,  255,  345,   75]
+        #     ( hx,  hy) cartesian angles: [-120, -120, -120, -120]
+        #     subtract magnetic variation: [ -15,  -15,  -15,  -15]
+        #     predicted:                   [  30,  120,  210,  300]
+        u_xpctd = np.array([rt3, -1.0, -rt3, +1.0]) / 2.0
+        v_xpctd = np.array([1.0, +rt3, -1.0, -rt3]) / 2.0
+        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
+        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
+        np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
+        np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
+        # (d) non-perfect cal case, work through by hand
+        vp1 = 100.0 * rt3 / 2.0
+        vp3 = 100.0 * 1.0 / 2.0
+        hx = -rt3
+        hy = -1.0
+        #
+        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat[0], lon[0], ts[0])
+        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat[0], lon[0], ts[0])
+        # step through by stages
+        u_inst_coord = -(vp1 + vp3) / np.sqrt(2.0)
+        v_inst_coord = (vp1 - vp3) / np.sqrt(2.0)
+        angle_inst_coord = np.arctan2(v_inst_coord, u_inst_coord)
+        hdg_naut = xpctd_MMP_hdg[2]   # calculated in a previous test; already contains compass bias
+        magvar = 15.0                 # reference magnetic variation by design
+        # using the cartesian angle convention, convert nautical heading and flip magvar sign.
+        hdg_cart = np.deg2rad((90.0 - hdg_naut) - magvar)
+        angle_cart = angle_inst_coord + hdg_cart
+        #
+        speed = np.sqrt(u_inst_coord * u_inst_coord + v_inst_coord * v_inst_coord) / 100.0
+        u_xpctd = speed * np.cos(angle_cart)
+        v_xpctd = speed * np.sin(angle_cart)
+        np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
+        np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
