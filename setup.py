@@ -69,7 +69,7 @@ setup(name = 'ion-functions',
             'scipy==0.11.0',
             'cython'
         ],
-        package_data = {'ion_functions.data':['WMM.COF']},
+        package_data = {'ion_functions.data':['WMM*.COF']},
 
 )
 
