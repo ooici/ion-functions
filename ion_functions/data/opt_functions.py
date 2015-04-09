@@ -770,12 +770,7 @@ def opt_par_wetlabs(counts_output, a0, a1, Im):
         (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
         1341-00722_Data_Product_SPEC_OPTPARW_WETLabs_OOI.pdf)
     """
-
-    counts_output = float(counts_output)
-    a0 = float(a0)
-    a1 = float(a1)
-
-    OPTPARW_L1 = Im * 10**((counts_output - a0) / a1)
+    OPTPARW_L1 = Im * 10**((counts_output - a0) / (1.0 * a1))
 
     return OPTPARW_L1
 

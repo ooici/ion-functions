@@ -631,10 +631,25 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
                              496.8256708, 2.176371115, 2.218183222, 2.359700693, 2.664053061,
                              3.08006158, 496.8256708])
 
-    # compute par values
-    par_calc = np.zeros(22)
-    for i in range(0, 22):
-        par_calc[i] = optfunc.opt_par_wetlabs(par_count[i], a0, a1, Im)
+    # compute par values individually
+    par_calc = np.zeros(par_count.shape)
+    for index, count in enumerate(par_count):
+        par_calc[index] = optfunc.opt_par_wetlabs(count, a0, a1, Im)
+
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
+
+    # compute par values as array
+    par_calc = optfunc.opt_par_wetlabs(par_count, a0, a1, Im)
+
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
+
+    # compute par values as array with coefficient arrays
+    Im = np.tile(Im, par_count.shape)
+    a0 = np.tile(a0, par_count.shape)
+    a1 = np.tile(a1, par_count.shape)
+    par_calc = optfunc.opt_par_wetlabs(par_count, a0, a1, Im)
 
     # compare calculated results to expected
     np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
