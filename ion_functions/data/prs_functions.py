@@ -836,7 +836,7 @@ def anchor_bin(time, data, bin_duration, mode):
 
     Implemented by:
 
-        2014-01-13: Russell Desiderio. Initial code.
+        2015-01-13: Russell Desiderio. Initial code.
         2015-01-14: Russell Desiderio. Changed output arguments and incorporated conditionals
                                        to improve program efficiency.
 

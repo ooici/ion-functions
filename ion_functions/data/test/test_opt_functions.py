@@ -573,6 +573,10 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         1341-00720_Data_Product_SPEC_OPTPARW_Satl_OOI.pdf)
 
         Implemented by Craig Risien, February 2014
+        Modified by Russell Desiderio, April 09, 2015.
+            check function operation without iterating on the input data using for loop.
+            check both cal coeff cases: (1) calcoeffs are scalars
+                                        (2) calcoeffs are 1d arrays in time.
         """
 
     # test inputs
@@ -591,11 +595,17 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
                              8.999071318, 8.993896835, 8.992097014, 8.972748944, 8.97409881, 8.991197104,
                              8.979273293, 8.977923428, 8.971849034, 8.980623159])
 
-    # compute par values
-    par_calc = np.zeros(22)
-    for i in range(0, 22):
-        par_calc[i] = optfunc.opt_par_satlantic(par_count[i], a0, a1, Im)
+    # compute par values: scalar cal coeff case
+    par_calc = optfunc.opt_par_satlantic(par_count, a0, a1, Im)
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
 
+    # compute par values: tiled cal coeff case
+    tval = par_count.shape[0]
+    a0_tiled = np.tile(a0, tval)
+    a1_tiled = np.tile(a1, tval)
+    Im_tiled = np.tile(Im, tval)
+    par_calc = optfunc.opt_par_satlantic(par_count, a0_tiled, a1_tiled, Im_tiled)
     # compare calculated results to expected
     np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
 
@@ -613,6 +623,10 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         1341-00722_Data_Product_SPEC_OPTPARW_WETLabs_OOI.pdf)
 
         Implemented by Craig Risien, December 2014
+        Modified by Russell Desiderio, April 09, 2015.
+            check function operation without iterating on the input data using for loop.
+            check both cal coeff cases: (1) calcoeffs are scalars
+                                        (2) calcoeffs are 1d arrays in time.
         """
 
     # test inputs
@@ -631,11 +645,16 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
                              496.8256708, 2.176371115, 2.218183222, 2.359700693, 2.664053061,
                              3.08006158, 496.8256708])
 
-    # compute par values
-    par_calc = np.zeros(22)
-    for i in range(0, 22):
-        par_calc[i] = optfunc.opt_par_wetlabs(par_count[i], a0, a1, Im)
+    par_calc = optfunc.opt_par_wetlabs(par_count, a0, a1, Im)
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
 
+    # compute par values: tiled cal coeff case
+    tval = par_count.shape[0]
+    a0_tiled = np.tile(a0, tval)
+    a1_tiled = np.tile(a1, tval)
+    Im_tiled = np.tile(Im, tval)
+    par_calc = optfunc.opt_par_wetlabs(par_count, a0_tiled, a1_tiled, Im_tiled)
     # compare calculated results to expected
     np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
 
@@ -653,6 +672,10 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         1341-00721_Data_Product_SPEC_OPTPARW_Bios_OOI.pdf)
 
         Implemented by Craig Risien, February 2014
+        Modified by Russell Desiderio, April 09, 2015.
+            check function operation without iterating on the input data using for loop.
+            check both cal coeff cases: (1) calcoeffs are scalars
+                                        (2) calcoeffs are 1d arrays in time.
         """
 
     # test inputs
@@ -661,14 +684,16 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
 
     par_volts = np.array([1.016793, 0.599800, 0.452400, 0.305000, 0.187000, 0.178900, 0.069100, 0.039600, 0.010100])
 
-    # expected outputs
     par_expected = np.array([1707.13, 1000.00, 750.00, 500.00, 300.00, 286.25, 100.00, 50.00, 0.00])
+    par_calc = optfunc.opt_par_biospherical_mobile(par_volts, offset, scale)
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
 
-    # compute par values
-    par_calc = np.zeros(9)
-    for i in range(0, 9):
-        par_calc[i] = optfunc.opt_par_biospherical_mobile(par_volts[i], offset, scale)
-
+    # compute par values: tiled cal coeff case
+    tval = par_volts.shape[0]
+    offset_tiled = np.tile(offset, tval)
+    scale_tiled = np.tile(scale, tval)
+    par_calc = optfunc.opt_par_biospherical_mobile(par_volts, offset_tiled, scale_tiled)
     # compare calculated results to expected
     np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
 
@@ -686,6 +711,10 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         1341-00721_Data_Product_SPEC_OPTPARW_Bios_OOI.pdf)
 
         Implemented by Craig Risien, March 2014
+        Modified by Russell Desiderio, April 09, 2015.
+            check function operation without iterating on the input data using for loop.
+            check both cal coeff cases: (1) calcoeffs are scalars
+                                        (2) calcoeffs are 1d arrays in time.
         """
 
     # test inputs
@@ -695,14 +724,16 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
 
     par_mvolts = np.array([1016.793, 599.800, 452.400, 305.000, 187.000, 178.900, 69.100, 39.600, 10.100])
 
-    # expected outputs
     par_expected = np.array([1707.13, 1000.00, 750.00, 500.00, 300.00, 286.25, 100.00, 50.00, 0.00])
+    par_calc = optfunc.opt_par_biospherical_wfp(par_mvolts, offset, scale)
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
 
-    # compute par values
-    par_calc = np.zeros(9)
-    for i in range(0, 9):
-        par_calc[i] = optfunc.opt_par_biospherical_wfp(par_mvolts[i], offset, scale)
-
+    # compute par values: tiled cal coeff case
+    tval = par_mvolts.shape[0]
+    offset_tiled = np.tile(offset, tval)
+    scale_tiled = np.tile(scale, tval)
+    par_calc = optfunc.opt_par_biospherical_wfp(par_mvolts, offset_tiled, scale_tiled)
     # compare calculated results to expected
     np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
 
@@ -725,12 +756,16 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
 
 
         Implemented by Russell Desiderio, March 14, 2014.
-        Modified by Russell Desiderio, March 25, 2014. Transposed test array.
-                                                       Set known output to be 2D row vector.
+        Modified by Russell Desiderio, March 25, 2014.
+            Transposed test array.
+            Set known output to be 2D row vector.
+        Modified by Russell Desiderio, April 09, 2014.
+            Added unit tests for multiple data packets and exception checking
+            Set known output for 1 data packet case to be 1D vector.
         """
 #              counts         offset          scale        mrsn     Ed
         test_array = np.transpose(np.array([
-            [2148370944, 2148377867.8, 2.09023117662E-07, 1.368, -0.002],
+            [2148370944, 2148377867.8, 2.09023117662E-07, 1.368, -0.00198],
             [2200000000, 2148218092.4, 2.06543624674E-07, 1.410, 15.080],
             [2300000000, 2147607229.7, 2.12484770952E-07, 1.365, 44.200],
             [2400000000, 2147789959.1, 2.07241106309E-07, 1.354, 70.771],
@@ -739,6 +774,7 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
             [2700000000, 2146998228.4, 2.14806273478E-07, 1.347, 160.008]
         ]))
 
+        ## one data packet case
         # set inputs
         counts = test_array[0, :]
         offset = test_array[1, :]
@@ -746,13 +782,46 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         immersion_factor = test_array[3, :]
 
         # set known output
-        Ed = np.atleast_2d(test_array[-1, :])
+        Ed = test_array[-1, :]
+        #print Ed.shape
 
         # calculate the downwelling irradiance
         Ed_out = optfunc.opt_ocr507_irradiance(counts, offset, scale, immersion_factor)
 
         ###########################################################################
-        # The (unfinished) DPS specifies a precision of 0.25 uW/cm^2/nm
-        np.testing.assert_allclose(Ed_out, Ed, rtol=0.01, atol=0.1)
+        # The DPS specifies a precision of 0.25 uW/cm^2/nm
+        np.testing.assert_allclose(Ed_out, Ed, rtol=0.0, atol=0.1)
         ###########################################################################
+
+        ## multiple data packets case
+        ## cal coeffs will also be "tiled in time" by CI
+        # create 10 data packets
+        z_value = 10
+        zcounts = np.tile(counts, (z_value, 1))
+        zoffset = np.tile(offset, (z_value, 1))
+        zscale = np.tile(scale, (z_value, 1))
+        zimmersion_factor = np.tile(immersion_factor, (z_value, 1))
+
+        # set known output
+        zEd = np.tile(Ed, (z_value, 1))
+        #print Ed.shape
+
+        # calculate the downwelling irradiance
+        zEd_out = optfunc.opt_ocr507_irradiance(zcounts, zoffset, zscale, zimmersion_factor)
+
+        ###########################################################################
+        # The DPS specifies a precision of 0.25 uW/cm^2/nm
+        np.testing.assert_allclose(zEd_out, zEd, rtol=0.0, atol=0.1)
+        ###########################################################################
+
+        ## test error-checking
+        # data array counts does not have 7 elements
+        counts_wrongshape = test_array[0, 0:-1]
+        np.testing.assert_raises(ValueError, optfunc.opt_ocr507_irradiance, counts_wrongshape,
+                                 offset, scale, immersion_factor)
+
+        # cal coeff scale does not have 7 elements
+        scale_wrongshape = test_array[2, 0:-1]
+        np.testing.assert_raises(ValueError, optfunc.opt_ocr507_irradiance, counts, offset,
+                                 scale_wrongshape, immersion_factor)
 

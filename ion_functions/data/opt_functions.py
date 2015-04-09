@@ -748,7 +748,7 @@ def opt_par_wetlabs(counts_output, a0, a1, Im):
 
     Usage:
 
-        OPTPARW_L1 = opt_par_satlantic(counts_output, a0, a1, Im):
+        OPTPARW_L1 = opt_wetlabs(counts_output, a0, a1, Im):
 
         Calculates the L1 OPTPARW from the WET Labs instrument on the CSPP:
 
@@ -771,9 +771,7 @@ def opt_par_wetlabs(counts_output, a0, a1, Im):
         1341-00722_Data_Product_SPEC_OPTPARW_WETLabs_OOI.pdf)
     """
 
-    counts_output = float(counts_output)
-    a0 = float(a0)
-    a1 = float(a1)
+    counts_output = counts_output * 1.0  # type conversion
 
     OPTPARW_L1 = Im * 10**((counts_output - a0) / a1)
 
@@ -893,6 +891,8 @@ def opt_ocr507_irradiance(counts, offset, scale, immersion_factor):
         2014-03-25: Russell Desiderio.
             Changed code to require data input arguments to be arrays with 7 columns,
             one for each wavelength channel.
+        2015-04-09: Russell Desiderio
+            CI has determined that cal coefficients will be tiled in time.
 
     Usage:
 
@@ -913,15 +913,16 @@ def opt_ocr507_irradiance(counts, offset, scale, immersion_factor):
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00730__???.pdf)
     """
-    # condition input to be arrays: the type scalar does not have a shape attribute
-    counts = np.atleast_2d(counts)
-    offset = np.atleast_2d(offset)
-    scale = np.atleast_2d(scale)
-    immersion_factor = np.atleast_2d(immersion_factor)
+    # condition input to be arrays for error-checking:
+    # the type scalar does not have a shape attribute
+    counts = np.atleast_1d(counts*1.0)  # type conversion from fix to float in case needed.
+    offset = np.atleast_1d(offset)
+    scale = np.atleast_1d(scale)
+    immersion_factor = np.atleast_1d(immersion_factor)
 
-    # check to see that there are 7 columns (corresponding to 7 wavelength channels)
-    lFlag1 = counts.shape[1] != 7
-    # check that the shapes of all input arguments are identical
+    # check to see that there are 7 columns (corresponding to 7 wavelength channels), and ...
+    lFlag1 = counts.shape[-1] != 7
+    # ... check that the shapes of all input arguments are identical
     lFlag2 = not (counts.shape == offset.shape == scale.shape == immersion_factor.shape)
     if lFlag1 or lFlag2:
         raise ValueError('counts, offset, scale, and immersion arrays must have the same shape and have 7 columns')
