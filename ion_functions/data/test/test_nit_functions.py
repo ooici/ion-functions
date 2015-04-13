@@ -30,6 +30,9 @@ class TestNitFunctionsUnit(BaseUnitTestCase):
             1341-00620_Data_Product_Spec_NUTNR_OOI.pdf)
 
         Implemented by Craig Risien, May 2014
+        Revised by Russell Desiderio, April 09, 2015.
+            Cal coeffs are now presented as time-vectorized arguments as input to the DPAs.
+            The DPA and unit tests have been revised to incorporate this change.
         """
 
     # test inputs
@@ -111,9 +114,28 @@ class TestNitFunctionsUnit(BaseUnitTestCase):
 
     # expected outputs
     nit_expected = np.array([-9999999.0, -9999999.0, -9999999.0, -9999999.0, -9999999.0, 0.75987271, 0.87556255, 0.96985023, 1.08586070, 0.88144169, -9999999.0, 1.00141440, 0.75700846, 1.16804700, 0.90545067, 0.80298560, -9999999.0, -3.94501510, -9999999.0, -4.12437310, -9999999.0, -4.04031150, -4.39287360, -3.80415850, -3.85723530, -4.24619420, -9999999.0, -3.99834040, -4.11579830, -4.00934960, -4.52545540, -3.80571640, -9999999.0, 27.05594900, -9999999.0, 27.43379400, -9999999.0, 28.29888200, 27.70576900, 27.50978800, 28.17723100, 27.16895500, -9999999.0, 27.83870300, 28.26505800, 27.20442100, 27.32593200, 27.79936600, -9999999.0, 0.35236329, -9999999.0, 0.69892011, -9999999.0, 0.44256863, 0.51434485, 0.41167468, 0.32718955, 0.36115907, -9999999.0, 0.44321778, 0.54636823, 0.59245404, 0.36121940, 0.64607541])
-    # compute L2 nit conc values
+    # change fill values to nans.
+    nit_expected[nit_expected == -9999999.0] = np.nan
+
+    # compute L2 nit conc values: cal coeffs are time-vectorized.
+    # wllower and wlupper omitted from input arguments
+    tval = data_in.shape[0]
+    cal_temp = np.tile(cal_temp, tval)
+    wl = np.tile(wl, (tval, 1))
+    eno3 = np.tile(eno3, (tval, 1))
+    eswa = np.tile(eswa, (tval, 1))
+    di = np.tile(di, (tval, 1))
+
     NO3_conc_calc = ts_corrected_nitrate(cal_temp, wl, eno3, eswa, di, dark_value,
                                          ctd_t, ctd_sp, data_in, frame_type)
-
     # compare calculated results to expected results
     np.testing.assert_allclose(NO3_conc_calc, nit_expected, rtol=0.000001, atol=0.000001)
+
+    # test when wllower and wlupper are included in the argument list
+    wllower = np.tile(217.0, tval)
+    wlupper = np.tile(240.0, tval)
+    NO3_conc_calc = ts_corrected_nitrate(cal_temp, wl, eno3, eswa, di, dark_value,
+                                         ctd_t, ctd_sp, data_in, frame_type, wllower, wlupper)
+    # compare calculated results to expected results
+    np.testing.assert_allclose(NO3_conc_calc, nit_expected, rtol=0.000001, atol=0.000001)
+
