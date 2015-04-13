@@ -759,7 +759,7 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         Modified by Russell Desiderio, March 25, 2014.
             Transposed test array.
             Set known output to be 2D row vector.
-        Modified by Russell Desiderio, April 09, 2014.
+        Modified by Russell Desiderio, April 09, 2015.
             Added unit tests for multiple data packets and exception checking
             Set known output for 1 data packet case to be 1D vector.
         """

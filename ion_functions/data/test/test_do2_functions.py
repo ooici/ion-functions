@@ -30,6 +30,9 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         SBE43F oxygen sensors are connected to a SBE 52-MP profiling CTD
         which provides the inputs of salinity, temperature, and
         pressure.
+
+        2015-04-10: Russell Desiderio. Added test for implementation of
+                    calibration coefficients as time-vectorized arguments.
         """
 
         # FUNCTION CALIBRATION COEFFICIENTS
@@ -106,6 +109,23 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         #np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
         np.testing.assert_allclose(do, do_expected, rtol=1e-6, atol=1e-6)
 
+        # R. Desiderio, 10-Apr-2015:
+        # test new CI implementation of time-vectorized cal coeffs
+        tval = freq.shape[0]
+        A = np.tile(A, tval)
+        B = np.tile(B, tval)
+        C = np.tile(C, tval)
+        E = np.tile(E, tval)
+        Foffset = np.tile(Foffset, tval)
+        Soc = np.tile(Soc, tval)
+
+        # CALCULATION
+        do = do2_dofst_frequency(
+            freq, Foffset, Soc, A, B, C, E, pres, temp, salt, lat, lon)
+
+        # ASSERT FINAL OUTPUTS
+        np.testing.assert_allclose(do, do_expected, rtol=1e-6, atol=1e-6)
+
     def test_dofst_voltage(self):
         """ DOFST voltage test
         Unit Test of the do2_dofst_volt function in
@@ -115,6 +135,9 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         NOTE:
         SBE43 oxygen sensors are connected to a SBE 16+ V2 CTD which
         provides the inputs of salinity, temperature, and pressure.
+
+        2015-04-10: Russell Desiderio. Added test for implementation of
+                    calibration coefficients as time-vectorized arguments.
         """
 
         # FUNCTION CALIBRATION COEFFICIENTS
@@ -189,6 +212,23 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         #np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
         np.testing.assert_allclose(do, do_expected, rtol=1e-6, atol=1e-6)
 
+        # R. Desiderio, 10-Apr-2015:
+        # test new CI implementation of time-vectorized cal coeffs
+        tval = volt_counts.shape[0]
+        A = np.tile(A, tval)
+        B = np.tile(B, tval)
+        C = np.tile(C, tval)
+        E = np.tile(E, tval)
+        Voffset = np.tile(Voffset, tval)
+        Soc = np.tile(Soc, tval)
+
+        # CALCULATION
+        do = do2_dofst_volt(
+            volt_counts, Voffset, Soc, A, B, C, E, pres, temp, salt, lat, lon)
+
+        # ASSERT FINAL OUTPUTS
+        np.testing.assert_allclose(do, do_expected, rtol=1e-6, atol=1e-6)
+
     def test_do2_SVU(self):
         """ DOSTA Stern-Volmer-Uchida (SVU) test
         Unit Test of the do2_SVU function in
@@ -196,6 +236,9 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         oxygen with the SVU equation from phase, temperature, and
         multipoint calibration coefficients from a Aanderaa oxygen
         optode.
+
+        2015-04-10: Russell Desiderio. Added test for implementation of
+                    calibration coefficients as time-vectorized arguments.
         """
         calphase = np.array([
             32., 32., 32., 32., 39.825, 39.825, 39.825,
@@ -228,11 +271,24 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         # SVU ASSERT
         np.testing.assert_array_almost_equal(do_svu, svu_expected, decimal=6)
 
+        # R. Desiderio, 10-Apr-2015:
+        # test new CI implementation of time-vectorized cal coeffs
+        tval = calphase.shape[0]
+        csv = np.tile(csv, (tval, 1))
+
+        # SVU CALCULATION
+        do_svu = do2_SVU(calphase, temp, csv)
+
+        # SVU ASSERT
+        np.testing.assert_array_almost_equal(do_svu, svu_expected, decimal=6)
+
     def test_salinity_correction(self):
         """ DOSTA salinity correction test
         Unit Test of the do2_salinity_correction function in
         ion_functions/data/do2_functions.py for correction of
         oxygen for pressure and salinity.
+
+        2015-04-10: Russell Desiderio. No cal in this function's argument list.
         """
         do_svu = np.array([
             3.67038772e+02,   2.89131248e+02,   2.32138540e+02,

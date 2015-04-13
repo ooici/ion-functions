@@ -1235,6 +1235,8 @@ def magnetic_correction(theta, u, v):
                     calculate magnetic corrections by the functions contained
                     in this module instead of the function magnetic_correction
                     found in ion_functions.data.generic_functions.
+        2015-04-10: Russell Desiderio. Corrected a typo:
+                    uv = np.atleast_2d(u)  ->  u = np.atleast_2d(u)
 
     Usage:
 
@@ -1268,7 +1270,7 @@ def magnetic_correction(theta, u, v):
     """
     # force shapes of inputs to arrays
     theta = np.atleast_1d(theta)
-    uv = np.atleast_2d(u)
+    u = np.atleast_2d(u)
     v = np.atleast_2d(v)
 
     theta_rad = np.radians(theta)

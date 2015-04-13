@@ -54,6 +54,12 @@ def do2_SVU(calphase, temp, csv):
 
     Implemented by:
         2013-04-26: Stuart Pearce. Initial Code.
+        2015-04-10: Russell Desiderio. Revised code to work with CI implementation
+                    of calibration coefficients: they are to be implemented as time-
+                    vectorized arguments (tiled in the time dimension to match the
+                    number of data packets).
+
+                    Fix for "blocker bug #2972".
 
     References:
         OOI (2012). Data Product Specification for Oxygen Concentration
@@ -62,11 +68,13 @@ def do2_SVU(calphase, temp, csv):
             Company Home >> OOI >> Controlled >> 1000 System Level
             >> 1341-00520_Data_Product_SPEC_DOCONCS_OOI.pdf)
     """
+    # this will work for both old and new CI implementations of cal coeffs.
+    csv = np.atleast_2d(csv)
 
     # Calculate DO using Stern-Volmer:
-    Ksv = csv[0] + csv[1]*temp + csv[2]*(temp**2)
-    P0 = csv[3] + csv[4]*temp
-    Pc = csv[5] + csv[6]*calphase
+    Ksv = csv[:, 0] + csv[:, 1]*temp + csv[:, 2]*(temp**2)
+    P0 = csv[:, 3] + csv[:, 4]*temp
+    Pc = csv[:, 5] + csv[:, 6]*calphase
     DO = ((P0/Pc) - 1) / Ksv
     return DO
 

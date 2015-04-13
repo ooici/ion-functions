@@ -745,6 +745,8 @@ def opt_par_wetlabs(counts_output, a0, a1, Im):
     Implemented by:
 
         2014-12-10: Craig Risien. Initial Code
+        2015-04-09: Russell Desiderio. Fixed "blocker bug #3182" so that the
+                    function runs correctly on time-vectorized arguments.
 
     Usage:
 
@@ -892,7 +894,8 @@ def opt_ocr507_irradiance(counts, offset, scale, immersion_factor):
             Changed code to require data input arguments to be arrays with 7 columns,
             one for each wavelength channel.
         2015-04-09: Russell Desiderio
-            CI has determined that cal coefficients will be tiled in time.
+            CI has determined that cal coefficients will be implemented as time-vectorized
+            arguments (tiled in time to the number of data packets).
 
     Usage:
 
