@@ -7,9 +7,6 @@
 """
 
 import numpy as np
-import numexpr as ne
-
-from ion_functions.utils import fill_value
 
 # load the temperature and salinity correction coefficients table
 from ion_functions.data.opt_functions_tscor import tscor
@@ -37,6 +34,7 @@ def opt_beam_attenuation(cref, csig, traw, cwl, coff, tcal, tbins, tc_arr,
         2014-05-29: Russell Desiderio. Added capability to handle OPTAA wavelengths outside
                     the wavelength range of the empirically derived temperature and salinity
                     correction coefficients.
+        2015-04-17: Russell Desiderio. Use np.nan instead of fill_value.
 
     Usage:
 
@@ -122,9 +120,6 @@ def opt_beam_attenuation(cref, csig, traw, cwl, coff, tcal, tbins, tc_arr,
         cpd_ts_row = opt_tempsal_corr('c', cpd, cwl[ii, :], tcal[ii], T[ii], PS[ii])
         cpd_ts[ii, :] = cpd_ts_row
 
-    # replace any nans (from tscor dictionary lookups) to fill values.
-    cpd_ts[np.isnan(cpd_ts)] = fill_value
-
     # return the temperature and salinity corrected beam attenuation
     # coefficient OPTATTN_L2 [m^-1]
     return cpd_ts
@@ -150,6 +145,7 @@ def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
         2014-05-29: Russell Desiderio. Added capability to handle OPTAA wavelengths outside
                     the wavelength range of the empirically derived temperature and salinity
                     correction coefficients.
+        2015-04-17: Russell Desiderio. Use np.nan instead of fill_value.
 
     Usage:
 
@@ -229,9 +225,6 @@ def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
     # initialize output array
     apd_ts_s = np.zeros([npackets, nwavelengths])
 
-    # convert fill values to nans
-    cpd_ts[cpd_ts == fill_value] = np.nan
-
     for ii in range(npackets):
 
         # calculate the internal instrument temperature [deg_C]
@@ -247,9 +240,6 @@ def opt_optical_absorption(aref, asig, traw, awl, aoff, tcal, tbins, ta_arr,
         # correct the optical absorption coefficient for scattering effects
         apd_ts_s_row = opt_scatter_corr(apd_ts, awl[ii, :], cpd_ts[ii, :], cwl[ii, :], rwlngth)
         apd_ts_s[ii, :] = apd_ts_s_row
-
-    # replace any nans to fill values.
-    apd_ts_s[np.isnan(apd_ts_s)] = fill_value
 
     # return the temperature, salinity and scattering corrected optical
     # absorption coefficient OPTABSN_L2 [m^-1]
@@ -324,6 +314,7 @@ def opt_pd_calc(ref, sig, offset, tintrn, tbins, tarray):
 
         2013-04-25: Christopher Wingard. Initial implementation.
         2014-02-19: Russell Desiderio. Expanded Usage documentation.
+        2015-04-21: Russell Desiderio. Added diagnostics to ValueError exceptions.
 
     Usage:
 
@@ -383,26 +374,35 @@ def opt_pd_calc(ref, sig, offset, tintrn, tbins, tarray):
     offset = np.atleast_1d(offset)
     lFlag = len(offset) != nValues
     if lFlag:
-        raise ValueError('The number of offsets must match the number of ',
-                         'Signal and Reference values.')
+        str1 = 'The number of calibration offset channels ('
+        str2 = ') from the cal devfile must match the number of Signal and Reference channels ('
+        str3 = ') from the rawdata.'
+        offsetErrorString = str1 + str(len(offset)) + str2 + str(nValues) + str3
+        raise ValueError(offsetErrorString)
 
     # The temperature bins are imported as a 1D array
     tbins = np.atleast_1d(tbins)
     tValues = np.size(tbins)
 
-    # The temperature array tarray is a 2D array. The # of "columns" must equal
-    # the length of temperature bins. The number of "rows" must equal the number
-    # of wavelengths.
+    # The internal temperature compensation array 'tarray' is a 2D array. The # of
+    # columns must equal the length of the tbins array. The number of rows must equal
+    # the number of wavelengths.
     tarray = np.atleast_2d(tarray)
     r, c = tarray.shape
 
     if r != nValues:
-        raise ValueError('The number of rows in the temperature array must ',
-                         'match the number of Signal and Reference values.')
+        str1 = 'The number of rows in the internal temperature compensation calibration array ('
+        str2 = ') must match the number of wavelength channels in the rawdata ('
+        str3 = ').'
+        rErrorString = str1 + str(r) + str2 + str(nValues) + str3
+        raise ValueError(rErrorString)
 
     if c != tValues:
-        raise ValueError('The number of columns in the temperature array must ',
-                         'match the number of temperature bin values.')
+        # since both tbins and tarray (should) come from the same dev file, this exception is not likely.
+        str1 = 'Number of columns in the internal temperature compensation calibration array ('
+        str2 = ') must match the number of internal temp comp cal bin values = ('
+        cErrorString = str1 + str(c) + str2 + str(tValues) + ').'
+        raise ValueError(cErrorString)
 
     # find the indexes in the temperature bins corresponding to the values
     # bracketing the internal temperature.
@@ -727,7 +727,7 @@ def opt_par_satlantic(counts_output, a0, a1, Im):
         1341-00720_Data_Product_SPEC_OPTPARW_Satl_OOI.pdf)
     """
 
-    OPTPARW_L1 = ne.evaluate('Im * a1 * (counts_output - a0)')
+    OPTPARW_L1 = np.atleast_1d(Im * a1 * (counts_output - a0))
 
     return OPTPARW_L1
 
@@ -775,7 +775,7 @@ def opt_par_wetlabs(counts_output, a0, a1, Im):
 
     counts_output = counts_output * 1.0  # type conversion
 
-    OPTPARW_L1 = Im * 10**((counts_output - a0) / a1)
+    OPTPARW_L1 = np.atleast_1d(Im * 10**((counts_output - a0) / a1))
 
     return OPTPARW_L1
 
@@ -817,7 +817,7 @@ def opt_par_biospherical_mobile(output, dark_offset, scale_wet):
         1341-00721_Data_Product_SPEC_OPTPARW_Bios_OOI.pdf)
     """
 
-    OPTPARW_L1 = ne.evaluate('(output - dark_offset) / scale_wet')
+    OPTPARW_L1 = np.atleast_1d((output - dark_offset) / scale_wet)
 
     return OPTPARW_L1
 
@@ -869,7 +869,7 @@ def opt_par_biospherical_wfp(output, dark_offset, scale_wet):
     #1uE/sec/m^2 PAR= 1umole/sec/m^2 PAR = 6.02*10**13 quanta/sec/cm^2 PAR
     scale_wet_converted = scale_wet * (6.02 * 10**13)
 
-    OPTPARW_L1 = ne.evaluate('(output_volts - dark_offset_volts) / scale_wet_converted')
+    OPTPARW_L1 = np.atleast_1d((output_volts - dark_offset_volts) / scale_wet_converted)
 
     return OPTPARW_L1
 
@@ -896,6 +896,11 @@ def opt_ocr507_irradiance(counts, offset, scale, immersion_factor):
         2015-04-09: Russell Desiderio
             CI has determined that cal coefficients will be implemented as time-vectorized
             arguments (tiled in time to the number of data packets).
+        2015-04-21: Russell Desiderio
+            CI has determined that calcoeffs and data that are 'natively' 1D arrays (all
+            input and output arguments of this function qualify) will be passed to the
+            function as 2D arrays (for one data record, these will be row vectors). On
+            output, the data product will also be 2D.
 
     Usage:
 
@@ -916,16 +921,15 @@ def opt_ocr507_irradiance(counts, offset, scale, immersion_factor):
             (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
             1341-00730__???.pdf)
     """
-    # condition input to be arrays for error-checking:
-    # the type scalar does not have a shape attribute
-    counts = np.atleast_1d(counts*1.0)  # type conversion from fix to float in case needed.
-    offset = np.atleast_1d(offset)
-    scale = np.atleast_1d(scale)
-    immersion_factor = np.atleast_1d(immersion_factor)
+    # condition input to be arrays for error-checking, in case scalars are input
+    counts = np.atleast_2d(counts*1.0)  # type conversion from fix to float in case needed.
+    offset = np.atleast_2d(offset)
+    scale = np.atleast_2d(scale)
+    immersion_factor = np.atleast_2d(immersion_factor)
 
-    # check to see that there are 7 columns (corresponding to 7 wavelength channels), and ...
+    # check to see that there are 7 columns (corresponding to 7 wavelength channels) ...
     lFlag1 = counts.shape[-1] != 7
-    # ... check that the shapes of all input arguments are identical
+    # ... and check that the shapes of all input arguments are identical
     lFlag2 = not (counts.shape == offset.shape == scale.shape == immersion_factor.shape)
     if lFlag1 or lFlag2:
         raise ValueError('counts, offset, scale, and immersion arrays must have the same shape and have 7 columns')
