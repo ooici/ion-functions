@@ -12,7 +12,6 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 from ion_functions.data import opt_functions as optfunc
-from ion_functions.utils import fill_value
 
 
 @attr('UNIT', group='func')
@@ -229,6 +228,7 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         Implemented by Russell Desiderio, 21-Feb-2014. Additional unit test data
             constructed as documented in the OPTAA Unit Test document artifact
             reference above.
+        2015-04-17: Russell Desiderio. Changed signal and reference count input from float to fix.
         """
 
         # test inputs:
@@ -245,15 +245,15 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
 
         # a_off and c_off must have same dimensions as wlngth.
         wlngth = np.array([500., 550., 600., 650., 700., 715.])
-        c_sig = np.array([150., 225., 200., 350., 450., 495.])
-        c_ref = np.array([550., 540., 530., 520., 510., 500.])
+        c_sig = np.array([150, 225, 200, 350, 450, 495])
+        c_ref = np.array([550, 540, 530, 520, 510, 500])
         c_off = np.array([1.35, 1.30, 1.25, 1.20, 1.15, 1.10])
-        a_sig = np.array([250., 300., 210., 430., 470., 495.])
-        a_ref = np.array([450., 460., 470., 480., 490., 500.])
+        a_sig = np.array([250, 300, 210, 430, 470, 495])
+        a_ref = np.array([450, 460, 470, 480, 490, 500])
         a_off = np.array([0.35, 0.30, 0.25, 0.20, 0.15, 0.10])
 
         # traw, T, and PS must be scalar (before vectorization).
-        traw = 48355.0
+        traw = 48355
         Tcal = 20.0
         T = 12.0
         PS = 35.0
@@ -313,6 +313,7 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         Implemented by Russell Desiderio, 26-Feb-2014. Additional unit test data
             constructed as documented in the OPTAA Unit Test document artifact
             reference above.
+        2015-04-17: Russell Desiderio. Changed signal and reference count input from float to fix.
         """
 
         # test inputs:
@@ -330,15 +331,15 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         # a_off and c_off must have same dimensions as wlngth.
         cwlngth = np.array([510., 540., 580., 630., 670., 710.])
         awlngth = np.array([500., 550., 600., 650., 700., 715.])
-        c_sig = np.array([150., 225., 200., 350., 450., 495.])
-        c_ref = np.array([550., 540., 530., 520., 510., 500.])
+        c_sig = np.array([150, 225, 200, 350, 450, 495])
+        c_ref = np.array([550, 540, 530, 520, 510, 500])
         c_off = np.array([1.35, 1.30, 1.25, 1.20, 1.15, 1.10])
-        a_sig = np.array([250., 300., 210., 430., 470., 495.])
-        a_ref = np.array([450., 460., 470., 480., 490., 500.])
+        a_sig = np.array([250, 300, 210, 430, 470, 495])
+        a_ref = np.array([450, 460, 470, 480, 490, 500])
         a_off = np.array([0.35, 0.30, 0.25, 0.20, 0.15, 0.10])
 
         # traw, T, and PS must be scalar (before vectorization).
-        traw = 48355.0
+        traw = 48355
         Tcal = 20.0
         T = 12.0
         PS = 35.0
@@ -395,76 +396,93 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         Implemented by Russell Desiderio, 05-Mar-2014. Additional unit test data
             constructed as documented in the OPTAA Unit Test document artifact
             reference above.
+        2015-04-17: Russell Desiderio. Changed signal and reference count input from float to fix.
+                                       Replaced 'exec' statements.
+        2015-04-21: Russell Desiderio. Corrected input data shapes to current CI implementation.
+                                       Added scalar time record case.
         """
-        # test inputs:
-        # replicate the inputs to represent 3 data packets
-        npackets = 3
-        # tbins will become a 2D array.
-        tbins = np.array([14.5036, 15.5200, 16.4706, 17.4833, 18.4831, 19.5196, 20.5565])
-        tbins = np.tile(tbins, (npackets, 1))
-        # nrows of tarr = length(nwlngth); ncols of tarr = length(tbins)
-        tarr = np.array([
+        ### set test inputs: scalar (that is, 1) time record case
+        # native scalars will come into the DPA with shape (1,)
+        traw = np.array([48355])
+        Tcal = np.array([20.0])
+        T = np.array([12.0])
+        PS = np.array([35.0])
+        # native 1D arrays will come in as 2D row vectors
+        cwlngth = np.array([[510., 540., 580., 630., 670., 710.]])
+        awlngth = np.array([[500., 550., 600., 650., 700., 715.]])
+        c_sig = np.array([[150, 225, 200, 350, 450, 495]])
+        c_ref = np.array([[550, 540, 530, 520, 510, 500]])
+        c_off = np.array([[1.35, 1.30, 1.25, 1.20, 1.15, 1.10]])
+        a_sig = np.array([[250, 300, 210, 430, 470, 495]])
+        a_ref = np.array([[450, 460, 470, 480, 490, 500]])
+        a_off = np.array([[0.35, 0.30, 0.25, 0.20, 0.15, 0.10]])
+        tbins = np.array([[14.5036, 15.5200, 16.4706, 17.4833, 18.4831, 19.5196, 20.5565]])
+        # native 2D arrays will come in as 3D arrays, for this single time record case;
+        # a singleton dimension will be prepended to the native 2D array.
+        # native dimensions of tarr are (nwavelengths, ntempbins),
+        # so that tarr.shape = (1,6,7)
+        tarr = np.array([[
             [0.0, -0.004929, -0.004611, 0.0, 0.0, 0.0, 0.0],
             [0.0, -0.004611, -0.004418, 0.0, 0.0, 0.0, 0.0],
             [0.0, -0.004418, -0.004355, 0.0, 0.0, 0.0, 0.0],
             [0.0, -0.004355, -0.004131, 0.0, 0.0, 0.0, 0.0],
             [0.0, -0.004131, -0.003422, 0.0, 0.0, 0.0, 0.0],
             [0.0, -0.003422, -0.002442, 0.0, 0.0, 0.0, 0.0]
-        ])
-        # tarr will become a 3D array
-        # dimensions will be (npackets, nwavelengths, ntempbins)
-        tarr = np.tile(tarr, (npackets, 1, 1))
-        ###
-        # note that "tarr = np.tile(tarr, (1, 1, npackets))" results in the
-        # array tarr.shape = (1,6,7*npackets)
-        ###
-        # a_off and c_off must have same dimensions as wlngth.
-        cwlngth = np.array([510., 540., 580., 630., 670., 710.])
-        awlngth = np.array([500., 550., 600., 650., 700., 715.])
-        c_sig = np.array([150., 225., 200., 350., 450., 495.])
-        c_ref = np.array([550., 540., 530., 520., 510., 500.])
-        c_off = np.array([1.35, 1.30, 1.25, 1.20, 1.15, 1.10])
-        a_sig = np.array([250., 300., 210., 430., 470., 495.])
-        a_ref = np.array([450., 460., 470., 480., 490., 500.])
-        a_off = np.array([0.35, 0.30, 0.25, 0.20, 0.15, 0.10])
-        # make all of the previous vectors 2-D
-        for str in ['cwlngth', 'awlngth', 'c_sig', 'c_ref', 'c_off', 'a_sig', 'a_ref', 'a_off']:
-            exec(str + ' = np.tile(' + str + ', (npackets,1))')
-        # traw, Tcal, T, and PS will now be vectors, so:
-        traw = np.array([48355])
-        Tcal = np.array([20.0])
-        T = np.array([12.0])
-        PS = np.array([35.0])
-        for str in ['traw', 'Tcal', 'T', 'PS']:
-            exec(str + ' = np.tile(' + str + ', (npackets,1))')
+        ]])
 
-        # also test case of user selected reference wavelength for abs scatter correction
-        ref_wave = 695  # nearest abs wavelength (700nm) should become reference wavelength
-
-        # expected outputs
-        cpd_ts = np.array([6.553771, 4.807914, 5.156010, 2.788715, 1.655607, 1.171965])
-        apd_ts_s_ref715 = np.array([1.990992, 1.479089, 3.350109, 0.350108, 0.152712, 0.000000])
-        apd_ts_s_ref700 = np.array([1.379858, 1.021574, 3.235057, 0.099367, 0.000000, -0.156972])
-        for str in ['cpd_ts', 'apd_ts_s_ref715', 'apd_ts_s_ref700']:
-            exec(str + ' = np.tile(' + str + ', (npackets,1))')
-
-        # beam attenuation (beam c)  test
+        ## expected outputs to scalar time record test: 2D row vectors
+        # beam attenuation (beam c) test
+        # expected:
+        cpd_ts = np.array([[6.553771, 4.807914, 5.156010, 2.788715, 1.655607, 1.171965]])
+        # calculated:
         c_ts = optfunc.opt_beam_attenuation(c_ref, c_sig, traw, cwlngth, c_off, Tcal,
                                             tbins, tarr, T, PS)
         np.testing.assert_allclose(c_ts, cpd_ts, rtol=1e-6, atol=1e-6)
 
         # absorption test
         # case: default reference wavelength for scatter correction
-        a_ts_sdef = np.zeros(6)
+        apd_ts_s_ref715 = np.array([[1.990992, 1.479089, 3.350109, 0.350108, 0.152712, 0.000000]])
+        a_ts_sdef = optfunc.opt_optical_absorption(a_ref, a_sig, traw, awlngth, a_off, Tcal,
+                                                   tbins, tarr, cpd_ts, cwlngth, T, PS)
+        np.testing.assert_allclose(a_ts_sdef, apd_ts_s_ref715, rtol=1e-6, atol=1e-6)
+
+        # absorption test
+        # case: user selected reference wavelength for scatter correction to abs values
+        ref_wave = 695  # nearest abs wavelength (700nm) should become reference wavelength
+
+        apd_ts_s_ref700 = np.array([[1.379858, 1.021574, 3.235057, 0.099367, 0.000000, -0.156972]])
+        a_ts_s700 = optfunc.opt_optical_absorption(a_ref, a_sig, traw, awlngth, a_off, Tcal,
+                                                   tbins, tarr, cpd_ts, cwlngth, T, PS, ref_wave)
+        np.testing.assert_allclose(a_ts_s700, apd_ts_s_ref700, rtol=1e-6, atol=1e-6)
+
+        ### multiple time records case
+        # replicate the inputs to represent 3 data packets
+        npackets = 3
+        [traw, Tcal, T, PS] = [np.tile(xarray, npackets) for xarray in [traw, Tcal, T, PS]]
+        [cwlngth, awlngth, c_sig, c_ref, c_off, a_sig, a_ref, a_off, tbins] = [
+            np.tile(xarray, (npackets, 1)) for xarray in [
+                cwlngth, awlngth, c_sig, c_ref, c_off, a_sig, a_ref, a_off, tbins]]
+        tarr = np.tile(tarr, (npackets, 1, 1))
+
+        # replicate the expected output data products
+        cpd_ts = np.tile(cpd_ts, (npackets, 1))
+        apd_ts_s_ref715 = np.tile(apd_ts_s_ref715, (npackets, 1))
+        apd_ts_s_ref700 = np.tile(apd_ts_s_ref700, (npackets, 1))
+
+        # beam attenuation (beam c) test
+        c_ts = optfunc.opt_beam_attenuation(c_ref, c_sig, traw, cwlngth, c_off, Tcal,
+                                            tbins, tarr, T, PS)
+        np.testing.assert_allclose(c_ts, cpd_ts, rtol=1e-6, atol=1e-6)
+
+        # absorption test
+        # case: default reference wavelength for scatter correction
         a_ts_sdef = optfunc.opt_optical_absorption(a_ref, a_sig, traw, awlngth, a_off, Tcal,
                                                    tbins, tarr, cpd_ts, cwlngth, T, PS)
         np.testing.assert_allclose(a_ts_sdef, apd_ts_s_ref715, rtol=1e-6, atol=1e-6)
 
         # case: user selected reference wavelength for scatter correction
-        a_ts_s700 = np.zeros(6)
         a_ts_s700 = optfunc.opt_optical_absorption(a_ref, a_sig, traw, awlngth, a_off, Tcal,
                                                    tbins, tarr, cpd_ts, cwlngth, T, PS, ref_wave)
-
         np.testing.assert_allclose(a_ts_s700, apd_ts_s_ref700, rtol=1e-6, atol=1e-6)
 
     def test_opt_functions_OPTAA_vectorization_with_tscor_nans(self):
@@ -496,57 +514,65 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
             wavelengths are outside the range of the empirically derived temperature
             and salinity correction wavelength keys in the original tscor.py dictionary
             by modifying def test_opt_functions_OPTAA_vectorization test data.
+        2015-04-17: Russell Desiderio. Use np.nan instead of fill_value.
+                                       Changed signal and reference count input from float to fix.
+                                       Replaced 'exec' statements.
+        2015-04-21: Russell Desiderio. Cosmetic statement re-ordering and shaping of input arrays.
         """
         # test inputs:
         # replicate the inputs to represent 3 data packets
         npackets = 3
-        # tbins will become a 2D array.
-        tbins = np.array([14.5036, 15.5200, 16.4706, 17.4833, 18.4831, 19.5196, 20.5565])
-        tbins = np.tile(tbins, (npackets, 1))
+
+        ## natively scalar inputs
+        traw = np.array([48355])
+        Tcal = np.array([20.0])
+        T = np.array([12.0])
+        PS = np.array([35.0])
+        # time-vectorize
+        [traw, Tcal, T, PS] = [np.tile(xarray, npackets) for xarray in [traw, Tcal, T, PS]]
+
+        ## natively 1D inputs
+        # valid tscor dictionary entries (those without nan values) are
+        # keyed at [400.0 755.0] nm. The dictionary has been extended to
+        # to [380.0 775.0] using np.nan as fill values. test:
+        cwlngth = np.array([[398.5, 540., 580., 630., 670., 710.]])
+        awlngth = np.array([[500., 550., 600., 650., 700., 761.2]])
+        c_sig = np.array([[150, 225, 200, 350, 450, 495]])
+        c_ref = np.array([[550, 540, 530, 520, 510, 500]])
+        c_off = np.array([[1.35, 1.30, 1.25, 1.20, 1.15, 1.10]])
+        a_sig = np.array([[250, 300, 210, 430, 470, 495]])
+        a_ref = np.array([[450, 460, 470, 480, 490, 500]])
+        a_off = np.array([[0.35, 0.30, 0.25, 0.20, 0.15, 0.10]])
+        tbins = np.array([[14.5036, 15.5200, 16.4706, 17.4833, 18.4831, 19.5196, 20.5565]])
+        # time-vectorize
+        [cwlngth, awlngth, c_sig, c_ref, c_off, a_sig, a_ref, a_off, tbins] = [
+            np.tile(xarray, (npackets, 1)) for xarray in [
+                cwlngth, awlngth, c_sig, c_ref, c_off, a_sig, a_ref, a_off, tbins]]
+
         # nrows of tarr = length(nwlngth); ncols of tarr = length(tbins)
-        tarr = np.array([
+        tarr = np.array([[
             [0.0, -0.004929, -0.004611, 0.0, 0.0, 0.0, 0.0],
             [0.0, -0.004611, -0.004418, 0.0, 0.0, 0.0, 0.0],
             [0.0, -0.004418, -0.004355, 0.0, 0.0, 0.0, 0.0],
             [0.0, -0.004355, -0.004131, 0.0, 0.0, 0.0, 0.0],
             [0.0, -0.004131, -0.003422, 0.0, 0.0, 0.0, 0.0],
             [0.0, -0.003422, -0.002442, 0.0, 0.0, 0.0, 0.0]
-        ])
-        # tarr will become a 3D array
+        ]])
+        # time-vectorize
         # dimensions will be (npackets, nwavelengths, ntempbins)
         tarr = np.tile(tarr, (npackets, 1, 1))
-        # valid tscor dictionary entries (those without nan values) are
-        # keyed at [400.0 755.0] nm. The dictionary has been extended to
-        # to [380.0 775.0] using np.nan as fill values. test:
-        cwlngth = np.array([398.5, 540., 580., 630., 670., 710.])
-        awlngth = np.array([500., 550., 600., 650., 700., 761.2])
-        c_sig = np.array([150., 225., 200., 350., 450., 495.])
-        c_ref = np.array([550., 540., 530., 520., 510., 500.])
-        c_off = np.array([1.35, 1.30, 1.25, 1.20, 1.15, 1.10])
-        a_sig = np.array([250., 300., 210., 430., 470., 495.])
-        a_ref = np.array([450., 460., 470., 480., 490., 500.])
-        a_off = np.array([0.35, 0.30, 0.25, 0.20, 0.15, 0.10])
-        # make all of the previous vectors 2-D
-        for str in ['cwlngth', 'awlngth', 'c_sig', 'c_ref', 'c_off', 'a_sig', 'a_ref', 'a_off']:
-            exec(str + ' = np.tile(' + str + ', (npackets,1))')
-        # traw, Tcal, T, and PS will now be vectors, so:
-        traw = np.array([48355])
-        Tcal = np.array([20.0])
-        T = np.array([12.0])
-        PS = np.array([35.0])
-        for str in ['traw', 'Tcal', 'T', 'PS']:
-            exec(str + ' = np.tile(' + str + ', (npackets,1))')
 
         # expected outputs:
         # 1st c wavelength is out-of-range of the empirical TS corrections, so the DPA
-        # should return the fill value.
-        cpd_ts = np.array([fill_value, 4.807914, 5.156010, 2.788715, 1.655607, 1.171965])
+        # should return nan.
+        cpd_ts = np.array([[np.nan, 4.807914, 5.156010, 2.788715, 1.655607, 1.171965]])
         # to scatter-correct the 1st abs wavelength value, the c values are interpolated;
         # because the 1st c value is out-of-TScor-range, the 1st abs value will also be
-        # a fill value. and, the last abs value will also be a fill value because 761.2>755.0.
-        apd_ts_s_ref700 = np.array([fill_value, 1.021574, 3.235057, 0.099367, 0.000000, fill_value])
-        for str in ['cpd_ts', 'apd_ts_s_ref700']:
-            exec(str + ' = np.tile(' + str + ', (npackets,1))')
+        # a nan value. and, the last abs value will also be a nan value because 761.2>755.0.
+        apd_ts_s_ref700 = np.array([[np.nan, 1.021574, 3.235057, 0.099367, 0.000000, np.nan]])
+
+        cpd_ts = np.tile(cpd_ts, (npackets, 1))
+        apd_ts_s_ref700 = np.tile(apd_ts_s_ref700, (npackets, 1))
 
         # beam attenuation (beam c)  test
         c_ts = optfunc.opt_beam_attenuation(c_ref, c_sig, traw, cwlngth, c_off, Tcal,
@@ -554,7 +580,6 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_allclose(c_ts, cpd_ts, rtol=1e-6, atol=1e-6)
 
         # absorption test
-        a_ts_s700 = np.zeros(6)
         a_ts_s700 = optfunc.opt_optical_absorption(a_ref, a_sig, traw, awlngth, a_off, Tcal,
                                                    tbins, tarr, cpd_ts, cwlngth, T, PS)
         np.testing.assert_allclose(a_ts_s700, apd_ts_s_ref700, rtol=1e-6, atol=1e-6)
@@ -577,12 +602,15 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
             check function operation without iterating on the input data using for loop.
             check both cal coeff cases: (1) calcoeffs are scalars
                                         (2) calcoeffs are 1d arrays in time.
+        Modified by Russell Desiderio, April 21, 2015.
+            removed test using 1D data input array with scalar calcoeffs.
+            added scalar data with scalar calcoeff test.
         """
 
     # test inputs
-    Im = 1.3589
-    a0 = 2156849800.8
-    a1 = 2.586852835e-006
+    Im = np.array([1.3589])
+    a0 = np.array([2156849800.8])
+    a1 = np.array([2.586852835e-006])
 
     par_count = np.array([2159403328, 2159400384, 2159396992, 2159400384, 2159407488, 2159399296, 2159400384,
                           2159404800, 2159403904, 2159402240, 2159403200, 2159409728, 2159409792, 2159408320,
@@ -595,12 +623,13 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
                              8.999071318, 8.993896835, 8.992097014, 8.972748944, 8.97409881, 8.991197104,
                              8.979273293, 8.977923428, 8.971849034, 8.980623159])
 
-    # compute par values: scalar cal coeff case
-    par_calc = optfunc.opt_par_satlantic(par_count, a0, a1, Im)
+    # compute par value for 'scalar' in time case.
+    par_calc = optfunc.opt_par_satlantic(par_count[0], a0, a1, Im)
     # compare calculated results to expected
-    np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
+    np.testing.assert_allclose(par_calc, par_expected[0], rtol=0.000001, atol=0.000001)
 
-    # compute par values: tiled cal coeff case
+    # compute par values: time-vectorized cal coeff case
+    # all inputs and output are 1D arrays of shape (tval,)
     tval = par_count.shape[0]
     a0_tiled = np.tile(a0, tval)
     a1_tiled = np.tile(a1, tval)
@@ -627,12 +656,15 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
             check function operation without iterating on the input data using for loop.
             check both cal coeff cases: (1) calcoeffs are scalars
                                         (2) calcoeffs are 1d arrays in time.
+        Modified by Russell Desiderio, April 21, 2015.
+            removed test using 1D data input array with scalar calcoeffs.
+            added scalar data with scalar calcoeff test.
         """
 
     # test inputs
-    Im = 1.3589
-    a0 = 4381
-    a1 = 2904
+    Im = np.array([1.3589])
+    a0 = np.array([4381])
+    a1 = np.array([2904])
 
     par_count = np.array([4975, 4999, 5077, 5230, 5413, 5483, 5427, 5344, 5285, 5284,
                           5344, 5470, 5649, 5835, 6007, 11824, 4975, 4999, 5077, 5230,
@@ -645,11 +677,12 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
                              496.8256708, 2.176371115, 2.218183222, 2.359700693, 2.664053061,
                              3.08006158, 496.8256708])
 
-    par_calc = optfunc.opt_par_wetlabs(par_count, a0, a1, Im)
+    # compute par value for 'scalar' in time case.
+    par_calc = optfunc.opt_par_wetlabs(par_count[0], a0, a1, Im)
     # compare calculated results to expected
-    np.testing.assert_allclose(par_calc, par_expected, rtol=0.000001, atol=0.000001)
+    np.testing.assert_allclose(par_calc, par_expected[0], rtol=0.000001, atol=0.000001)
 
-    # compute par values: tiled cal coeff case
+    # compute par values: time-vectorized cal coeff case
     tval = par_count.shape[0]
     a0_tiled = np.tile(a0, tval)
     a1_tiled = np.tile(a1, tval)
@@ -676,20 +709,25 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
             check function operation without iterating on the input data using for loop.
             check both cal coeff cases: (1) calcoeffs are scalars
                                         (2) calcoeffs are 1d arrays in time.
+        Modified by Russell Desiderio, April 21, 2015.
+            removed test using 1D data input array with scalar calcoeffs.
+            added scalar data with scalar calcoeff test.
         """
 
     # test inputs
-    offset = 0.0101
-    scale = 5.897e-04
+    offset = np.array([0.0101])
+    scale = np.array([5.897e-04])
 
     par_volts = np.array([1.016793, 0.599800, 0.452400, 0.305000, 0.187000, 0.178900, 0.069100, 0.039600, 0.010100])
 
     par_expected = np.array([1707.13, 1000.00, 750.00, 500.00, 300.00, 286.25, 100.00, 50.00, 0.00])
-    par_calc = optfunc.opt_par_biospherical_mobile(par_volts, offset, scale)
-    # compare calculated results to expected
-    np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
 
-    # compute par values: tiled cal coeff case
+    # scalar time case
+    par_calc = optfunc.opt_par_biospherical_mobile(par_volts[0], offset, scale)
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected[0], rtol=0.01, atol=0.01)
+
+    # compute par values: time-vectorized cal coeff case
     tval = par_volts.shape[0]
     offset_tiled = np.tile(offset, tval)
     scale_tiled = np.tile(scale, tval)
@@ -715,21 +753,26 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
             check function operation without iterating on the input data using for loop.
             check both cal coeff cases: (1) calcoeffs are scalars
                                         (2) calcoeffs are 1d arrays in time.
+        Modified by Russell Desiderio, April 21, 2015.
+            removed test using 1D data input array with scalar calcoeffs.
+            added scalar data with scalar calcoeff test.
         """
 
     # test inputs
     #offset units = mvolts
-    offset = 10.1
-    scale = 5.897e-04 / (6.02 * 10**13)
+    offset = np.array([10.1])
+    scale = np.array([5.897e-04 / (6.02 * 10**13)])
 
     par_mvolts = np.array([1016.793, 599.800, 452.400, 305.000, 187.000, 178.900, 69.100, 39.600, 10.100])
 
     par_expected = np.array([1707.13, 1000.00, 750.00, 500.00, 300.00, 286.25, 100.00, 50.00, 0.00])
-    par_calc = optfunc.opt_par_biospherical_wfp(par_mvolts, offset, scale)
-    # compare calculated results to expected
-    np.testing.assert_allclose(par_calc, par_expected, rtol=0.01, atol=0.01)
 
-    # compute par values: tiled cal coeff case
+    # scalar case
+    par_calc = optfunc.opt_par_biospherical_wfp(par_mvolts[0], offset, scale)
+    # compare calculated results to expected
+    np.testing.assert_allclose(par_calc, par_expected[0], rtol=0.01, atol=0.01)
+
+    # compute par values: time-vectorized cal coeff case
     tval = par_mvolts.shape[0]
     offset_tiled = np.tile(offset, tval)
     scale_tiled = np.tile(scale, tval)
@@ -761,7 +804,10 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
             Set known output to be 2D row vector.
         Modified by Russell Desiderio, April 09, 2015.
             Added unit tests for multiple data packets and exception checking
-            Set known output for 1 data packet case to be 1D vector.
+            Set known output for 1 data packet case to be 1D array.
+        Modified by Russell Desiderio, April 21, 2015.
+            Conditioned inputs for 1 data packet case to be 2D row vectors.
+            Set known output for 1 data packet case back to 2D row vector.
         """
 #              counts         offset          scale        mrsn     Ed
         test_array = np.transpose(np.array([
@@ -776,13 +822,13 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
 
         ## one data packet case
         # set inputs
-        counts = test_array[0, :]
-        offset = test_array[1, :]
-        scale = test_array[2, :]
-        immersion_factor = test_array[3, :]
+        counts = test_array[[0], :]
+        offset = test_array[[1], :]
+        scale = test_array[[2], :]
+        immersion_factor = test_array[[3], :]
 
-        # set known output
-        Ed = test_array[-1, :]
+        # set known output to be a 2D row vector
+        Ed = test_array[[-1], :]
         #print Ed.shape
 
         # calculate the downwelling irradiance
@@ -794,7 +840,7 @@ class TestOptFunctionsUnit(BaseUnitTestCase):
         ###########################################################################
 
         ## multiple data packets case
-        ## cal coeffs will also be "tiled in time" by CI
+        ## cal coeffs will also be "time-vectorized" by CI
         # create 10 data packets
         z_value = 10
         zcounts = np.tile(counts, (z_value, 1))
