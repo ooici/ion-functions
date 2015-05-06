@@ -471,11 +471,11 @@ def vadcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
 
     Usage:
 
-        uu_cor = vadcp_beam_eastward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt)
+        uu_cor = vadcp_beam_eastward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt)
 
             where
 
-        uu_corr = east velocity profiles in Earth coordinates corrected for the
+        uu_cor = east velocity profiles in Earth coordinates corrected for the
                   magnetic declination (VELTURB-VLE_L1) [m s-1]
 
         b1 = "beam 1" velocity profiles in beam coordinates (VELTURB-B1_L0) [mm s-1]
@@ -541,18 +541,17 @@ def vadcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt):
 
     Usage:
 
-        vv_cor = vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf, lat, lon, z, dt)
+        vv_cor = vadcp_beam_northward(b1, b2, b3, b4, h, p, r, vf, lat, lon, z, dt)
 
             where
 
-        vv_corr = north velocity profiles in Earth coordinates corrected for the
+        vv_cor = north velocity profiles in Earth coordinates corrected for the
                   magnetic declination (VELTURB-VLN_L1) [m s-1]
 
         b1 = "beam 1" velocity profiles in beam coordinates (VELTURB-B1_L0) [mm s-1]
         b2 = "beam 2" velocity profiles in beam coordinates (VELTURB-B2_L0) [mm s-1]
         b3 = "beam 3" velocity profiles in beam coordinates (VELTURB-B3_L0) [mm s-1]
         b4 = "beam 4" velocity profiles in beam coordinates (VELTURB-B4_L0) [mm s-1]
-        b5 = "beam 5" velocity profiles in beam coordinates (VELTURB-B5_L0) [mm s-1]
         h = instrument's uncorrected magnetic heading [cdegrees]
         p = instrument pitch [cdegrees]
         r = instrument roll [cdegrees]
@@ -615,11 +614,12 @@ def vadcp_beam_vertical_est(b1, b2, b3, b4, h, p, r, vf):
 
     Usage:
 
-        ww_cor = vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf)
+        ww_est = vadcp_beam_vertical_est(b1, b2, b3, b4, h, p, r, vf)
 
             where
 
-        ww_corr = vertical velocity profiles in Earth coordinates (VELTURB-W5_L1) [m s-1]
+        ww_est = estimated vertical velocity profiles in Earth coordinates
+                 (VELTURB-W5_L1) [m s-1]
 
         b1 = "beam 1" velocity profiles in beam coordinates (VELTURB-B1_L0) [mm s-1]
         b2 = "beam 2" velocity profiles in beam coordinates (VELTURB-B2_L0) [mm s-1]
@@ -671,12 +671,12 @@ def vadcp_beam_vertical_true(b1, b2, b3, b4, b5, h, p, r, vf):
 
     Usage:
 
-        ww_cor = vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf)
+        ww_true = vadcp_beam_northward(b1, b2, b3, b4, b5, h, p, r, vf)
 
             where
 
-        ww_corr = true vertical velocity profiles in Earth coordinates
-            (VELTURB-W5_L1) [m s-1]
+        ww_true = true vertical velocity profiles in Earth coordinates
+                  (VELTURB-W5_L1) [m s-1]
 
         b1 = "beam 1" velocity profiles in beam coordinates (VELTURB-B1_L0) [mm s-1]
         b2 = "beam 2" velocity profiles in beam coordinates (VELTURB-B2_L0) [mm s-1]
@@ -694,7 +694,7 @@ def vadcp_beam_vertical_true(b1, b2, b3, b4, b5, h, p, r, vf):
     b2 = np.atleast_2d(b2)
     b3 = np.atleast_2d(b3)
     b4 = np.atleast_2d(b4)
-    b5 = np.atleast_2d(b4)
+    b5 = np.atleast_2d(b5)
     h = np.atleast_1d(h) / 100.  # scale cdegrees input to degrees
     p = np.atleast_1d(p) / 100.  # scale cdegrees input to degrees
     r = np.atleast_1d(r) / 100.  # scale cdegrees input to degrees
@@ -709,7 +709,7 @@ def vadcp_beam_vertical_true(b1, b2, b3, b4, b5, h, p, r, vf):
     # scale upward velocity to m/s
     ww = ww / 1000.  # mm/s -> m/s
 
-    # return the Upward Velocity Profile
+    # return the true Upward Velocity Profile
     return ww
 
 
@@ -728,7 +728,7 @@ def vadcp_beam_error(b1, b2, b3, b4):
 
     Usage:
 
-        e = vadcp_beam_northward(b1, b2, b3, b4, b5)
+        e = vadcp_beam_northward(b1, b2, b3, b4)
 
             where
 
@@ -753,132 +753,6 @@ def vadcp_beam_error(b1, b2, b3, b4):
 
     # return the Error Velocity Profile
     return e
-
-
-def enthalpy_SSO_0_p(p):
-    r"""This function calculates enthalpy at the Standard Ocean Salinty, SSO,
-    and at a Conservative Temperature of zero degrees C, as a function of
-    pressure, p, in dbar, using a streamlined version of the 48-term CT
-    version of the Gibbs function, that is, a streamlined version of the
-    code "enthalpy(SA,CT,p).
-    Examples
-    --------
-    >>> import gsw
-    >>> p = np.array([10, 50, 125, 250, 600, 1000])
-    >>> gsw.library.enthalpy_SSO_0_p(p)
-    array([   97.26388276,   486.27439004,  1215.47518168,  2430.24919716,
-            5827.90973888,  9704.32296903])
-    Modifications:
-    VERSION NUMBER: 3.03 (29th April, 2013)
-    References
-    ----------
-    .. [1] McDougall T.J., P.M. Barker, R. Feistel and D.R. Jackett, 2013:  A
-    computationally efficient 48-term expression for the density of seawater in
-    terms of Conservative Temperature, and related properties of seawater.  To
-    be submitted to J. Atm. Ocean. Technol., xx, yyy-zzz.
-
-    .. [2] https://pypi.python.org/pypi/gsw/
-    """
-    v01 = 9.998420897506056e+2
-    v05 = -6.698001071123802
-    v08 = -3.988822378968490e-2
-    v12 = -2.233269627352527e-2
-    v15 = -1.806789763745328e-4
-    v17 = -3.087032500374211e-7
-    v20 = 1.550932729220080e-10
-    v21 = 1.0
-    v26 = -7.521448093615448e-3
-    v31 = -3.303308871386421e-5
-    v36 = 5.419326551148740e-6
-    v37 = -2.742185394906099e-5
-    v41 = -1.105097577149576e-7
-    v43 = -1.119011592875110e-10
-    v47 = -1.200507748551599e-15
-    SSO = 35.16504
-    a0 = v21 + SSO * (v26 + v36 * SSO + v31 * np.sqrt(SSO))
-    a1 = v37 + v41 * SSO
-    a2 = v43
-    a3 = v47
-    b0 = v01 + SSO * (v05 + v08 * np.sqrt(SSO))
-    b1 = 0.5 * (v12 + v15 * SSO)
-    b2 = v17 + v20 * SSO
-    b1sq = b1 ** 2
-    sqrt_disc = np.sqrt(b1sq - b0 * b2)
-    N = a0 + (2 * a3 * b0 * b1 / b2 - a2 * b0) / b2
-    M = a1 + (4 * a3 * b1sq / b2 - a3 * b0 - 2 * a2 * b1) / b2
-    A = b1 - sqrt_disc
-    B = b1 + sqrt_disc
-    part = (N * b2 - M * b1) / (b2 * (B - A))
-    db2Pascal = 10000.0
-    return (db2Pascal * (p * (a2 - 2 * a3 * b1 / b2 + 0.5 * a3 * p) / b2 +
-            (M / (2 * b2)) * np.log(1 + p * (2 * b1 + b2 * p) / b0) + part *
-            np.log(1 + (b2 * p * (B - A)) / (A * (B + b2 * p)))))
-
-
-def z_from_p(p, lat, geo_strf_dyn_height=0):
-    r"""Calculates height from sea pressure using the computationally-efficient
-    48-term expression for density in terms of SA, CT and p (McDougall et
-    al., 2011).  Dynamic height anomaly, geo_strf_dyn_height, if provided, must
-    be computed with its pr=0 (the surface).
-
-    Parameters
-    ----------
-    p : array_like
-        pressure [dbar]
-    lat : array_like
-          latitude in decimal degrees north [-90..+90]
-    geo_strf_dyn_height : float, optional
-                          dynamic height anomaly [ m :sup:`2` s :sup:`-2` ]
-
-    Returns
-    -------
-    z : array_like
-        height [m]
-
-    See Also
-    --------
-    # FIXME: enthalpy_SSO_0_CT25, changed!
-
-
-    Examples
-    --------
-    >>> p = [10, 50, 125, 250, 600, 1000]
-    >>> lat = 4
-    >>> z_from_p(p, lat)
-    array([  -9.94460074,  -49.71817465, -124.2728275 , -248.47044828,
-           -595.82618014, -992.0931748 ])
-
-    Notes
-    -----
-    At sea level z = 0, and since z (HEIGHT) is defined to be positive upwards,
-    it follows that while z is positive in the atmosphere, it is NEGATIVE in
-    the ocean.
-
-    References
-    ----------
-    .. [1] IOC, SCOR and IAPSO, 2010: The international thermodynamic equation
-    of seawater - 2010: Calculation and use of thermodynamic properties.
-    Intergovernmental Oceanographic Commission, Manuals and Guides No. 56,
-    UNESCO (English), 196 pp.
-
-    .. [2] McDougall T.J., P.M. Barker, R. Feistel and D.R. Jackett, 2011:  A
-    computationally efficient 48-term expression for the density of seawater
-    in terms of Conservative Temperature, and related properties of seawater.
-
-    .. [3] Moritz (2000) Goedetic reference system 1980. J. Geodesy, 74,
-    128-133.
-
-    .. [4] https://pypi.python.org/pypi/gsw/
-    """
-
-    X = np.sin(np.deg2rad(lat))
-    sin2 = X ** 2
-    B = 9.780327 * (1.0 + (5.2792e-3 + (2.32e-5 * sin2)) * sin2)
-    gamma = 2.26e-07
-    A = -0.5 * gamma * B
-    C = enthalpy_SSO_0_p(p) - geo_strf_dyn_height
-
-    return -2 * C / (B + np.sqrt(B ** 2 - 4 * A * C))
 
 
 # Calculates bin depths tRDI ADCPs configured to output data using the PD0 and PD12 formats
@@ -1302,3 +1176,129 @@ def magnetic_correction(theta, u, v):
 
     # return corrected u and v values
     return (u_cor, v_cor)
+
+
+def enthalpy_SSO_0_p(p):
+    r"""This function calculates enthalpy at the Standard Ocean Salinty, SSO,
+    and at a Conservative Temperature of zero degrees C, as a function of
+    pressure, p, in dbar, using a streamlined version of the 48-term CT
+    version of the Gibbs function, that is, a streamlined version of the
+    code "enthalpy(SA,CT,p).
+    Examples
+    --------
+    >>> import gsw
+    >>> p = np.array([10, 50, 125, 250, 600, 1000])
+    >>> gsw.library.enthalpy_SSO_0_p(p)
+    array([   97.26388276,   486.27439004,  1215.47518168,  2430.24919716,
+            5827.90973888,  9704.32296903])
+    Modifications:
+    VERSION NUMBER: 3.03 (29th April, 2013)
+    References
+    ----------
+    .. [1] McDougall T.J., P.M. Barker, R. Feistel and D.R. Jackett, 2013:  A
+    computationally efficient 48-term expression for the density of seawater in
+    terms of Conservative Temperature, and related properties of seawater.  To
+    be submitted to J. Atm. Ocean. Technol., xx, yyy-zzz.
+
+    .. [2] https://pypi.python.org/pypi/gsw/
+    """
+    v01 = 9.998420897506056e+2
+    v05 = -6.698001071123802
+    v08 = -3.988822378968490e-2
+    v12 = -2.233269627352527e-2
+    v15 = -1.806789763745328e-4
+    v17 = -3.087032500374211e-7
+    v20 = 1.550932729220080e-10
+    v21 = 1.0
+    v26 = -7.521448093615448e-3
+    v31 = -3.303308871386421e-5
+    v36 = 5.419326551148740e-6
+    v37 = -2.742185394906099e-5
+    v41 = -1.105097577149576e-7
+    v43 = -1.119011592875110e-10
+    v47 = -1.200507748551599e-15
+    SSO = 35.16504
+    a0 = v21 + SSO * (v26 + v36 * SSO + v31 * np.sqrt(SSO))
+    a1 = v37 + v41 * SSO
+    a2 = v43
+    a3 = v47
+    b0 = v01 + SSO * (v05 + v08 * np.sqrt(SSO))
+    b1 = 0.5 * (v12 + v15 * SSO)
+    b2 = v17 + v20 * SSO
+    b1sq = b1 ** 2
+    sqrt_disc = np.sqrt(b1sq - b0 * b2)
+    N = a0 + (2 * a3 * b0 * b1 / b2 - a2 * b0) / b2
+    M = a1 + (4 * a3 * b1sq / b2 - a3 * b0 - 2 * a2 * b1) / b2
+    A = b1 - sqrt_disc
+    B = b1 + sqrt_disc
+    part = (N * b2 - M * b1) / (b2 * (B - A))
+    db2Pascal = 10000.0
+    return (db2Pascal * (p * (a2 - 2 * a3 * b1 / b2 + 0.5 * a3 * p) / b2 +
+            (M / (2 * b2)) * np.log(1 + p * (2 * b1 + b2 * p) / b0) + part *
+            np.log(1 + (b2 * p * (B - A)) / (A * (B + b2 * p)))))
+
+
+def z_from_p(p, lat, geo_strf_dyn_height=0):
+    r"""Calculates height from sea pressure using the computationally-efficient
+    48-term expression for density in terms of SA, CT and p (McDougall et
+    al., 2011).  Dynamic height anomaly, geo_strf_dyn_height, if provided, must
+    be computed with its pr=0 (the surface).
+
+    Parameters
+    ----------
+    p : array_like
+        pressure [dbar]
+    lat : array_like
+          latitude in decimal degrees north [-90..+90]
+    geo_strf_dyn_height : float, optional
+                          dynamic height anomaly [ m :sup:`2` s :sup:`-2` ]
+
+    Returns
+    -------
+    z : array_like
+        height [m]
+
+    See Also
+    --------
+    # FIXME: enthalpy_SSO_0_CT25, changed!
+
+
+    Examples
+    --------
+    >>> p = [10, 50, 125, 250, 600, 1000]
+    >>> lat = 4
+    >>> z_from_p(p, lat)
+    array([  -9.94460074,  -49.71817465, -124.2728275 , -248.47044828,
+           -595.82618014, -992.0931748 ])
+
+    Notes
+    -----
+    At sea level z = 0, and since z (HEIGHT) is defined to be positive upwards,
+    it follows that while z is positive in the atmosphere, it is NEGATIVE in
+    the ocean.
+
+    References
+    ----------
+    .. [1] IOC, SCOR and IAPSO, 2010: The international thermodynamic equation
+    of seawater - 2010: Calculation and use of thermodynamic properties.
+    Intergovernmental Oceanographic Commission, Manuals and Guides No. 56,
+    UNESCO (English), 196 pp.
+
+    .. [2] McDougall T.J., P.M. Barker, R. Feistel and D.R. Jackett, 2011:  A
+    computationally efficient 48-term expression for the density of seawater
+    in terms of Conservative Temperature, and related properties of seawater.
+
+    .. [3] Moritz (2000) Goedetic reference system 1980. J. Geodesy, 74,
+    128-133.
+
+    .. [4] https://pypi.python.org/pypi/gsw/
+    """
+
+    X = np.sin(np.deg2rad(lat))
+    sin2 = X ** 2
+    B = 9.780327 * (1.0 + (5.2792e-3 + (2.32e-5 * sin2)) * sin2)
+    gamma = 2.26e-07
+    A = -0.5 * gamma * B
+    C = enthalpy_SSO_0_p(p) - geo_strf_dyn_height
+
+    return -2 * C / (B + np.sqrt(B ** 2 - 4 * A * C))
