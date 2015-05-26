@@ -355,10 +355,10 @@ def calc_l2_totlgas_smpco2con(port_timestamp_sampleint, L0_dissgas_sampleint,
                   PSU - 0.00846934 * np.sqrt(PSU**3) + np.log(1 - 0.001005 * PSU)))
 
     r1 = (pressure * (1.758163 - 0.008763 * t - pressure * ((7.32 * 10**-6) -
-         (2.0845 * 10**-7)) * t) / ((t + 273.15) * 83.131))
+         (2.0845 * 10**-7 * t))) / ((t + 273.15) * 83.131))
 
-    r2 = (pressure * (-1.09075 - 0.00151 * t + pressure * ((2.69 * 10**-6) -
-         (3.506 * 10**-7)) * t) / ((t + 273.15) * 83.131))
+    r2 = (pressure * (1.09075 + 0.00151 * t + pressure * ((2.69 * 10**-6) -
+         (3.506 * 10**-7 * t))) / ((t + 273.15) * 83.131))
 
     K1 = np.exp(r1) * K1T
 
@@ -558,10 +558,10 @@ def calc_l2_totlgas_bkgco2con(port_timestamp_bkgndint, L0_dissgas_bkgndint,
                   PSU - 0.00846934 * np.sqrt(PSU**3) + np.log(1 - 0.001005 * PSU)))
 
     r1 = (pressure * (1.758163 - 0.008763 * t - pressure * ((7.32 * 10**-6) -
-         (2.0845 * 10**-7)) * t) / ((t + 273.15) * 83.131))
+         (2.0845 * 10**-7 * t))) / ((t + 273.15) * 83.131))
 
-    r2 = (pressure * (-1.09075 - 0.00151 * t + pressure * ((2.69 * 10**-6) -
-         (3.506 * 10**-7)) * t) / ((t + 273.15) * 83.131))
+    r2 = (pressure * (1.09075 + 0.00151 * t + pressure * ((2.69 * 10**-6) -
+         (3.506 * 10**-7 * t))) / ((t + 273.15) * 83.131))
 
     K1 = np.exp(r1) * K1T
 
