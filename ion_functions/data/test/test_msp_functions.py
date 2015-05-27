@@ -583,18 +583,26 @@ class TestMspFunctionsUnit(BaseUnitTestCase):
                                                            data.calibration_table)
 
     #put all calculated l1 gas conc values in one array for comparison
-    msp_l1_calculated = np.array([np.round(smpmethcon), np.round(smpethcon),
-                                  np.round(smph2con), np.round(smparcon), np.round(smph2scon),
-                                  np.round(smpo2con), np.round(smpco2con), np.round(bkgmethcon),
-                                  np.round(bkgethcon), np.round(bkgh2con), np.round(bkgarcon),
-                                  np.round(bkgh2scon), np.round(bkgo2con), np.round(bkgco2con),
-                                  np.round(cal1methcon), np.round(cal1co2con), np.round(cal2methcon),
-                                  np.round(cal2co2con)])
+    msp_l1_calculated = np.array([smpmethcon, smpethcon,
+                                  smph2con, smparcon, smph2scon,
+                                  smpo2con, smpco2con, bkgmethcon,
+                                  bkgethcon, bkgh2con, bkgarcon,
+                                  bkgh2scon, bkgo2con, bkgco2con,
+                                  cal1methcon, cal1co2con, cal2methcon,
+                                  cal2co2con])
+
+    #put all calculated l2 gas conc values in one array for comparison
+    msp_l2_calculated = np.array([smpco2con_totalgas, smph2scon_totalgas, bkgco2con_totalgas, bkgh2scon_totalgas])
 
     #expected output results
-    #I had to make atol=4 for the nose tests to work because there are slight differences between my results and the l1 test data
+    #I had to make atol=2.5 for the nose tests to work because there are differences between my results and the l1 & l2 test data
 
-    msp_l1_expected = np.array([0, 0, 0, 8, 0, 533, 4, 0, 0, 0, 10, 0, 266, 4, 177, 10, 0, 0])
+    msp_l1_expected = np.array([0, 0, 0, 7.78, 0, 546.66, 3.89, 0, 0, 0, 10.45, 0, 272.06, 3.84, 176.47, 9.56, 0, 0])
 
-    # compare calculated results to expected results
-    np.testing.assert_allclose(msp_l1_calculated, msp_l1_expected, rtol=0.000001, atol=4)
+    # compare calculated L1 results to expected results
+    np.testing.assert_allclose(msp_l1_calculated, msp_l1_expected, rtol=0.000001, atol=2.5)
+
+    msp_l2_expected = np.array([4839.58, 0, 3008.87, 0])
+
+    # compare calculated L2 results to expected results
+    np.testing.assert_allclose(msp_l2_calculated, msp_l2_expected, rtol=0.000001, atol=2.5)
