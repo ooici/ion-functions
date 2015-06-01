@@ -72,7 +72,10 @@ def fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat, lon, timest
     Implemented by:
 
         2015-02-13: Russell Desiderio. Initial code.
-
+        2015-05-29: Russell Desiderio. Time-vectorized calcoeffs by removing exception checking of the
+                                       lengths of calcoeff arrays. This is now done by checking the
+                                       shapes of these variables in the fsi_acm_compass_cal routine
+                                       which is called by fsi_acm_nautical_heading.
     Notes:
 
         The VEL3D series A and L instruments are FSI current meters modified for use on a
@@ -105,12 +108,6 @@ def fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat, lon, timest
             >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
             MMP-User Manual-Rev-E-WEB.pdf)
     """
-    # before calculating headings, make sure that the cal vectors are sized correctly.
-    lFlag = len(hdg_cal) != 8 or len(hx_cal) != 8 or len(hy_cal) != 8
-    if lFlag:
-        raise ValueError('Compass calibration vectors hdg_cal, hx_cal, and hy_cal must '
-                         'each contain 8 elements.')
-
     # calculate the headings from the field direction cosines hx and hy and the cal data.
     hdg = fsi_acm_nautical_heading(hx, hy, hdg_cal, hx_cal, hy_cal)
 
@@ -155,6 +152,10 @@ def fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat, lon, times
     Implemented by:
 
         2015-02-13: Russell Desiderio. Initial code.
+        2015-05-29: Russell Desiderio. Time-vectorized calcoeffs by removing exception checking of the
+                                       lengths of calcoeff arrays. This is now done by checking the
+                                       shapes of these variables in the fsi_acm_compass_cal routine
+                                       which is called by fsi_acm_nautical_heading.
 
     Notes:
 
@@ -188,12 +189,6 @@ def fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat, lon, times
             >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
             MMP-User Manual-Rev-E-WEB.pdf)
     """
-    # before calculating headings, make sure that the cal vectors are sized correctly.
-    lFlag = len(hdg_cal) != 8 or len(hx_cal) != 8 or len(hy_cal) != 8
-    if lFlag:
-        raise ValueError('Compass calibration vectors hdg_cal, hx_cal, and hy_cal must '
-                         'each contain 8 elements.')
-
     # calculate the headings from the field direction cosines hx and hy and the cal data.
     hdg = fsi_acm_nautical_heading(hx, hy, hdg_cal, hx_cal, hy_cal)
 
@@ -1795,6 +1790,8 @@ def fsi_acm_compass_cal(hdg_cal, hx_cal, hy_cal):
     Implemented by:
 
         2015-02-16: Russell Desiderio. Initial code.
+        2015-06-01: Russell Desiderio. Adjusted code to process vertically stacked (in time)
+                                       input variables.
 
     Notes:
 
@@ -1842,19 +1839,24 @@ def fsi_acm_compass_cal(hdg_cal, hx_cal, hy_cal):
             >> REFERENCE >> Data Product Specification Artifacts >> 1341-00792_VELPTMN >>
             MMP-User Manual-Rev-E-WEB.pdf). see p. 8-18 and Appendix D.
     """
-    # make sure that the cal vectors are sized correctly.
-    lFlag = len(hdg_cal) != 8 or len(hx_cal) != 8 or len(hy_cal) != 8
+    # make sure that the cal variables are sized correctly.
+    # variables should be passed to DPAs as 2D vectors, but make sure to avoid tuple out of range.
+    hdg_cal = np.atleast_2d(hdg_cal)
+    hx_cal = np.atleast_2d(hx_cal)
+    hy_cal = np.atleast_2d(hy_cal)
+    lFlag = hdg_cal.shape[1] != 8 or hx_cal.shape[1] != 8 or hy_cal.shape[1] != 8
     if lFlag:
-        raise ValueError('Compass calibration vectors hdg_cal, hx_cal, and hy_cal must '
-                         'each contain 8 elements.')
+        raise ValueError('Each row of the compass calibration variables hdg_cal, '
+                         'hx_cal, and hy_cal must contain 8 elements.')
 
     # the offsets are found by taking the vector average.
-    hx_offset = np.mean(hx_cal)
-    hy_offset = np.mean(hy_cal)
+    # return column vectors so that python's default broadcasting action will give desired result.
+    hx_offset = np.mean(hx_cal, axis=1, keepdims=True)
+    hy_offset = np.mean(hy_cal, axis=1, keepdims=True)
 
     # the scaling factors are calculated as
-    hx_scale = np.max(np.abs(hx_cal - hx_offset))
-    hy_scale = np.max(np.abs(hy_cal - hy_offset))
+    hx_scale = np.max(np.abs(hx_cal - hx_offset), axis=1, keepdims=True)
+    hy_scale = np.max(np.abs(hy_cal - hy_offset), axis=1, keepdims=True)
 
     # the x and y offsets and scaling factors will be used to correct the field data.
 
@@ -1871,7 +1873,14 @@ def fsi_acm_compass_cal(hdg_cal, hx_cal, hy_cal):
     # correct compass differences resulting from the wrap-around discontinuity
     mask = np.abs(compass_bias) > 180.0
     compass_bias[mask] = compass_bias[mask] - np.sign(compass_bias[mask]) * 360.0
-    # and take the mean, final answer
-    compass_bias = np.mean(compass_bias)
+    # and take the mean, final answer. for symmetry, return answer as a column vector, but ...
+    compass_bias = np.mean(compass_bias, axis=1, keepdims=True)
+
+    # now return all arguments as 1D arrays.
+    hx_offset = hx_offset.reshape(-1)
+    hy_offset = hy_offset.reshape(-1)
+    hx_scale = hx_scale.reshape(-1)
+    hy_scale = hy_scale.reshape(-1)
+    compass_bias = compass_bias.reshape(-1)
 
     return hx_offset, hy_offset, hx_scale, hy_scale, compass_bias

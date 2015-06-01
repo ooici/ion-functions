@@ -363,6 +363,11 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         Implemented by:
 
             2015-02-20: Russell Desiderio. Initial code.
+            2015-05-29: Russell Desiderio.
+                        Time vectorized cal coeffs hdg_cal, hx_cal, hy_cal (fsi_acm_rsn functions):
+                            Single time point case, shapes were changed from [8,] to [1,8].
+                            Multiple time point case, these arrays were tiled in the time dimension.
+                        Added two time point, different cals unit test.
 
         References:
 
@@ -397,29 +402,52 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         calc = fsi_acm_up_profiler_descending(vp1, vp2, vp3)
         np.testing.assert_allclose(calc, xpctd_dsc, rtol=0.0, atol=1.e-2)
 
-        ###
-        ### fsi_acm_compass_cal test
-        ###
+        #############################
+        ### fsi_acm_compass_cal tests
+        #############################
+        #
+        ### these are single time point cases:
+        ### calcoeffs will be supplied by CI as row vectors, not 1D arrays.
+        #
         # (a)  trivial perfect cal case
-        xpctd = np.array([0.0, 0.0, 1.0, 1.0, 0.0])  # offsets are zero, scale factors are 1, bias is 0
-        hdg_percal = np.array([0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0])
-        hx_percal = np.array([1.0, 1.0, 0.0, -1.0, -1.0, -1.0, +0.0, +1.0])
-        hy_percal = np.array([0.0, 1.0, 1.0, +1.0, +0.0, -1.0, -1.0, -1.0])
+        # offsets are zero, scale factors are 1, bias is 0
+        xpctd = (np.array([0.]), np.array([0.]), np.array([1.]), np.array([1.]), np.array([0.]))
+        hdg_percal = np.array([[0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0]])
+        hx_percal = np.array([[1.0, 1.0, 0.0, -1.0, -1.0, -1.0, +0.0, +1.0]])
+        hy_percal = np.array([[0.0, 1.0, 1.0, +1.0, +0.0, -1.0, -1.0, -1.0]])
         calc = fsi_acm_compass_cal(hdg_percal, hx_percal, hy_percal)
         np.testing.assert_allclose(calc, xpctd, rtol=0.0, atol=1.e-12)
         # (b)  using MMP manual example (p 8-19)
+        #
         # the expected values are hx and hy offsets, hx and hy scaling factors, and compass bias.
-        xpctd_MMP_cal = np.array([0.01763750, -0.04673750, 0.34686250, 0.33813750, 7.46424566])
+        # as in case (a), the xpctd arguments are actually each 1-element 1D arrays; this is
+        # "up-dimensioned" by the action of the assertion testing to a column vector, so,
+        # equivalently:
+        xpctd_MMP_cal = np.array([[0.01763750], [-0.04673750], [0.34686250],
+                                  [0.33813750], [7.46424566]])
         # convert the manual's cartesian reference directions to nautical
-        hdg_cal = np.array([0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0])
-        hx_cal = np.array([0.3645, 0.2383, -0.0246, -0.2508, -0.3212, -0.1979, 0.0511, 0.2817])
-        hy_cal = np.array([0.0008, 0.2321, 0.2914, 0.1515, -0.1064, -0.3218, -0.3652, -0.2563])
+        hdg_cal = np.array([[0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0]])
+        hx_cal = np.array([[0.3645, 0.2383, -0.0246, -0.2508, -0.3212, -0.1979, 0.0511, 0.2817]])
+        hy_cal = np.array([[0.0008, 0.2321, 0.2914, 0.1515, -0.1064, -0.3218, -0.3652, -0.2563]])
         calc = fsi_acm_compass_cal(hdg_cal, hx_cal, hy_cal)
         np.testing.assert_allclose(calc, xpctd_MMP_cal, rtol=0.0, atol=1.e-6)
 
-        ###
+        #############################################################################
+        # for all but the last of the remaining test sets, 4 time points will be used.
+        # therefore, the calcoeff arrays will be time-vectorized by tiling so that
+        # the lead dimension of the resulting 2D array will be 4.
+        npoints = 4
+        hdg_percal_tv = np.tile(hdg_percal, (npoints, 1))
+        hx_percal_tv = np.tile(hx_percal, (npoints, 1))
+        hy_percal_tv = np.tile(hy_percal, (npoints, 1))
+        hdg_cal_tv = np.tile(hdg_cal, (npoints, 1))
+        hx_cal_tv = np.tile(hx_cal, (npoints, 1))
+        hy_cal_tv = np.tile(hy_cal, (npoints, 1))
+        #############################################################################
+
+        #################################
         ### fsi_acm_nautical_heading test
-        ###
+        #################################
         rt3 = np.sqrt(3.0)
         # pick a point in each quadrant.
         #
@@ -452,16 +480,21 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         #
         # (a)  trivial perfect cal case
         xpctd = np.array([30.0, 120.0, 210.0, 300.0])
-        calc = fsi_acm_nautical_heading(hx, hy, hdg_percal, hx_percal, hy_percal)
+        calc = fsi_acm_nautical_heading(hx, hy, hdg_percal_tv, hx_percal_tv, hy_percal_tv)
         np.testing.assert_allclose(calc, xpctd, rtol=0.0, atol=1.e-12)
         # (b)  using calibration data from the example in the MMP manual
         xpctd_MMP_hdg = np.array([24.59490, 111.68440, 201.73555, 292.14246])
-        calc = fsi_acm_nautical_heading(hx, hy, hdg_cal, hx_cal, hy_cal)
+        calc = fsi_acm_nautical_heading(hx, hy, hdg_cal_tv, hx_cal_tv, hy_cal_tv)
         np.testing.assert_allclose(calc, xpctd_MMP_hdg, rtol=0.0, atol=1.e-4)
 
-        ###
+        ####################################
         ### fsi_acm_sio east and north tests
-        ###
+        ####################################
+        #
+        # the sio instruments output heading directly, and do not correct the field
+        # data using compass cals. therefore, there are no calcoeffs to time-vectorize
+        # in the tests in this section.
+        #
         # figure out OOI timestamp for Feb 1, 2011 at midnight [sec since 1900_01_01]
         ts_unix_time = 1296518400.0  # midnight, Feb 1, 2011, sec since 1970_01_01
         delta_epoch = 2208988800.0  # OOI time for midnight 1970_01_01 [sec since 1900_01_01]
@@ -538,9 +571,9 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
         np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
 
-        ###
+        ####################################
         ### fsi_acm_rsn east and north tests
-        ###
+        ####################################
         # (a) use fsi_acm_compass_cal and fsi_acm_nautical_heading test set-up along with sio
         #     vp1 and vp3 values and a perfect cal so that the expected values can be predicted
         #     on geometrical grounds.
@@ -551,8 +584,8 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         #     add columns; so, all 4 angles should be 210 degrees             [210, 210,  210, 210]
         u_xpctd = np.zeros(4) - rt3/2.0  # cos(210)
         v_xpctd = np.zeros(4) - 0.5      # sin(210)
-        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
-        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
+        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_percal_tv, hx_percal_tv, hy_percal_tv, lat, lon, ts)
+        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_percal_tv, hx_percal_tv, hy_percal_tv, lat, lon, ts)
         np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
         np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
         # (b) fix (vp1, vp3) and vary (hx, hy), perfect cal case
@@ -570,8 +603,8 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         #     predicted:                   [-120, 150,  60, -30]
         u_xpctd = np.array([-1.0, -rt3, 1.0, +rt3]) / 2.0
         v_xpctd = np.array([-rt3, +1.0, rt3, -1.0]) / 2.0
-        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
-        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
+        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_percal_tv, hx_percal_tv, hy_percal_tv, lat, lon, ts)
+        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_percal_tv, hx_percal_tv, hy_percal_tv, lat, lon, ts)
         np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
         np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
         # (c) fix (hx, hy) and vary (vp1, vp3), perfect cal
@@ -589,18 +622,20 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         #     predicted:                   [  30,  120,  210,  300]
         u_xpctd = np.array([rt3, -1.0, -rt3, +1.0]) / 2.0
         v_xpctd = np.array([1.0, +rt3, -1.0, -rt3]) / 2.0
-        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
-        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_percal, hx_percal, hy_percal, lat, lon, ts)
+        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_percal_tv, hx_percal_tv, hy_percal_tv, lat, lon, ts)
+        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_percal_tv, hx_percal_tv, hy_percal_tv, lat, lon, ts)
         np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
         np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
         # (d) non-perfect cal case, work through by hand
+        #     single time point.
         vp1 = 100.0 * rt3 / 2.0
         vp3 = 100.0 * 1.0 / 2.0
         hx = -rt3
         hy = -1.0
         #
-        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat[0], lon[0], ts[0])
-        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat[0], lon[0], ts[0])
+        # make sure the shapes of the lat, lon, and ts variables are (1,) as CI will supply them.
+        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat[[0]], lon[[0]], ts[[0]])
+        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_cal, hx_cal, hy_cal, lat[[0]], lon[[0]], ts[[0]])
         # step through by stages
         u_inst_coord = -(vp1 + vp3) / np.sqrt(2.0)
         v_inst_coord = (vp1 - vp3) / np.sqrt(2.0)
@@ -616,3 +651,23 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         v_xpctd = speed * np.sin(angle_cart)
         np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
         np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
+
+        # (e) two time point case, different cals.
+        #         1st point: case (d) immediately above
+        #         2nd point: 1st point of case (c)
+        #     these cases have identical vp1, vp3, hx, hy, lat, lon, and ts, but different cals.
+        vp1 = np.array([vp1, vp1])
+        vp3 = np.array([vp3, vp3])
+        hx = np.array([hx, hx])
+        hy = np.array([hy, hy])
+        hdg_2cals = np.vstack([hdg_cal, hdg_percal])
+        hx_2cals = np.vstack([hx_cal, hx_percal])
+        hy_2cals = np.vstack([hy_cal, hy_percal])
+        u_xpctd = np.array([u_xpctd, rt3 / 2.0])
+        v_xpctd = np.array([v_xpctd, 0.5])
+        u_calc = fsi_acm_rsn_east(vp1, vp3, hx, hy, hdg_2cals, hx_2cals, hy_2cals, lat[0:2], lon[0:2], ts[0:2])
+        v_calc = fsi_acm_rsn_north(vp1, vp3, hx, hy, hdg_2cals, hx_2cals, hy_2cals, lat[0:2], lon[0:2], ts[0:2])
+
+        np.testing.assert_allclose(u_calc, u_xpctd, rtol=0.0, atol=1.e-6)
+        np.testing.assert_allclose(v_calc, v_xpctd, rtol=0.0, atol=1.e-6)
+
