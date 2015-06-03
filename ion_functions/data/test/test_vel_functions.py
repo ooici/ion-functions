@@ -60,6 +60,24 @@ VU_EXPECTED = np.array([
     -0.011, -0.006, -0.014, -0.02, -0.017, -0.02,
     0.013, -0.016, -0.011, -0.045])
 
+# input arguments to the vel3dk series of unit tests.
+HDG = 10. * np.array(
+    [0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
+PTCH = 10. * np.array([
+    -20.10, -5.82, 0.0, -10.26, -8.09, -1.36, 5.33, 9.96, 13.68, 26.77])
+RLL = 10. * np.array([
+    -15.0, -11.67, -8.33, -5.0, 0.0, 1.67, 5.0, 8.33, 11.67, 15.0])
+VEL0 = np.array([
+    0, 6305, 6000, 7810, 10048, 11440, -10341, -10597, 9123, -12657])
+VEL1 = np.array([
+    0, 1050, 856, -1672, 3593, -2487, -5731, -3085, -1987, 2382])
+VEL2 = np.array([
+    7628, 0, 4974, -4204, 4896, 5937, 6480, -6376, -7271, -7576])
+VSCALE = np.array([-4])
+
+# the integer fill value for all integer variables is
+FILL = -999999999
+
 
 @attr('UNIT', group='func')
 class TestVelFunctionsUnit(BaseUnitTestCase):
@@ -164,17 +182,31 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
 
     def test_vel3dk(self):
         """
-        Tests functions vel3dk_mag_corr_east and vel3dk_mag_corr_north
+        Tests functions vel3dk_east, vel3dk_north, and vel3dk_up
         from the ion_functions.data.vel_functions module using test data
-        from the VELPTMN DPS.
+        from the VELPTMN DPS. Tests normal operation, when the beams
+        variable does not contain actionable fill values (fill values in
+        one of the first 4 columns).
 
         Implemented by:
 
-        2013-04-17: Stuart Pearce. Initial code.
+        2014-03-06: Stuart Pearce. Initial code, vel3dk_up.
+        2013-04-17: Stuart Pearce. Initial code, vel3dk_east and vel3dk_north.
         2013-04-24: Stuart Pearce. Changed to be general for all velocity
                     instruments.
         2014-02-05: Christopher Wingard. Edited to use magnetic corrections in
                     the generic_functions module.
+        2015-06-02: Russell Desiderio.
+                    (1) Uncommented testing.assert statement for upwards velocity
+                        test; set ptch and rll values for this test to those used
+                        by the eastward and northward function tests so that the
+                        upwards velocity unit test passes.
+                    (2) Combined the east and north tests with the up tests into
+                        this one function.
+                    (3) Changed more of the input variables to Global in preparation
+                        for cloning the present routine to add unit tests checking
+                        the actions of the DPAs when the beams variable contains
+                        fill values (to fix redmine blocker #3178).
 
         References:
 
@@ -183,6 +215,10 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
                 https://alfresco.oceanobservatories.org/ (See: Company Home
                 >> OOI >> Controlled >> 1000 System Level >>
                 1341-00790_Data_Product_SPEC_VELPTMN_OOI.pdf)
+
+            VEL3D-K IDD (2014) (No DPS as of 2014-03-03)
+                https://confluence.oceanobservatories.org/display/
+                instruments/VEL3D-K__stc_imodem+-+Telemetered
         """
 
         beams = np.array([
@@ -197,30 +233,12 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
             [2, 3, 4, 0, 0],
             [2, 3, 4, 0, 0]])
 
-        hdg = 10. * np.array(
-            [0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
-
-        ptch = 10. * np.array([
-            -20.10, -5.82, 0.0, -10.26, -8.09, -1.36, 5.33, 9.96, 13.68, 26.77])
-
-        rll = 10. * np.array([
-            -15.0, -11.67, -8.33, -5.0, 0.0, 1.67, 5.0, 8.33, 11.67, 15.0])
-
-        vel0 = np.array([
-            0, 6305, 6000, 7810, 10048, 11440, -10341, -10597, 9123, -12657])
-
-        vel1 = np.array([
-            0, 1050, 856, -1672, 3593, -2487, -5731, -3085, -1987, 2382])
-
-        vel2 = np.array([
-            7628, 0, 4974, -4204, 4896, 5937, 6480, -6376, -7271, -7576])
-
-        Vscale = np.array([-4])
-
-        ve_cor = vel3dk_east(
-            vel0, vel1, vel2, hdg, ptch, rll, beams, LAT, LON, TS, Vscale, DEPTH)
-        vn_cor = vel3dk_north(
-            vel0, vel1, vel2, hdg, ptch, rll, beams, LAT, LON, TS, Vscale, DEPTH)
+        ve_calcd = vel3dk_east(
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, LAT, LON, TS, VSCALE, DEPTH)
+        vn_calcd = vel3dk_north(
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, LAT, LON, TS, VSCALE, DEPTH)
+        vu_calcd = vel3dk_up(
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, VSCALE)
 
         VE_expected = np.array([
             0.34404501, -0.01039404,  0.64049184, -0.17489265, -0.0739631,
@@ -230,65 +248,160 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
             0.91742235,  0.04629215,  0.06132321,  0.56597656, -0.35874325,
             0.37553716, -1.87672302, -1.12589293,  0.0720366, -0.6617893])
 
-        np.testing.assert_array_almost_equal(ve_cor, VE_expected, decimal=7)
-        np.testing.assert_array_almost_equal(vn_cor, VN_expected, decimal=7)
+        vU_expected = np.array([
+            -0.42452079, 0.8123358, 0.443022, 1.29753572, 0.99032304,
+            1.21870746, 0.76989652, -0.19519593, -0.05982637, -0.51904823])
 
-    def test_vel3dk_up(self):
+        np.testing.assert_array_almost_equal(ve_calcd, VE_expected, decimal=7)
+        np.testing.assert_array_almost_equal(vn_calcd, VN_expected, decimal=7)
+        np.testing.assert_array_almost_equal(vu_calcd, vU_expected, decimal=7)
+
+    def test_vel3dk_onebadrow_in_beams(self):
         """
-        Tests functions vel3dk_scale_up_vel from the
-        ion_functions.data.vel_functions module using test data from the
-        VELPTMN DPS.
+        Tests functions vel3dk_east, vel3dk_north, and vel3dk_up
+        from the ion_functions.data.vel_functions module using test data
+        from the VELPTMN DPS. Tests operation when one of the rows of the
+        beams variable contains an actionable fill value (a fill value in
+        one of the first 4 columns).
 
         Implemented by:
 
-        2014-03-06: Stuart Pearce. Initial code.
-
-        References:
-
-            VEL3D-K IDD (2014) (No DPS as of 2014-03-03)
-                https://confluence.oceanobservatories.org/display/
-                instruments/VEL3D-K__stc_imodem+-+Telemetered
+        2015-06-02: Russell Desiderio. Initial code. Modified version of test_vel3dk.
+                    Written to test DPA modifications to clear redmine blocker #3178.
+                    NOTE: fillvalues in column 4 will cause NaN output.
+                          fillvalues in column 5 will not cause NaN output.
         """
+
         beams = np.array([
             [1, 2, 4, 0, 0],
             [1, 2, 4, 0, 0],
             [1, 2, 4, 0, 0],
             [1, 2, 4, 0, 0],
-            [1, 2, 4, 0, 0],
+            [1, 2, 4, FILL, 0],
             [2, 3, 4, 0, 0],
             [2, 3, 4, 0, 0],
-            [2, 3, 4, 0, 0],
+            [2, 3, 4, 0, FILL],
             [2, 3, 4, 0, 0],
             [2, 3, 4, 0, 0]])
 
-        hdg = 10. * np.array([0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
-
-        ptch = 10. * np.array([
-            -20.10, -5.82, 0.0, -10.26, -8.09, -1.36, 5.33, 9.96, 13.68, 26.77])/0.1
-
-        rll = 10. * np.array([
-            -15.0, -11.67, -8.33, -5.0, 0.0, 1.67, 5.0, 8.33, 11.67, 15.0])/0.1
-
-        vel0 = np.array([
-            0, 6305, 6000, 7810, 10048, 11440, -10341, -10597, 9123, -12657])
-
-        vel1 = np.array([
-            0, 1050, 856, -1672, 3593, -2487, -5731, -3085, -1987, 2382])
-
-        vel2 = np.array([
-            7628, 0, 4974, -4204, 4896, 5937, 6480, -6376, -7271, -7576])
-
-        Vscale = -4
-
+        ve_calcd = vel3dk_east(
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, LAT, LON, TS, VSCALE, DEPTH)
+        vn_calcd = vel3dk_north(
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, LAT, LON, TS, VSCALE, DEPTH)
         vu_calcd = vel3dk_up(
-            vel0, vel1, vel2, hdg, ptch, rll,
-            beams, Vscale)
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, VSCALE)
 
-        vu_expected = np.array([[
-            -0.42452079, 0.8123358, 0.443022, 1.29753572, 0.99032304,
-            1.21870746, 0.76989652, -0.19519593, -0.05982637, -0.51904823]])
+        VE_expected = np.array([
+            0.34404501, -0.01039404,  0.64049184, -0.17489265, np.nan,
+            -1.09305797, -0.47947474,  0.11710443,  1.97369869, -1.6466505])
 
-        #np.testing.assert_array_almost_equal(vu_calcd, vu_expected)
+        VN_expected = np.array([
+            0.91742235,  0.04629215,  0.06132321,  0.56597656, np.nan,
+            0.37553716, -1.87672302, -1.12589293,  0.0720366, -0.6617893])
+
+        vU_expected = np.array([
+            -0.42452079, 0.8123358, 0.443022, 1.29753572, np.nan,
+            1.21870746, 0.76989652, -0.19519593, -0.05982637, -0.51904823])
+
+        np.testing.assert_array_almost_equal(ve_calcd, VE_expected, decimal=7)
+        np.testing.assert_array_almost_equal(vn_calcd, VN_expected, decimal=7)
+        np.testing.assert_array_almost_equal(vu_calcd, vU_expected, decimal=7)
+
+    def test_vel3dk_onegoodrow_in_beams(self):
+        """
+        Tests functions vel3dk_east, vel3dk_north, and vel3dk_up
+        from the ion_functions.data.vel_functions module using test data
+        from the VELPTMN DPS. Tests operation when only one of the rows of
+        the beams variable does not contain an actionable fill value (a
+        fill value in one of the first 4 columns).
+
+        Implemented by:
+
+        2015-06-02: Russell Desiderio. Initial code. Modified version of test_vel3dk.
+                    Written to test DPA modifications to clear redmine blocker #3178.
+                    NOTE: fillvalues in column 4 will cause NaN output.
+                          fillvalues in column 5 will not cause NaN output.
+        """
+
+        beams = np.array([
+            [1, 2, FILL, 0, 0],
+            [FILL, FILL, 4, 0, 0],
+            [1, 2, 4, FILL, 0],
+            [FILL, 2, FILL, 0, 0],
+            [1, FILL, 4, 0, 0],
+            [FILL, FILL, FILL, FILL, FILL],
+            [2, 3, FILL, FILL, 0],
+            [2, 3, 4, FILL, 0],
+            [2, 3, 4, 0, 0],
+            [2, 3, FILL, 0, 0]])
+
+        ve_calcd = vel3dk_east(
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, LAT, LON, TS, VSCALE, DEPTH)
+        vn_calcd = vel3dk_north(
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, LAT, LON, TS, VSCALE, DEPTH)
+        vu_calcd = vel3dk_up(
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, VSCALE)
+
+        VE_expected = np.array([
+            np.nan, np.nan,  np.nan, np.nan, np.nan,
+            np.nan, np.nan,  np.nan, 1.97369869, np.nan])
+
+        VN_expected = np.array([
+            np.nan, np.nan,  np.nan, np.nan, np.nan,
+            np.nan, np.nan,  np.nan, 0.0720366, np.nan])
+
+        vU_expected = np.array([
+            np.nan, np.nan,  np.nan, np.nan, np.nan,
+            np.nan, np.nan,  np.nan, -0.05982637, np.nan])
+
+        np.testing.assert_array_almost_equal(ve_calcd, VE_expected, decimal=7)
+        np.testing.assert_array_almost_equal(vn_calcd, VN_expected, decimal=7)
+        np.testing.assert_array_almost_equal(vu_calcd, vU_expected, decimal=7)
+
+    def test_vel3dk_allbadrows_in_beams(self):
+        """
+        Tests functions vel3dk_east, vel3dk_north, and vel3dk_up
+        from the ion_functions.data.vel_functions module using test data
+        from the VELPTMN DPS. Tests operation when all rows of the beams
+        variable contain an actionable fill value (a fill value in one of
+        the first 4 columns).
+
+        Implemented by:
+
+        2015-06-02: Russell Desiderio. Initial code. Modified version of test_vel3dk.
+                    Written to test DPA modifications to clear redmine blocker #3178.
+                    NOTE: fillvalues in column 4 will cause NaN output.
+                          fillvalues in column 5 will not cause NaN output.
+        """
+
+        beams = np.array([
+            [1, 2, FILL, 0, 0],
+            [FILL, FILL, 4, 0, 0],
+            [1, 2, 4, FILL, 0],
+            [FILL, 2, FILL, 0, 0],
+            [1, FILL, 4, 0, 0],
+            [FILL, FILL, FILL, FILL, FILL],
+            [2, 3, FILL, FILL, 0],
+            [2, 3, 4, FILL, 0],
+            [FILL, 3, 4, 0, 0],
+            [2, 3, FILL, 0, 0]])
+
+        ve_calcd = vel3dk_east(
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, LAT, LON, TS, VSCALE, DEPTH)
+        vn_calcd = vel3dk_north(
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, LAT, LON, TS, VSCALE, DEPTH)
+        vu_calcd = vel3dk_up(
+            VEL0, VEL1, VEL2, HDG, PTCH, RLL, beams, VSCALE)
+
+        VE_expected = np.ones(10) * np.nan
+
+        VN_expected = np.ones(10) * np.nan
+
+        vU_expected = np.ones(10) * np.nan
+
+        np.testing.assert_array_almost_equal(ve_calcd, VE_expected, decimal=7)
+        np.testing.assert_array_almost_equal(vn_calcd, VN_expected, decimal=7)
+        np.testing.assert_array_almost_equal(vu_calcd, vU_expected, decimal=7)
 
     def test_zero_case(self, ):
         """
