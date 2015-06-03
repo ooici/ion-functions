@@ -126,6 +126,7 @@ class TestVel3dkPerformance(PerformanceTestCase):
 
     Implemented by:
         2014-03-04: Stuart Pearce. Initial code.
+        2015-06-02: Russell Desiderio. Added 5th column to self.beams.
     """
     def setUp(self):
         self.lat = np.ones(10000, dtype=np.float) * 14.6846
@@ -134,7 +135,7 @@ class TestVel3dkPerformance(PerformanceTestCase):
         self.vel0 = np.ones(10000, dtype=np.int) * 12345
         self.vel1 = np.ones(10000, dtype=np.int) * 15432
         self.vel2 = np.ones(10000, dtype=np.int) * 14253
-        self.beams = np.tile(np.array([1, 2, 4, 0]), (10000, 1))
+        self.beams = np.tile(np.array([1, 2, 4, 0, 0]), (10000, 1))
         self.hdg = np.ones(10000, dtype=np.int) * 123
         self.ptch = np.ones(10000, dtype=np.float) * 1.23
         self.rll = np.ones(10000, dtype=np.float) * 1.23

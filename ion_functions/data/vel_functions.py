@@ -1476,14 +1476,28 @@ def vel3dk_transform(
             configured as [beam1,beam2,beam3,beam4,beam5] where beam#
             corresponds to vel#-1 (e.g. beam1 to vel0).
 
+            Documentation added: as of 2015-06-03, the IDD states that
+            the 5th beam value will be NULL which should turn into the
+            integer fill value -999999999 when presented to this DPA.
+            This DPA deletes the 5th column of beams, so this is moot.
+
     Implemented by:
         2014-05-13: Stuart Pearce. Reimplementation of code from P.J.
             Rusello at Nortek
+        2015-06-02: Russell Desiderio. Trapped out instances of actionable
+            fill values in the beams configuration variable to return Nans
+            for those corresponding data products. Actionable fill values
+            are those that are situated in the 1st 4 columns; fill values
+            in the 5th column are ignored because the 5th column is deleted.
 
     References:
         Lengthy discussions with Nortek and McLane representatives.  No
         DPS as of yet.
     """
+    # denote the agreed upon fill value for all integer variables.
+    fill = -999999999
+    # at some point this will probably become a global variable.
+
     # Ensure that the variables are in the right condition
     heading = np.atleast_1d(heading)
     roll = np.atleast_1d(roll)
@@ -1512,7 +1526,10 @@ def vel3dk_transform(
         vel3 = np.atleast_1d(vel3)
         if vel3.ndim > 1:
             vel3 = np.reshape(vel3, -1)
-        data[4, :] = vel3
+        # change the next statement from
+        #data[4, :] = vel3
+        # to
+        data = np.vstack((data, vel3))
 
     # if the beams array has 5 beams, drop the 5th one since there is
     # not a 5th transducer.
@@ -1524,11 +1541,32 @@ def vel3dk_transform(
             "the VEL3D-K algorithm inputs expect a Nx5 beam array," +
             "instead got a %dx%d array" % (rows, cols))
 
+    # the next section traps out rows in the beams configuration variable that contain
+    # the integer fill value; the corresponding columns in the product matrix ENU will
+    # contain NaNs.
+
+    # initialize output variable with nans
+    ENU = np.matrix(np.ones_like(data)) * np.nan  # East, North, Up velocities
+
+    # find rows in the (now) 4-column beams variable that do not contain fill values.
+    mask = ~np.any(beams == fill, axis=1)
+    # if all of the rows contained fill values, we're done;
+    # for this case, return nans for all values.
+    if np.all(~mask):
+        return ENU
+
+    # else, send only those data corresponding to good beams data for further processing
+    beams = beams[mask, :]
+    heading = heading[mask]
+    pitch = pitch[mask]
+    roll = roll[mask]
+    data = data[:, mask]
+    # initialize loop product variable
+    ENU_loop = np.matrix(np.ones_like(data)) * np.nan  # East, North, Up velocities
+
     # Now grab the first beam configuration and the transform to start
     beams_used = list(beams[0, :])
     t_beam2XYZ = get_XYZ_transform(beams_used)
-
-    ENU = np.matrix(np.zeros_like(data))  # East, North, Up velocities
 
     # need a transformation matrix for each measurement
     # because Heading Pitch & Roll will change with each record
@@ -1538,7 +1576,11 @@ def vel3dk_transform(
             beams_used = list(beams[ii, :])
             t_beam2XYZ = get_XYZ_transform(beams_used)
         t_XYZ2ENU = generate_ENU_transform(heading[ii], pitch[ii], roll[ii])
-        ENU[:, ii] = t_XYZ2ENU * t_beam2XYZ * data[:, ii]
+        ENU_loop[:, ii] = t_XYZ2ENU * t_beam2XYZ * data[:, ii]
+
+    # now insert calculated loop product into output variable
+    ENU[:, mask] = ENU_loop
+
     return ENU
 
 
