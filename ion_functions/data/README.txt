@@ -7,6 +7,10 @@ according to its Instrument Family as defined in SAF.
         
 Alphabetical by instrument family Public ID.
 
+Revision History:
+
+    2015-06-08. Russell Desiderio. Updated VEL:vel_functions.py documentation.
+
 CO2: Partial Pressure CO2
 
     * co2_functions.py -- Covers calculation of the L1 PCO2WAT data product
@@ -373,8 +377,8 @@ VEL: Water Velocity
             instruments originally programmed in beam coordinates.
     
     * vel_functions.py -- Covers calculation of the L1 VEL3D Eastward, Northward,
-    and Upward component data products from the VEL3D-A, VEL3D-B, VEL3D-CD,
-    VEL3D-K, VEL3D-L, and VELPT instruments.  This module includes
+    and Upward component data products from VEL3D-A, VEL3D-B, VEL3D-CD, VEL3D-K,
+    VEL3D-L, and all VELPT instruments (ABDJ).  This module includes
     
       fsi_acm_rsn_east -- calculates VELPTMN-VLE_L1 from VEL3D-A
       fsi_acm_rsn_north -- calculates VELPTMN-VLN_L1 from VEL3D-A
@@ -385,15 +389,20 @@ VEL: Water Velocity
 
       nobska_mag_corr_east -- calculates VELPTTU-VLE_L1 from VEL3D-B
       nobska_mag_corr_north -- calculates VELPTTU-VLN_L1 from VEL3D-B
-      nobska_scale_up_vel -- calculates VELPTTU-VLU_L0 from VEL3D-B
+      nobska_scale_up_vel -- calculates VELPTTU-VLU_L1 from VEL3D-B
 
-      nortek_mag_corr_east -- calculates VELPTTU-VLE_L1 from VEL3D-CDK &
-          VELPT
-      nortek_mag_corr_north -- calculates VELPTTU-VLN_L1 from VEL3D-CDK &
-          VELPT
-      nortek_up_vel -- passes through VELPTTU-VLU_L1 from VEL3D-CDK &
-          VELPT
-      
+      nortek_mag_corr_east -- calculates VELPTTU-VLE_L1 from VEL3D-CD
+      nortek_mag_corr_north -- calculates VELPTTU-VLN_L1 from VEL3D-CD
+      nortek_up_vel -- calculates VELPTTU-VLU_L1 from VEL3D-CD
+
+      vel3dk_east -- calculates VELPTTU-VLE_L1 from VEL3D-K
+      vel3dk_north -- calculates VELPTTU-VLN_L1 from VEL3D-K
+      vel3dk_up -- calculates VELPTTU-VLU_L1 from VEL3D-K
+
+      velpt_mag_corr_east -- calculates VELPTMN-VLE_L1 from VELPT-ABDJ
+      velpt_mag_corr_north -- calculates VELPTMN-VLN_L1 from VELPT-ABDJ
+      velpt_up_vel -- calculates VELPTMN-VLU_L1 from VELPT-ABDJ
+
 WAV: Surface Wave Spectra
 
     * wav_functions.py -- Covers calculation of the WAVSS data products WAVSTAT

@@ -10,10 +10,9 @@ from nose.plugins.attrib import attr
 from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
-import pdb
-from ion_functions.data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north
-from ion_functions.data.vel_functions import nortek_mag_corr_east, nortek_mag_corr_north
-from ion_functions.data.vel_functions import velpt_mag_corr_east, velpt_mag_corr_north
+from ion_functions.data.vel_functions import nobska_mag_corr_east, nobska_mag_corr_north, nobska_scale_up_vel
+from ion_functions.data.vel_functions import nortek_mag_corr_east, nortek_mag_corr_north, nortek_up_vel
+from ion_functions.data.vel_functions import velpt_mag_corr_east, velpt_mag_corr_north, velpt_up_vel
 from ion_functions.data.vel_functions import velpt_up_vel
 from ion_functions.data.vel_functions import vel3dk_east, vel3dk_north
 from ion_functions.data.vel_functions import vel3dk_up
@@ -38,13 +37,17 @@ TS = np.array([
     3319581600, 3319585200, 3319588800, 3319592400, 3319596000],
     dtype=np.float)
 
-# input velocities (Nobska outputs cm/s, Nortek m/s)
+# unit test input velocities
+# Nobska instrument outputs velocities in cm/s. VEL3D-B
 VE_NOBSKA = np.array([-3.2, 0.1, 0., 2.3, -0.1, 5.6, 5.1, 5.8, 8.8, 10.3])
 VN_NOBSKA = np.array([18.2, 9.9, 12., 6.6, 7.4, 3.4, -2.6, 0.2, -1.5, 4.1])
 VU_NOBSKA = np.array([-1.1, -0.6, -1.4, -2, -1.7, -2, 1.3, -1.6, -1.1, -4.5])
-VE_NORTEK = VE_NOBSKA / 100.
-VN_NORTEK = VN_NOBSKA / 100.
-VU_NORTEK = VU_NOBSKA / 100.
+# Nortek Vector velocities are mm/s. VEL3D-CD
+# note that the DPS (1341-00780) is incorrect (as of 2015_06_08).
+VE_NORTEK = VE_NOBSKA * 10.
+VN_NORTEK = VN_NOBSKA * 10.
+VU_NORTEK = VU_NOBSKA * 10.
+# Nortek Aquadopp velocities, with the exception of AQD II (vel3d-k), are mm/sec. all VELPT.
 VE_VELPT = VE_NOBSKA * 10.
 VN_VELPT = VN_NOBSKA * 10.
 VU_VELPT = VU_NOBSKA * 10.
@@ -60,7 +63,7 @@ VU_EXPECTED = np.array([
     -0.011, -0.006, -0.014, -0.02, -0.017, -0.02,
     0.013, -0.016, -0.011, -0.045])
 
-# input arguments to the vel3dk series of unit tests.
+# input arguments to the VEL3D-K series of unit tests.
 HDG = 10. * np.array(
     [0., 36., 72., 108., 144., 180., 216., 252., 288., 324.])
 PTCH = 10. * np.array([
@@ -85,9 +88,11 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
     # Nobska instrument unit test
     def test_vel3d_nobska(self):
         """
-        Tests functions nobska_mag_corr_east and nobska_mag_corr_north
-        from the ion_functions.data.vel_functions module using test data
-        found in the VELPTMN DPS.
+        Tests functions nobska_mag_corr_east, nobska_mag_corr_north and
+        nobska_scale_up_vel from the ion_functions.data.vel_functions
+        module using test data found in the VELPTMN DPS.
+
+        2015-06-08: Russell Desiderio. Added up_velocity unit test.
 
         References:
 
@@ -107,15 +112,17 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
             VE_NOBSKA, VN_NOBSKA, LAT, LON, TS, DEPTH)
         vn_cor = nobska_mag_corr_north(
             VE_NOBSKA, VN_NOBSKA, LAT, LON, TS, DEPTH)
+        vu_cor = nobska_scale_up_vel(VU_NOBSKA)
 
         np.testing.assert_array_almost_equal(ve_cor, VE_EXPECTED)
         np.testing.assert_array_almost_equal(vn_cor, VN_EXPECTED)
+        np.testing.assert_array_almost_equal(vu_cor, VU_EXPECTED)
 
     def test_vel3d_nortek(self):
         """
-        Tests functions nortek_mag_corr_east and nortek_mag_corr_north
-        from the ion_functions.data.vel_functions module using test data
-        from the VELPTMN DPS.
+        Tests functions nortek_mag_corr_east, nortek_mag_corr_north and
+        nortek_up_vel from the ion_functions.data.vel_functions module
+        using test data from the VELPTMN DPS.
 
         Implemented by:
 
@@ -124,6 +131,7 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
                     instruments.
         2014-02-05: Christopher Wingard. Edited to use magnetic corrections in
                     the generic_functions module.
+        2015-06-08: Russell Desiderio. Added up_velocity unit test.
 
         References:
 
@@ -144,15 +152,17 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
             VE_NORTEK, VN_NORTEK, LAT, LON, TS, DEPTH)
         vn_cor = nortek_mag_corr_north(
             VE_NORTEK, VN_NORTEK, LAT, LON, TS, DEPTH)
+        vu_cor = nortek_up_vel(VU_NORTEK)
 
         np.testing.assert_array_almost_equal(ve_cor, VE_EXPECTED)
         np.testing.assert_array_almost_equal(vn_cor, VN_EXPECTED)
+        np.testing.assert_array_almost_equal(vu_cor, VU_EXPECTED)
 
     def test_velpt(self):
         """
-        Tests functions velpt_mag_corr_east and velpt_mag_corr_north
-        from the ion_functions.data.vel_functions module using test data
-        from the VELPTMN DPS.
+        Tests functions velpt_mag_corr_east, velpt_mag_corr_north and
+        velpt_up_vel from the ion_functions.data.vel_functions module
+        using test data from the VELPTMN DPS.
 
         Implemented by:
 
@@ -162,6 +172,7 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         2014-02-05: Christopher Wingard. Edited to use magnetic corrections in
                     the generic_functions module.
         2014-10-29: Stuart Pearce. Adds the velpt functions.
+        2015-06-08: Russell Desiderio. Added up_velocity unit test.
 
         References:
 
@@ -176,9 +187,11 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
             VE_VELPT, VN_VELPT, LAT, LON, TS, DEPTH)
         vn_cor = velpt_mag_corr_north(
             VE_VELPT, VN_VELPT, LAT, LON, TS, DEPTH)
+        vu_cor = velpt_up_vel(VU_VELPT)
 
         np.testing.assert_array_almost_equal(ve_cor, VE_EXPECTED)
         np.testing.assert_array_almost_equal(vn_cor, VN_EXPECTED)
+        np.testing.assert_array_almost_equal(vu_cor, VU_EXPECTED)
 
     def test_vel3dk(self):
         """
@@ -462,7 +475,7 @@ class TestVelFunctionsUnit(BaseUnitTestCase):
         self.assertRaises(ValueError, nortek_mag_corr_east, VE_NOBSKA[0], VN_NOBSKA[0], 45.0, -210.0, TS[0], DEPTH)
         self.assertRaises(ValueError, nortek_mag_corr_north, VE_NOBSKA[0], VN_NOBSKA[0], 45.0, 200.0, TS[0], DEPTH)
 
-    # vel3d-a,l unit tests
+    # VEL3D-A,L unit tests
     def test_fsi_acm(self):
         """
         Description:
