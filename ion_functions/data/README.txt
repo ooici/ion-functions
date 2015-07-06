@@ -344,38 +344,50 @@ VEL: Water Velocity
     and ECHOINT data products from the tRDI ADCPs used throughout the
     program (ADCPA, ADCPS, ADCPT and VADCP). This module includes:
     
-      **** For instruments programmed in beam coordinates
+      **** For instruments programmed in beam coordinates:
+           (ADCPS-I,K;  ADCPT-B,D,E)
       adcp_beam_eastward -- calculates VELPROF-VLE_L1
       adcp_beam_northward -- calculates VELPROF-VLN_L1
       adcp_beam_vertical -- calculates VELPROF-VLU_L1
       adcp_beam_error -- calculates VELPROF-ERR_L1
         
-      **** For instruments programmed in earth coordinates
+      **** For instruments programmed in earth coordinates:
+           (ADCPA;  ADCPS-J,L,N; ADCPT-C,F,G,M)
       adcp_earth_eastward -- calculates VELPROF-VLE_L1
       adcp_earth_northward -- calculates VELPROF-VLN_L1
       adcp_earth_vertical -- calculates VELPROF-VLU_L1
       adcp_earth_error -- calculates VELPROF-ERR_L1
         
-      **** For the VADCP programmed in beam coordinates
+      **** For the VADCP programmed in beam coordinates:
       vadcp_beam_eastward -- calculates VELTURB-VLE_L1
       vadcp_beam_northward -- calculates VELTURB-VLN_L1
-      vadcp_beam_vertical -- calculates VELTURB-VLU_L1
+      vadcp_beam_vertical_true -- calculates VELTURB-VLU-5BM_L1
+      vadcp_beam_vertical_est -- calculates VELTURB-VLU-4BM_L1
       vadcp_beam_error -- calculates VELTURB-ERR_L1
         
-      **** For all ADCPS
+      **** For all tRDI ADCP instruments:
       adcp_backscatter -- calculates ECHOINT-B1_L1,
                           calculates ECHOINT-B2_L1,
                           calculates ECHOINT-B3_L1,
-                          calculates ECHOINT-B4_L1 for all ADCPs
+                          calculates ECHOINT-B4_L1.
               
       **** Base functions used by above functions
       adcp_beam2ins -- applies the beam to instrument transform using a 4
             beam solution for instruments programmed in beam coordinates
-      vadcp_beam2ins -- applies the beam to instrument transform using a 5
-            beam solution for the VADCP programmed in beam coordinates
       adcp_ins2earth -- applies the instrument to Earth transform for all
             instruments originally programmed in beam coordinates.
+      magnetic_correction -- corrects horizontal velocities for the magnetic
+            variation (declination) at the measurement location.
     
+      **** Supplementary functions to calculate velocity bin depths:
+      adcp_bin_depths -- calculates bin depths for the pd0 output format
+                         (virtually all tRDI ADCPs deployed by OOI); uses
+                         TEOS-10 functions p_from_z and enthalpy_SSO_0_p.
+      adcp_bin_depths_pd8 -- calculates bin depths for the pd8 output format,
+                             assuming that (1) the ADCP operator recorded the
+                             necessary input variables and (2) these are somehow
+                             entered into the CI system.
+
     * vel_functions.py -- Covers calculation of the L1 VEL3D Eastward, Northward,
     and Upward component data products from VEL3D-A, VEL3D-B, VEL3D-CD, VEL3D-K,
     VEL3D-L, and all VELPT instruments (ABDJ).  This module includes

@@ -2,7 +2,7 @@
 """
 @package ion_functions.data.generic_functions
 @file ion_functions/data/generic_functions.py
-@author Christopher Mueller
+@author Christopher Wingard, Stuart Pearce, Russell Desiderio
 @brief Module containing generic data-calculation functions.  Primarily
     used for calculating values in Parameter Functions
 """
@@ -16,6 +16,113 @@ import time
 
 # ION Functions imports
 from ion_functions.data.wmm import WMM
+
+# CyberInfrastructure fill value for all integer data types
+SYSTEM_FILLVALUE = -999999999
+
+
+def replace_fill_with_nan(instrument_fillvalue, *args):
+    """
+    Description:
+
+        Converts integer data types to float and replaces both system integer fill
+        values and instrument integer fill values with nans. The system fill value is
+        designated as a global variable in this module, the generic_functions module.
+        The instrument fill value(s) are designated as global variables in their
+        respective DPA modules and passed into this function via the first calling
+        argument in its argument list.
+
+    Usage:
+
+        var1, var2, ... = replace_fill_with_nan(instrument_fillvalue, var1, var2, ...)
+
+            where
+
+        var1, var2, ... = one or more variables. on output, var1 etc are floats
+                with system and instrument fill values replaced by nans.
+        instrument_fillvalue = if applicable, integer instrument fill value(s):
+                if none, use either None, an empty list, or np.array([])
+                if one, use either a scalar, a list, or a 1D ndarray
+                if more than one, use either a list or a 1D ndarray.
+        var1, var2, ... = one or more variables. on input, var1, var2, etc will all be
+                np.ndarrays of at least 1 dimension because that is how CI has been
+                configured. If float arrays are present in the argument
+                list they are passed through unchanged.
+
+    Implemented by:
+
+        2015-06-11: Russell Desiderio. Initial Code.
+
+    Notes:
+
+        The fill value for floats has been designated to be np.nan, but integer data types
+        cannot have nan values. Before being supplied as inputs to the DPAs, all integers
+        are stored as signed 32 bit integers, so that one system fillvalue could be and is
+        assigned. However, instruments can use integer fill values to denote bad or absent
+        data in their data streams which are not recognized as such by CI. These instrument
+        fill values will in general be different for different instruments.
+
+        Some kinds of integer inputs to DPAs should not be processed with this algorithm. In
+        particular the 'beams' variable in vel3dk is used in a dictionary look-up; fill values
+        in that variable should not be converted to nans.
+
+    """
+    # while all input arguments presented to the DPA functions by CI will be np.ndarrays of
+    # at least one dimension, many of the unit tests were written before this policy was
+    # established. as a result many use core python scalars to represent single-valued
+    # parameters ( for example: lat = 45.0 instead of lat = np.array([45.0]) ). because of
+    # this, for compatibility input arguments that are core python scalars will be supported.
+    args = np.atleast_1d(*args)
+    # the output of this last statement is a list, UNLESS there is only one element,
+    # in which case instead of a list of one element the element itself is returned.
+
+    # if args consists of a single element make it into a list so that when it is indexed,
+    # the index refers to the element itself instead of the element's subelements.
+    if not isinstance(args, list):
+        args = [args]
+
+    # the first fill value to be checked will be the system fillvalue
+    all_fillvalues = np.array([SYSTEM_FILLVALUE])
+    # in case instrument_fillvalue is passed as an ndarray, turn it into a flattened list;
+    # testing a list for whether it is empty (F) or not (T) is more straightforward than
+    # dealing with ndarrays of sizes from empty to multiple elements - some of my tests
+    # with these revealed non-intuitive results when subjected to boolean testing.
+    if isinstance(instrument_fillvalue, np.ndarray):
+        instrument_fillvalue = np.ndarray.tolist(np.ndarray.flatten(instrument_fillvalue))
+    if instrument_fillvalue is None:
+        # this branch is included so that None is not appended to the list of fill values
+        # in the variable all_fillvalues, even though the unit tests will still pass.
+        pass
+    # if an instrument_fillvalue of 0 is passed as a scalar 0, then it will test as false.
+    # a list of one element which is a 0 will test as true, the desired behavior.
+    elif [instrument_fillvalue]:
+        all_fillvalues = np.hstack((all_fillvalues, instrument_fillvalue))
+
+    ## original coding loops
+    #for ii in range(len(args)):
+    #    # check to see if the first element is an integer datatype
+    #    if isinstance(np.ndarray.flatten(args[ii])[0], (long, int)):
+    #        mask = np.zeros_like(args[ii], dtype=bool)
+    #        for jj in range(len(all_fillvalues)):
+    #            mask = np.logical_or(mask, args[ii] == all_fillvalues[jj])
+    #        args[ii] = args[ii].astype('float')
+    #        args[ii][mask] = np.nan
+
+    # more pythonic, perhaps faster
+    for ii, val in enumerate(args):
+        # check to see if the first element is an integer datatype
+        if isinstance(np.ndarray.flatten(val)[0], (long, int)):
+            mask = np.zeros_like(val, dtype=bool)
+            for jj, fil in enumerate(all_fillvalues):
+                mask = np.logical_or(mask, val == fil)
+            val = val.astype('float')
+            val[mask] = np.nan
+            args[ii] = val
+
+    # if args has only one element, unit tests fail if it is passed out as a list.
+    if len(args) == 1:
+        args = args[0]
+    return args
 
 
 def magnetic_declination(lat, lon, ntp_timestamp, z=0.0, zflag=-1):
