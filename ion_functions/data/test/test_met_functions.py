@@ -21,7 +21,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
 
     def setUp(self):
         """
-            "SCALAR" TESTSET:
+            "SCALAR" TESTSET (first values are selected for test):
 
             These test values are adapted from array indices 1356, 1357, and
             1358 from the test dataset Revelle10minutesLeg3_r3.mat, from
@@ -208,6 +208,25 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                                    self.cumu_prcp,
                                    zinvpbl)
 
+        # construct argument list to test time_vectorization of sensor heights.
+        nrep = self.lat.shape[0]
+        self.args_vector_ztmvec = (self.tC_sea,
+                                   self.wnd,
+                                   self.tC_air,
+                                   self.relhum,
+                                   self.timestamp,
+                                   self.lon,
+                                   np.tile(ztmpwat, nrep),
+                                   np.tile(zwindsp, nrep),
+                                   np.tile(ztmpair, nrep),
+                                   np.tile(zhumair, nrep),
+                                   self.lat,
+                                   self.pr_air,
+                                   self.Rshort_down,
+                                   self.Rlong_down,
+                                   self.cumu_prcp,
+                                   np.tile(zinvpbl, nrep))
+
         # construct sets of arguments to test warmlayer_time_keys.py (placement of nans
         # in output when a day's data does not start before sunrise, taken to be 6AM).
         #
@@ -268,6 +287,8 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         2014-10-29: Russell Desiderio. Incorporated new unit test values for all data products
                                        using warmlayer algorithm (which uses rain heat flux).
         2014-12-29: Russell Desiderio. Incorporated tests on Irminger METBK data.
+        2015-07-13: Russell Desiderio. Incorporated tests using time-vectorized input for
+                                       sensor heights and algorithm switches.
 
     References
 
@@ -278,9 +299,9 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
 
     def test_met_stablty(self):
         # cases: [jwarm, jcool]
-        xpctd = np.array([[-0.75134556, -1.53410291, -1.29155675],
-                          [-0.67713848, -1.40615623, -1.17706256],
-                          [-0.75134556, -1.53871067, -1.29521084],
+        xpctd = np.array([[-0.75134556, -1.53410291, -1.29155675],   # [00]
+                          [-0.67713848, -1.40615623, -1.17706256],   # [01]
+                          [-0.75134556, -1.53871067, -1.29521084],   # [10]
                           [-0.67713848, -1.41154284, -1.18138703]])  # [11]
 
         # SCALAR CASES [00] and [01]:
@@ -715,6 +736,9 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
     def test_met_current_direction(self):
+        """  Desiderio 13-Jul-2015.
+             Revised unit tests to check action of use_velptmn_with_metbk switch
+        """
         # test data inputs - hit all quadrants.
         hf_rt3 = np.sqrt(3.0)/2.0
         vle = np.array([0.0, hf_rt3, 0.5, 0.0, -0.5, -hf_rt3,
@@ -722,36 +746,208 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         vln = np.array([0.0, 0.5, hf_rt3, 1.0, hf_rt3, 0.5,
                         0.0, -0.5, -hf_rt3, -1.0, -hf_rt3, -0.5])
 
-        # expected output
+        # expected output;  0 = North, 90 = East.
         xpctd = np.array([90.0, 60.0, 30.0, 0.0, 330.0, 300.0,
                           270.0, 240.0, 210.0, 180.0, 150.0, 120.0])
 
-        # compute the surface current directions:
-        # 0 = North, 90 = East.
+        # (0) no switch - calculated = nans
         calc = mb.met_current_direction(vle, vln)
+        np.testing.assert_array_almost_equal(calc, xpctd*np.nan, decimal=4)
 
-        # and compare the expected to the calculated
+        # (1) scalar switch tests
+        # (1a) all good data
+        calc = mb.met_current_direction(vle, vln, 1)
+        np.testing.assert_array_almost_equal(calc, xpctd, decimal=4)
+        # (1b) all bad data
+        calc = mb.met_current_direction(vle, vln, 0)
+        np.testing.assert_array_almost_equal(calc, xpctd*np.nan, decimal=4)
+
+        # (2) vectorized switch tests
+        npts = vle.shape[0]
+        # (2a) all good data
+        calc = mb.met_current_direction(vle, vln, np.ones(npts))
+        np.testing.assert_array_almost_equal(calc, xpctd, decimal=4)
+        # (2b) all bad data
+        calc = mb.met_current_direction(vle, vln, np.zeros(npts))
+        np.testing.assert_array_almost_equal(calc, xpctd*np.nan, decimal=4)
+        # (2b) mixed data
+        use_metbk = np.ones(npts)
+        for ii in [1, 6, 9, 10]:
+            xpctd[ii] = np.nan
+            use_metbk[ii] = 0
+        calc = mb.met_current_direction(vle, vln, use_metbk)
         np.testing.assert_array_almost_equal(calc, xpctd, decimal=4)
 
-    def test_met_relative_wind(self):
+    def test_met_current_speed(self):
+        """
+            Test the surface current algorithm using test data generated in Matlab
+            from the compass plot function example:
+
+            >> rng(0,'twister') % initialize random number generator
+            >> M = randn(15,15);
+            >> Z = eig(M);
+            >> vle = real(Z);
+            >> vln = imag(Z);
+            >> crnt = sqrt(vle.^2 + vln.^2);
+
+            C. Wingard 2014-07-01
+            R. Desiderio 13-Jul-2015.
+               Revised unit tests to check action of use_velptmn_with_metbk switch
+        """
+
+        # test data inputs
+        vle = np.array([-3.1330, -3.1330, -2.9908, 1.0666, 1.0666,
+                        2.1770, 2.1770, -0.8572, -0.8572, -1.4486,
+                        -1.4486, 0.2149, 0.2149, 1.4811, 0.7050])
+        vln = np.array([1.1221, -1.1221, 0.0000, 2.8685, -2.8685,
+                        1.6654, -1.6654, 2.2209, -2.2209, 0.9033,
+                        -0.9033, 1.7152, -1.7152, 0.0000, 0.0000])
+
+        # expected output
+        crnt = np.array([3.3279, 3.3279, 2.9908, 3.0604, 3.0604,
+                         2.7410, 2.7410, 2.3806, 2.3806, 1.7072,
+                         1.7072, 1.7286, 1.7286, 1.4811, 0.7050])
+
+        # no switch - calculated = nans
+        out = mb.met_current_speed(vle, vln)
+        np.testing.assert_array_almost_equal(out, crnt*np.nan, decimal=4)
+
+        # compute the surface current - all good data
+        out = mb.met_current_speed(vle, vln, 1)
+        # and compare the expected to the calculated
+        np.testing.assert_array_almost_equal(out, crnt, decimal=4)
+
+        # compute the surface current - all bad data
+        out = mb.met_current_speed(vle, vln, 0)
+        # and compare the expected to the calculated
+        np.testing.assert_array_almost_equal(out, crnt*np.nan, decimal=4)
+
+        # vectorized switch tests
+        npts = vle.shape[0]
+        # all good data
+        out = mb.met_current_speed(vle, vln, np.ones(npts))
+        np.testing.assert_array_almost_equal(out, crnt, decimal=4)
+        # all bad data
+        out = mb.met_current_speed(vle, vln, np.zeros(npts))
+        np.testing.assert_array_almost_equal(out, crnt*np.nan, decimal=4)
+        # time vectorized, mixed good and bad data
+        use_metbk = np.ones(vle.shape[0])
+        for ii in [1, 6, 9, 10]:
+            crnt[ii] = np.nan
+            use_metbk[ii] = 0
+        out = mb.met_current_speed(vle, vln, use_metbk)
+        np.testing.assert_array_almost_equal(out, crnt, decimal=4)
+
+    def test_met_relwind_direction(self):
+        """
+        2015-07-14. Russell Desiderio. Revised unit tests to check action of
+                                       use_velptmn_with_metbk switch
+        """
         hf_rt3 = np.sqrt(3.0)/2.0
         wind_vle = np.array([0.0, hf_rt3, 0.5, 0.0, -0.5, -hf_rt3,
                             -1.0, -hf_rt3, -0.5, 0.0, 0.5, hf_rt3]) * 3.0
         wind_vln = np.array([0.0, 0.5, hf_rt3, 1.0, hf_rt3, 0.5,
                              0.0, -0.5, -hf_rt3, -1.0, -hf_rt3, -0.5]) * 3.0
-        current_vle = -0.5 * 2.0
-        current_vln = -hf_rt3 * 2.0
+        npts = wind_vle.shape[0]
+        current_vle = np.tile(-0.5 * 2.0, npts)
+        current_vln = np.tile(-hf_rt3 * 2.0, npts)
 
-        xpctd_relspeed = np.array([2.000000, 4.836559, 5.000000, 4.836559, 4.358899, 3.605551,
-                                   2.645751, 1.614836, 1.000000, 1.614836, 2.645751, 3.605551])
+        # to calculate expected values, use met_current_direction, which has already
+        # been checked (and not called by met_relwind_direction).
+        xpctd = mb.met_current_direction(wind_vle-current_vle, wind_vln-current_vln, 1)
 
-        calc = mb.met_relwind_speed(wind_vle, wind_vln, current_vle, current_vln)
-        np.testing.assert_array_almost_equal(calc, xpctd_relspeed, decimal=5)
-        #
-        #
-        xpctd_reldir = mb.met_current_direction(wind_vle-current_vle, wind_vln-current_vln)
+        # no current data and no switch - current data to be considered all bad, by default
+        # expected result is xpctd*np.nan
+        calc = mb.met_relwind_direction(wind_vle, wind_vln)
+        np.testing.assert_array_almost_equal(calc, xpctd*np.nan, decimal=5)
+
+        # no switch - current data to be considered all bad, by default
+        # expected result is xpctd*np.nan
         calc = mb.met_relwind_direction(wind_vle, wind_vln, current_vle, current_vln)
-        np.testing.assert_array_almost_equal(calc, xpctd_reldir, decimal=5)
+        np.testing.assert_array_almost_equal(calc, xpctd*np.nan, decimal=5)
+
+        # all good data: set the use_velptmn switch to 1 in the calling argument list.
+        calc = mb.met_relwind_direction(wind_vle, wind_vln, current_vle, current_vln, 1)
+        np.testing.assert_array_almost_equal(calc, xpctd, decimal=5)
+
+        # all bad data: set the use_velptmn switch to 0 in the calling argument list.
+        # expected result is xpctd*np.nan
+        calc = mb.met_relwind_direction(wind_vle, wind_vln, current_vle, current_vln, 0)
+        np.testing.assert_array_almost_equal(calc, xpctd*np.nan, decimal=5)
+
+        # time-vectorized switch cases
+        # all good
+        use_metbk = np.ones(npts)
+        calc = mb.met_relwind_direction(wind_vle, wind_vln, current_vle, current_vln, use_metbk)
+        np.testing.assert_array_almost_equal(calc, xpctd, decimal=5)
+        # all bad
+        use_metbk = np.zeros(npts)
+        calc = mb.met_relwind_direction(wind_vle, wind_vln, current_vle, current_vln, use_metbk)
+        np.testing.assert_array_almost_equal(calc, xpctd*np.nan, decimal=5)
+        # mixed good and bad data
+        use_metbk = np.ones(npts)
+        for ii in [1, 6, 9, 10]:
+            xpctd[ii] = np.nan
+            use_metbk[ii] = 0
+        calc = mb.met_relwind_direction(wind_vle, wind_vln, current_vle, current_vln, use_metbk)
+        np.testing.assert_array_almost_equal(calc, xpctd, decimal=5)
+
+    def test_met_relwind_speed(self):
+        """
+        2015-07-14. Russell Desiderio. Revised unit tests to check action of
+                                       use_velptmn_with_metbk switch.
+        """
+
+        # These tests differ from those for relwind_direction, current_speed, and current_direction
+        # in that bad current data should not result in nans for the relative windspeed; rather, the
+        # windspeed itself should be calculated as the data product as if the current velocities are 0.
+
+        hf_rt3 = np.sqrt(3.0)/2.0
+        wind_vle = np.array([0.0, hf_rt3, 0.5, 0.0, -0.5, -hf_rt3,
+                            -1.0, -hf_rt3, -0.5, 0.0, 0.5, hf_rt3]) * 3.0
+        wind_vln = np.array([0.0, 0.5, hf_rt3, 1.0, hf_rt3, 0.5,
+                             0.0, -0.5, -hf_rt3, -1.0, -hf_rt3, -0.5]) * 3.0
+        npts = wind_vle.shape[0]
+        current_vle = np.tile(-0.5 * 2.0, npts)
+        current_vln = np.tile(-hf_rt3 * 2.0, npts)
+
+        xpctd_goodcurrent = np.array([2.000000, 4.836559, 5.000000, 4.836559, 4.358899, 3.605551,
+                                      2.645751, 1.614836, 1.000000, 1.614836, 2.645751, 3.605551])
+
+        xpctd_badcurrent = np.hstack((0.0, np.tile(3.0, npts-1)))
+
+        # no current data and no switch - current data to be considered all bad, by default
+        # expected result is xpctd_badcurrent
+        calc = mb.met_relwind_speed(wind_vle, wind_vln)
+        np.testing.assert_array_almost_equal(calc, xpctd_badcurrent, decimal=5)
+
+        # all bad current data: no switch
+        calc = mb.met_relwind_speed(wind_vle, wind_vln, current_vle, current_vln)
+        np.testing.assert_array_almost_equal(calc, xpctd_badcurrent, decimal=5)
+        # all good current data: set the use_velptmn switch to 1 in the calling argument list.
+        calc = mb.met_relwind_speed(wind_vle, wind_vln, current_vle, current_vln, 1)
+        np.testing.assert_array_almost_equal(calc, xpctd_goodcurrent, decimal=5)
+        # all bad current data: set the use_velptmn switch to 0 in the calling argument list.
+        calc = mb.met_relwind_speed(wind_vle, wind_vln, current_vle, current_vln, 0)
+        np.testing.assert_array_almost_equal(calc, xpctd_badcurrent, decimal=5)
+
+        # time-vectorized switch cases
+        # all good
+        use_metbk = np.ones(npts)
+        calc = mb.met_relwind_speed(wind_vle, wind_vln, current_vle, current_vln, use_metbk)
+        np.testing.assert_array_almost_equal(calc, xpctd_goodcurrent, decimal=5)
+        # all bad
+        use_metbk = np.zeros(npts)
+        calc = mb.met_relwind_speed(wind_vle, wind_vln, current_vle, current_vln, use_metbk)
+        np.testing.assert_array_almost_equal(calc, xpctd_badcurrent, decimal=5)
+        # mixed good and bad
+        use_metbk = np.ones(npts)
+        xpctd = np.copy(xpctd_goodcurrent)
+        for ii in [1, 6, 9, 10]:
+            xpctd[ii] = xpctd_badcurrent[ii]
+            use_metbk[ii] = 0
+        calc = mb.met_relwind_speed(wind_vle, wind_vln, current_vle, current_vln, use_metbk)
+        np.testing.assert_array_almost_equal(calc, xpctd, decimal=5)
 
     def test_metbk_windavg(self):
         """
@@ -802,40 +998,6 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         # data is only tested to 2 decimal places
         np.testing.assert_array_almost_equal(ve_cor, ve_expected, decimal=2)
         np.testing.assert_array_almost_equal(vn_cor, vn_expected, decimal=2)
-
-    def test_met_current_speed(self):
-        """
-            Test the surface current algorithm using test data generated in Matlab
-            from the compass plot function example:
-
-            >> rng(0,'twister') % initialize random number generator
-            >> M = randn(15,15);
-            >> Z = eig(M);
-            >> vle = real(Z);
-            >> vln = imag(Z);
-            >> crnt = sqrt(vle.^2 + vln.^2);
-
-            C. Wingard 2014-07-01
-        """
-
-        # test data inputs
-        vle = np.array([-3.1330, -3.1330, -2.9908, 1.0666, 1.0666,
-                        2.1770, 2.1770, -0.8572, -0.8572, -1.4486,
-                        -1.4486, 0.2149, 0.2149, 1.4811, 0.7050])
-        vln = np.array([1.1221, -1.1221, 0.0000, 2.8685, -2.8685,
-                        1.6654, -1.6654, 2.2209, -2.2209, 0.9033,
-                        -0.9033, 1.7152, -1.7152, 0.0000, 0.0000])
-
-        # expected output
-        crnt = np.array([3.3279, 3.3279, 2.9908, 3.0604, 3.0604,
-                         2.7410, 2.7410, 2.3806, 2.3806, 1.7072,
-                         1.7072, 1.7286, 1.7286, 1.4811, 0.7050])
-
-        # compute the surface current
-        out = mb.met_current_speed(vle, vln)
-
-        # and compare the expected to the calculated
-        np.testing.assert_array_almost_equal(out, crnt, decimal=4)
 
     def test_make_hourly_data(self):
         """
@@ -976,7 +1138,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         rainrate = 1.0  # [mm/hour]
         Pr = 1015.0     # atmospheric pressure [mbar]
 
-        # from test_rain_heat_flux.m
+        # check value is from the matlab code test_rain_heat_flux.m
         xpctd = 4.663360812871
         calc = mb.rain_heat_flux(rainrate, Tsea, Tair, RH, Pr)
         np.testing.assert_allclose(calc, xpctd, rtol=0, atol=1.e-12)
@@ -1045,7 +1207,8 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         ve_cor = mb.met_windavg_mag_corr_east(wndrawE, wndrawN, lat, lon, timstmp)
         vn_cor = mb.met_windavg_mag_corr_north(wndrawE, wndrawN, lat, lon, timstmp)
         # for this test, however, assume there is no current.
-        rel_wnd_spd = mb.met_relwind_speed(ve_cor, vn_cor, 0.0, 0.0)
+        zero_1D = np.array([0.0])
+        rel_wnd_spd = mb.met_relwind_speed(ve_cor, vn_cor, zero_1D, zero_1D)
 
         # construct argument tuple for flux data products
         args = (tempsrf, rel_wnd_spd, tempair, relhumi, timstmp, lon, ztmpwat, zwindsp,
@@ -1053,7 +1216,6 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
 
         # latent heat flux, an hourly data product
         latnflx = mb.met_latnflx(*args)
-
         # calculate time base for latnflx (and all hourly data products)
         hourly_time_base = mb.met_timeflx(timstmp)
 
@@ -1102,3 +1264,34 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         calc = np.isnan(latnflx[0:4])
         xpctd = np.array([True, True, True, False])
         np.testing.assert_equal(calc, xpctd)
+
+    def test_time_vectorized_heights_and_switches(self):
+        """
+        Description:
+
+            Time-vectorization of the sensor heights (ztmpwat, ztmpair, zhumair, zwindsp,
+            and zinvpbl) and algorithm switches (jwarm, jcool) are tested using the DPA
+            met_latnflx which calculates the latent heat flux L2 data product. The check
+            values are identical to the vector case values in test_met_latnflx.
+
+        Implemented by:
+
+            2014-07-14: Russell Desiderio. Initial Code.
+        """
+        xpctd = np.array([[184.91334211, 133.43175366, 151.19456789],
+                          [170.45205774, 123.62963458, 139.11084942],
+                          [184.91334211, 133.78969897, 151.58612581],
+                          [170.45205774, 124.03365974, 139.55690009]])
+
+        # Time-vectorized cases only
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        npts = self.args_vector_ztmvec[0].shape  # number of time points
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_latnflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
