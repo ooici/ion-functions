@@ -12,14 +12,61 @@ from pygsw import vectors as gsw
 
 from ion_functions.data.generic_functions import magnetic_declination, magnetic_correction
 
+### July 2015
+""" use_velptmn_with_metbk """
+# Until VELPT current meters are
+#     (1) co-located with the METBK instrumentation to measure surface currents and
+#     (2) without ferrous interference aliasing the VELPT compass measurements,
+# VELPT current measurements should not be used to calculate relative wind speed (with
+# respect to water), which is the fundamental windspeed variable used in the METBK
+# calculations. Almost all of the METBK L2 data products require the relative wind speed
+# as a calling argument.
+#
+# The DPA to calculate relative wind speed over water is currently set to return actual
+# wind speed (as if the current velocities were measured to be 0) for all cases of input
+# current velocity values (absent, present, nan).
+#
+# A subset of the Endurance moorings are the only ones that have VELPT instruments
+# mounted to measure surface currents. However, their compass readings are inaccurate due
+# to the mounted instruments' proximity to iron ballast in the mooring.
+#
+# It is anticipated that these moorings will be modified to eliminate this magnetic
+# interference. To use the velptmn measurements for METBK calculations on these moorings,
+# a 5th variable, use_velptmn_with_metbk, has been added to the argument list of the
+# function met_relwind_speed. Implementation of the use_velptmn_with_metbk variable will
+# require that it be treated as a "platform/instrument instance specific metadata parameter
+# changeable in time". It has been coded to accept time-vectorized input.
+#
+### Further documentation is contained in the Notes to function met_relwind_speed in this module.
 
-# Set global switches used in METBK bulk flux calculations
-# These should be set to 1, always!
+"""
+    METBK SENSOR HEIGHTS
 
+    Note that the sensor heights may depend on the type of mooring:
+"""
+# these 4 sensor height variables were time-vectorized in the July 2015 revision.
+#     zwindsp = height of the wind measurement [m]
+#     ztmpair = height of air temperature measurement [m]
+#     zhumair = height of air humidity measurement [m]
+#     ztmpwat = depth of bulk sea surface water measurements [m]
+
+#     zvelptm = depth of surface current measurement [m]:
+#         this parameter is specified as metadata in the DPS;
+#         however, it is not used in the code.
+
+#     zinvpbl = planetary boundary layer/inversion height: this is
+#               set to a default value of 600m in the code, as is
+#               used in the DPS. this variable was written to accept
+#               time-vectorized input in the initial METBK code.
+
+"""
+    Set algorithm switches used in METBK bulk flux calculations
+"""
+# The jcool and jwarm switches should be set to 1, always!
 JCOOLFL = 1      # 1=do coolskin calc
 JWARMFL = 1      # 1=do warmlayer calc
 #JWAVEFL         # only the windspeed parametrization of the charnok
-                 # variable is coded; this switch is not used.
+                 # variable is coded; therefore this switch is not used.
 
 """
     LISTING OF SUBROUTINES BY ORDER IN THIS MODULE
@@ -115,6 +162,7 @@ JWARMFL = 1      # 1=do warmlayer calc
 #...................................................................................
 #...................................................................................
     Data conditioning and averaging routines
+        vet_velptmn_data
         condition_data
         make_hourly_data
         warmlayer_time_keys
@@ -122,23 +170,7 @@ JWARMFL = 1      # 1=do warmlayer calc
 
 """
 
-# METBK SENSOR HEIGHTS:
-
-"""
-    Note that the sensor heights may depend on the type of mooring:
-"""
-#     zwindsp = height of the wind measurement [m]
-#     ztmpair = height of air temperature measurement [m]
-#     zhumair = height of air humidity measurement [m]
-#     ztmpwat = depth of bulk sea surface water measurements [m]
-
-#     zvelptm = depth of surface current measurement [m]:
-#         this parameter is specified as metadata in the DPS;
-#         however, it is not used in the code.
-
-#     zinvpbl = planetary boundary layer/inversion height: this is
-#               set to a default value of 600m in the code, as is
-#               used in the DPS.
+####################################################################################
 
 """
 #...................................................................................
@@ -311,7 +343,7 @@ def met_windavg_mag_corr_north(uu, vv, lat, lon, timestamp, zwindsp=0.0):
 """
 
 
-def met_current_direction(vle_water, vln_water):
+def met_current_direction(vle_water, vln_water, use_velptmn_with_metbk=0):
     """
     Description:
 
@@ -321,16 +353,27 @@ def met_current_direction(vle_water, vln_water):
     Implemented by:
 
         2014-08-27: Russell Desiderio. Initial Code
+        2015-07-10: Russell Desiderio. Added data quality flags (use_velptmn_with_metbk)
+                    to argument list. See Notes to the function met_relwind_speed.
 
     Usage:
 
-        current_dir = met_current_direction(vle_water, vln_water)
+        current_dir = met_current_direction(vle_water, vln_water[, use_velptmn_with_metbk])
 
             where
 
         current_dir = direction of the surface current (CURRENT_DIR) [0 360) degrees
         vle_water = eastward surface current (VELPTMN-VLE_L1) [m/s]
         vln_water = northward surface current (VELPTMN-VLN_L1) [m/s]
+        use_velptmn_with_metbk = time-vectorized data quality flag:
+                                 0 -> bad  velptmn current data
+                                 1 -> good velptmn current data
+
+    Notes:
+
+        The auxiliary data product calculated by this function is not used in any of
+        the METBK functions in this module. It is calculated because it is of scientific
+        interest. See also the Notes to the function met_relwind_speed.
 
     References:
 
@@ -340,6 +383,9 @@ def met_current_direction(vle_water, vln_water):
             OOI >> Controlled >> 1000 System Level >>
             1341-00370_Data_Product_Spec_BULKFLX_OOI.pdf)
     """
+    # replace aliased current values with nans.
+    vle_water, vln_water = vet_velptmn_data(vle_water, vln_water, use_velptmn_with_metbk)
+
     # use arctan2, which will properly handle arguments in all 4 cartesian quadrants,
     # and gives answers [-180 180] after conversion to degrees.
     cartesian_dir = np.degrees(np.arctan2(vln_water, vle_water))
@@ -356,7 +402,7 @@ def met_current_direction(vle_water, vln_water):
     return current_dir
 
 
-def met_current_speed(vle_water, vln_water):
+def met_current_speed(vle_water, vln_water, use_velptmn_with_metbk=0):
     """
     Description:
 
@@ -376,16 +422,28 @@ def met_current_speed(vle_water, vln_water):
 
         2014-06-26: Chris Wingard. Initial Code
         2014-08-27: Russell Desiderio. Added documentation, changed variable names.
+        2015-07-10: Russell Desiderio. Added data quality flags (use_velptmn_with_metbk)
+                    to argument list. See Notes to the function met_relwind_speed.
 
     Usage:
 
-        current_spd = met_current_speed(vle_water, vln_water)
+        current_spd = met_current_speed(vle_water, vln_water[, use_velptmn_with_metbk])
 
             where
 
         current_spd = magnitude (speed) of the surface current (CURRENT_SPD) [m/s]
         vle_water = eastward surface current (VELPTMN-VLE_L1) [m/s]
         vln_water = northward surface current (VELPTMN-VLN_L1) [m/s]
+        use_velptmn_with_metbk = time-vectorized data quality flag:
+                                 0 -> bad  velptmn current data
+                                 1 -> good velptmn current data
+
+    Notes:
+
+        The auxiliary data product calculated by this function is not used in any of
+        the METBK functions in this module. It is calculated because it is of scientific
+        interest and because the DPS specified it. See also the Notes to the function
+        met_relwind_speed.
 
     References:
 
@@ -395,11 +453,14 @@ def met_current_speed(vle_water, vln_water):
             OOI >> Controlled >> 1000 System Level >>
             1341-00370_Data_Product_Spec_BULKFLX_OOI.pdf)
     """
+    # replace aliased current values with nans.
+    vle_water, vln_water = vet_velptmn_data(vle_water, vln_water, use_velptmn_with_metbk)
+
     current_spd = ne.evaluate("sqrt(vle_water**2 + vln_water**2)")
     return current_spd
 
 
-def met_relwind_direction(vle_wind, vln_wind, vle_water, vln_water):
+def met_relwind_direction(vle_wind, vln_wind, vle_water=None, vln_water=None, use_velptmn_with_metbk=0):
     """
     Description:
 
@@ -412,10 +473,12 @@ def met_relwind_direction(vle_wind, vln_wind, vle_water, vln_water):
     Implemented by:
 
         2014-08-26: Russell Desiderio. Initial Code.
+        2015-07-10: Russell Desiderio. Set default calling water velocity values and implemented
+                                       use_velptmn_with_metbk switch.
 
     Usage:
 
-        u_dir = met_relwind_direction(vle_wind, vln_wind, vle_water, vln_water)
+        u_dir = met_relwind_direction(vle_wind, vln_wind[, vle_water, vln_water[, use_velptmn_with_metbk]])
 
             where
 
@@ -424,6 +487,15 @@ def met_relwind_direction(vle_wind, vln_wind, vle_water, vln_water):
         vln_wind  = northward wind speed (WINDAVG-VLN_L1) [m/s]
         vle_water = eastward surface current (VELPTMN-VLE_L1) [m/s]
         vln_water = northward surface current (VELPTMN-VLN_L1) [m/s]
+        use_velptmn_with_metbk = time-vectorized data quality flag:
+                                 0 -> bad  velptmn current data
+                                 1 -> good velptmn current data
+
+    Notes:
+
+        The auxiliary data product calculated by this function is not used in any of
+        the METBK functions in this module. It is calculated because it is of scientific
+        interest. See also the Notes to the function met_relwind_speed.
 
     References:
 
@@ -433,6 +505,14 @@ def met_relwind_direction(vle_wind, vln_wind, vle_water, vln_water):
             OOI >> Controlled >> 1000 System Level >>
             1341-00370_Data_Product_Spec_BULKFLX_OOI.pdf)
     """
+    # if this function is called without using surface current data, return nan
+    if vle_water is None or vln_water is None:
+        u_dir = vle_wind * np.nan
+        return u_dir
+
+    # replace aliased current values with nans.
+    vle_water, vln_water = vet_velptmn_data(vle_water, vln_water, use_velptmn_with_metbk)
+
     # use arctan2, which will properly handle arguments in all 4 cartesian quadrants,
     # and gives answers [-180 180] after conversion to degrees.
     cartesian_dir = np.degrees(np.arctan2(vln_wind - vln_water, vle_wind - vle_water))
@@ -449,13 +529,15 @@ def met_relwind_direction(vle_wind, vln_wind, vle_water, vln_water):
     return u_dir
 
 
-def met_relwind_speed(vle_wind, vln_wind, vle_water, vln_water):
+def met_relwind_speed(vle_wind, vln_wind, vle_water=None, vln_water=None, use_velptmn_with_metbk=0):
     """
     Description:
 
-        Calculates RELWIND_SPD-AUX, the magnitude of the vector difference of surface current
-        (from VELPT measurements) from wind velocity (from METBK measurements). This is the
-        fundamental windspeed variable used in the METBK toga-coare algorithms.
+        Calculates RELWIND_SPD-AUX, the relative windspeed over water, calculated as the
+        magnitude of the vector difference of surface current velocity (from VELPT
+        measurements) subtracted from wind velocity (from METBK measurements).
+
+        This is the fundamental windspeed variable used in the METBK toga-coare algorithms.
 
         It is anticipated that the wind measurements will be roughly each minute and that the
         current measurements will be broadcast to that resolution.
@@ -463,10 +545,12 @@ def met_relwind_speed(vle_wind, vln_wind, vle_water, vln_water):
     Implemented by:
 
         2014-08-26: Russell Desiderio. Initial Code.
+        2015-07-10: Russell Desiderio. Set default calling water velocity values.
+                    Added the switch use_velptmn_with_metbk and code to vet surface current data.
 
     Usage:
 
-        u_rel = met_relwind_speed(vle_wind, vln_wind, vle_water, vln_water)
+        u_rel = met_relwind_speed(vle_wind, vln_wind[, vle_water, vln_water[, use_velptmn_with_metbk]])
 
             where
 
@@ -475,6 +559,36 @@ def met_relwind_speed(vle_wind, vln_wind, vle_water, vln_water):
         vln_wind  = northward wind speed (WINDAVG-VLN_L1) [m/s]
         vle_water = eastward surface current (VELPTMN-VLE_L1) [m/s]
         vln_water = northward surface current (VELPTMN-VLN_L1) [m/s]
+        use_velptmn_with_metbk = time-vectorized data quality flag:
+                                 0 -> bad  velptmn current data
+                                 1 -> good velptmn current data
+
+    Notes:
+
+        Previous fortran and matlab implementations of the toga-coare algorithms (not associated with
+        OOI) often used windspeed rather than windspeed relative to water, presumably because surface
+        current data were not available. And, the only surface moorings which do have surface current
+        meters are 4 Endurance moorings; however, at this time (July 2015) their compass readings are
+        aliased because of the proximity of their VELPT current meters to iron mooring ballast.
+
+        Therefore if current data are aliased or missing, met_relwind_speed will set current=0 and use
+        the actual windspeed in place of the windspeed relative to water (as the DPS also specifies).
+        This is only done in the routine met_relwind_speed, and not in met_relwind_direction,
+        met_current_direction, nor met_current_speed. In these latter 3 routines, bad or missing
+        current values are set to nan.
+
+        This treatment of current data allows the following two relative wind calculation cases to
+        be differentiated. Both cases calculate relative wind using the surface current values
+        vle_water=0 and vln_water=0:
+
+            (1) These 0 values came from actual VELPT data. In this case CURRENT_SPD calculated by
+                met_current_speed will be 0.
+            (2) These 0 values for current were used because the VELPT data were bad or missing. In
+                this case CURRENT_SPD calculated by met_current_speed will be a nan.
+
+        Implementation of the use_velptmn_with_metbk variable will require that it be treated as a
+        "platform/instrument instance specific metadata parameter changeable in time". It has been
+        coded to accept time-vectorized input.
 
     References:
 
@@ -484,6 +598,31 @@ def met_relwind_speed(vle_wind, vln_wind, vle_water, vln_water):
             OOI >> Controlled >> 1000 System Level >>
             1341-00370_Data_Product_Spec_BULKFLX_OOI.pdf)
     """
+    # If the surface current velocities are missing or invalid, the actual windspeed
+    # will be used in place of the relative windspeed over water to calculate the METBK
+    # data products.
+    #
+    # if this function is called without using surface current data, set current data to 0.
+    if vle_water is None or vln_water is None:
+        vle_water = np.zeros(vle_wind.shape[0])
+        vln_water = np.zeros(vle_wind.shape[0])
+
+    # find nans in the current record and if found replace both the east
+    # and north components with values of 0.
+    nanmask = np.isnan(vle_water * vln_water)
+    vle_water[nanmask] = 0.0
+    vln_water[nanmask] = 0.0
+
+    # expand use_velptmn_with_metbk if it is called as a scalar
+    if np.atleast_1d(use_velptmn_with_metbk).shape[0] == 1:
+        use_velptmn_with_metbk = np.tile(use_velptmn_with_metbk, vle_wind.shape[0])
+
+    # vet the surface current data - but don't use Nans
+    #   when use_velptmn_with_metbk=0, set surface current velocities to 0.
+    #   when use_velptmn_with_metbk=1, use surface current velocities as received.
+    vle_water = vle_water * use_velptmn_with_metbk
+    vln_water = vln_water * use_velptmn_with_metbk
+
     u_rel = np.sqrt((vle_water - vle_wind)**2 + (vln_water - vln_wind)**2)
     return u_rel
 
@@ -2718,6 +2857,9 @@ def warmlayer(rain_rate, timestamp, lon, ztmpwat, tC_sea, wnd, zwindsp, tC_air, 
     Implemented by:
 
         2014-09-01: Russell Desiderio. Initial code.
+        2015-07-08: Russell Desiderio. Added array subscripts to sensor height arrays ztmpwat,
+                    zwindsp, ztmpair, and zhumair so that now these parameters on input can
+                    either be 1-element 1D arrays or time-vectorized 1D arrays.
 
     Usage :
 
@@ -2865,7 +3007,7 @@ def warmlayer(rain_rate, timestamp, lon, ztmpwat, tC_sea, wnd, zwindsp, tC_air, 
         # can be indexed, whereas slicing with [ii-1] returns a variable which cannot be
         # indexed. [ii-1:ii] slicing is used so that coare35vn can be run with both
         # 'scalar' and 'vector' input.
-        args = (tsea_corr, wnd[ii-1:ii], zwindsp, tC_air[ii-1:ii], ztmpair, relhum[ii-1:ii], zhumair,
+        args = (tsea_corr, wnd[ii-1:ii], zwindsp[ii-1:ii], tC_air[ii-1:ii], ztmpair[ii-1:ii], relhum[ii-1:ii], zhumair[ii-1:ii],
                 pr_air[ii-1:ii], Rshort_down[ii-1:ii], Rlong_down[ii-1:ii], lat[ii-1:ii], zinvpbl[ii-1:ii],
                 jcool)
 
@@ -2932,10 +3074,10 @@ def warmlayer(rain_rate, timestamp, lon, ztmpwat, tC_sea, wnd, zwindsp, tC_air, 
             tk_pwp[ii] = tk_pwp[ii-1]
 
         # Compute warm layer correction dsea
-        if tk_pwp[ii] < ztmpwat:
+        if tk_pwp[ii] < ztmpwat[ii]:
             dsea[ii] = dt_wrm[ii]
         else:
-            dsea[ii] = dt_wrm[ii] * ztmpwat / tk_pwp[ii]
+            dsea[ii] = dt_wrm[ii] * ztmpwat[ii] / tk_pwp[ii]
 
     # for all days that did not begin before 6AM, return NaNs
     dt_wrm[nanmask] = np.nan
@@ -3375,12 +3517,56 @@ def scaling_parameters(dter, dqer, von, fdg, zwindsp, zhumair,
 #...................................................................................
     Data conditioning and averaging routines
 
+        vet_velptmn_data
         condition_data
         make_hourly_data
         warmlayer_time_keys
 #...................................................................................
 #...................................................................................
 """
+
+
+def vet_velptmn_data(vle, vln, use_velptmn):
+    """
+    Description:
+
+        When an element of the use_velptmn switch is 0, the corresponding elements in
+        vle_in and vln_in are set to Nan.
+
+        This function is not to be used with met_relwind_speed, where suspect velptmn
+        values are replaced with 0.
+
+    Implemented by:
+
+        2015-07-10: Russell Desiderio. Initial Code
+
+    Usage:
+
+        vle_out, vln_out = vet_velptmn_data(vle, vln, use_velptmn)
+
+            where
+
+        vle_out, vln_out = eastward and northward current speeds with suspect values
+                           returned as nan.
+        vle, vln = input eastward and northward current speeds
+        use_velptmn = time-vectorized data quality flag:
+                      0 -> bad  current data
+                      1 -> good current data
+    """
+    # expand use_velptmn_with_metbk if it is called as a scalar
+    if np.atleast_1d(use_velptmn).shape[0] == 1:
+        use_velptmn = np.tile(use_velptmn, vle.shape[0])
+
+    # to prevent what turned out to be very much unanticipated "call-by-reference"-ish
+    # ramifications in the unit tests
+    vle_out = np.copy(vle)
+    vln_out = np.copy(vln)
+    # replace aliased current values with nans.
+    nanmask = use_velptmn == 0
+    vle_out[nanmask] = np.nan
+    vln_out[nanmask] = np.nan
+
+    return vle_out, vln_out
 
 
 def condition_data(*args):
@@ -3393,9 +3579,20 @@ def condition_data(*args):
             input argument list, this routine expands the size of those variable
             arrays from 1 element to the size of that of the other variables.
 
+        (3) Also expands (time-vectorizes) sensor heights ztmpwat, zwindsp, ztmpair,
+            and zhumair to maintain compatibility with scalar sensor height inputs.
+
+        (4) Conditions the jcool and jwarm input variables; see code documentation.
+
     Implemented by:
 
         2014-09-19: Russell Desiderio. Initial code.
+        2015-07-08: Russell Desiderio. Added sensor height indices [3, 6, 8, 10]
+                    for [ztmpwat, zwindsp, ztmpair, zhumair] to idx_of_args_to_expand
+                    so that now these parameters on input can either be 1-element 1D
+                    arrays or time-vectorized 1D arrays. Also conditioned the jcool
+                    and jwarm variables to convert them into 1-element switches if
+                    they are input as time-vectorized variables.
 
     Usage:
 
@@ -3421,7 +3618,7 @@ def condition_data(*args):
     number_of_bulk_vars = 18
 
     # zinvpbl [15] must always be expanded
-    idx_of_args_to_expand = [0, 11, 12, 13, 14, 15]
+    idx_of_args_to_expand = [0, 3, 6, 8, 10, 11, 12, 13, 14, 15]
 
     nargs = len(args)
     for ii in range(nargs):
@@ -3430,6 +3627,17 @@ def condition_data(*args):
     # for rainrte and testing
     if nargs < number_of_bulk_vars:
         return args
+
+    # condition the jcool and jwarm switches.
+        # (1) these should be type integer, so there is no need to trap out Nans.
+        # (2) these switches should not be time-vectorized in the code. therefore,
+        #     the code is made compatible with time-vectorized inputs of these
+        #     switches by using only the 1st value; and, if it is not zero, change
+        #     it to 1. This will also trap out -99999999 system fillvalues.
+    for ii in [16, 17]:
+        if args[ii][0] != 0:
+            args[ii][0] = 1
+        args[ii] = args[ii][0:1]  # return 1 element as an ndarray
 
     # expand if only one item in argument
     n_records = args[1].size
@@ -3468,6 +3676,10 @@ def make_hourly_data(*args):
                     simple call could be made to this function for the purposes
                     of calculating an hourly timestamp metadata product not
                     included in the DPS but which I anticipate will be needed.
+        2015-07-08: Russell Desiderio. Deleted sensor height indices [3, 6, 8, 10]
+                    for [ztmpwat, zwindsp, ztmpair, zhumair] from idx_to_skip
+                    so that now these parameters on input can either be 1-element 1D
+                    arrays or time-vectorized 1D arrays.
 
     Usage
 
@@ -3518,7 +3730,7 @@ def make_hourly_data(*args):
     # prep all variables for rainrte (nargs<18).
     # for nargs >= 18, skip arguments that are constants (except for zinvpbl)
     # and switches.
-    idx_to_skip = [17, 16, 10, 8, 6, 3]
+    idx_to_skip = [17, 16]
 
     nargs = len(args)
     idx = range(nargs)
