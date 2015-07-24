@@ -3,7 +3,6 @@ from ion_functions.data.perf.test_performance import PerformanceTestCase, a_deca
 from ion_functions.data.sfl_functions import (sfl_trhph_vfltemp,
                                               sfl_trhph_vflorp,
                                               sfl_trhph_chloride,
-                                              sfl_sflpres_l1,
                                               sfl_thsph_temp_int,
                                               sfl_thsph_temp_ref,
                                               sfl_thsph_temp_tcl,
@@ -16,6 +15,9 @@ from ion_functions.data.sfl_functions import (sfl_trhph_vfltemp,
                                               sfl_thsph_ph_acl,
                                               sfl_thsph_ph_noref,
                                               sfl_thsph_ph_noref_acl,
+                                              sfl_sflpres_rtime,
+                                              sfl_sflpres_tide,
+                                              sfl_sflpres_wave,
                                               )
 import numpy as np
 
@@ -232,14 +234,6 @@ class TestSFLPerformance(PerformanceTestCase):
         # timing test
         self.profile(stats, sfl_trhph_vflorp, V, offset, gain)
 
-    def test_sfl_sflpres_l1(self):
-        stats = []
-        # create 10000 data packets
-        P = np.zeros((a_deca, 1)) + 14.868
-
-        # timing test
-        self.profile(stats, sfl_sflpres_l1, P)
-
     def test_sfl_trhph_chloride(self):
         stats = []
 
@@ -268,4 +262,55 @@ class TestSFLPerformance(PerformanceTestCase):
 
         # timing test
         self.profile(stats, sfl_trhph_chloride, V_R1, V_R2, V_R3, T)
+
+    # Performance tests for seafloor instruments PRESF
+
+    def test_sfl_sflpres_rtime(self):
+        stats = []
+        # create 10000 data packets
+        P = np.zeros(a_deca) + 14.868
+
+        # timing test
+        self.profile(stats, sfl_sflpres_rtime, P)
+
+    def test_sfl_sflpres_tide(self):
+        stats = []
+        # create 10000 data packets
+        p_dec_tide = np.zeros(a_deca, dtype=int) + 4175754
+        m = np.zeros(a_deca) + 279620.2
+        b = np.zeros(a_deca) + 18641.3
+        slope = np.zeros(a_deca) + 1.0
+        offset = np.zeros(a_deca) + 0.0
+        # timing test
+        self.profile(stats, sfl_sflpres_tide, p_dec_tide, b, m, slope, offset)
+
+    def test_sfl_sflpres_wave(self):
+        stats = []
+        # create 10000 data packets
+        # i don't know how many p_dec_wave values there are per burst ...
+        nval_per_burst = 20
+        p_dec_wave = np.tile(8900312, (a_deca, nval_per_burst))
+        #
+        lots_of_zeros = np.zeros(a_deca, dtype=int)
+        ptcn = 43746280 + lots_of_zeros
+        u0 = 5.856409e+00 + lots_of_zeros
+        y1 = -3.987838e+03 + lots_of_zeros
+        y2 = -1.049603e+04 + lots_of_zeros
+        y3 = 0.000000e+00 + lots_of_zeros
+        c1 = 2.305367e+02 + lots_of_zeros
+        c2 = 1.198422e+01 + lots_of_zeros
+        c3 = -2.401512e+02 + lots_of_zeros
+        d1 = 4.095400e-02 + lots_of_zeros
+        d2 = 0.000000e+00 + lots_of_zeros
+        t1 = 2.781994e+01 + lots_of_zeros
+        t2 = 6.760780e-01 + lots_of_zeros
+        t3 = 1.761829e+01 + lots_of_zeros
+        t4 = 6.000932e+00 + lots_of_zeros
+        poff = 0.0 + lots_of_zeros
+        slope = 1.0 + lots_of_zeros
+        offset = 0.0 + lots_of_zeros
+
+        # timing test
+        self.profile(stats, sfl_sflpres_wave, ptcn, p_dec_wave, u0, y1, y2, y3,
+                     c1, c2, c3, d1, d2, t1, t2, t3, t4, poff, slope, offset)
 

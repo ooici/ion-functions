@@ -12,7 +12,15 @@ from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
 from ion_functions.data import sfl_functions as sflfunc
-from ion_functions.utils import fill_value
+
+# CI type integer fill value
+SYSTEM_FILLVALUE = -999999999
+# CI type float fill value has been determined to be np.nan
+#    note: initial code and unit tests were written long before the CI convention
+#    for handling fill values was established. rather than changing all instances
+#    of the variable fill_value in the unit tests to np.nan, this global variable
+#    (local to this module) is employed instead.
+fill_value = np.nan
 
 
 @attr('UNIT', group='func')
@@ -37,6 +45,8 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         Implemented by:
 
             2014-07-09: Russell Desiderio. Initial Code
+            2015-07-22: Russell Desiderio. Added test for replacing system fill values
+                                           with nans.
 
         References:
 
@@ -65,6 +75,9 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
             THSPHTE Test Data Set v5.xls).   Also see adjoining 1341-00200_THSPHHS and
             1341-00210_THSPHHC entries.
         """
+        # for convenience
+        sfill = SYSTEM_FILLVALUE
+
         # calibration polynomial coefficients:
 
         # electrode engineering to lab calibrated units
@@ -90,8 +103,8 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         # SINGLE-VALUED TESTS
 
         # hydrogen concentration THSPHHC
-        counts_h2 = 4907.0
-        counts_ysz = 7807.0
+        counts_h2 = 4907
+        counts_ysz = 7807
         temperature = 320.0
         h2_xpctd = 0.02712
 
@@ -100,8 +113,8 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_allclose(h2_calc, h2_xpctd, rtol=0.0, atol=0.0001)
 
         # sulfide concentration THSPHHS
-        counts_hs = 3806.0
-        counts_ysz = 7007.0
+        counts_hs = 3806
+        counts_ysz = 7007
         temperature = 320.0
         h2s_xpctd = 0.95744
 
@@ -110,8 +123,8 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_allclose(h2s_calc, h2s_xpctd, rtol=0.0, atol=0.0001)
 
         # pH: THSPHPH-PH  and  THSPHPH-PH-ACL
-        counts_agcl = 7801.0
-        counts_ysz = 6607.0
+        counts_agcl = 7801
+        counts_ysz = 6607
         temperature = 300.0
         trhphcc = 400.0     # [chloride] from trhphcc data product has units of mmol/kg
         # THSPHPH-PH
@@ -126,7 +139,7 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_allclose(pH_calc, pH_acl_xpctd, rtol=0.0, atol=0.001)
 
         # pH: THSPHPH-PH-NOREF  and  THSPHPH-PH-NOREF-ACL
-        counts_ysz = 6207.0
+        counts_ysz = 6207
         temperature = 300.0
         # THSPHPH-PH-NOREF
         pH_noref_xpctd = 4.5064
@@ -166,37 +179,37 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         arr_yh2sg = np.tile(arr_yh2sg, (npackets, 1))
 
         # hydrogen concentration THSPHHC
-        counts_h2 = np.array([4907.0, 4207.0, 4907.0, 4207.0, 4907.0, 4207.0, 4907.0])
-        counts_ysz = np.array([7807.0, 7407.0, 7807.0, 7407.0, 7807.0, 7407.0, 7807.0])
+        counts_h2 = np.array([4907, 4207, 4907, 4207, sfill, 4207, 4907])
+        counts_ysz = np.array([7807, 7407, 7807, 7407, 7807, sfill, 7807])
         temperature = np.array([320.0, 250.0, 320.0, 250.0, 320.0, 250.0, 320.0])
-        h2_xpctd = np.array([0.02712, 0.09265, 0.02712, 0.09265, 0.02712, 0.09265, 0.02712])
+        h2_xpctd = np.array([0.02712, 0.09265, 0.02712, 0.09265, fill_value, fill_value, 0.02712])
 
         h2_calc = sflfunc.sfl_thsph_hydrogen(counts_h2, counts_ysz, temperature, e2l_h2, e2l_ysz, arr_hgo,
                                              arr_logkfh2g)
         np.testing.assert_allclose(h2_calc, h2_xpctd, rtol=0.0, atol=0.0001)
 
         # sulfide concentration THSPHHS
-        counts_hs = np.array([3806.0, 3166.0, 3806.0, 3166.0, 3806.0, 3166.0, 3806.0])
-        counts_ysz = np.array([7007.0, 6607.0, 7007.0, 6607.0, 7007.0, 6607.0, 7007.0])
+        counts_hs = np.array([3806, sfill, 3806, 3166, 3806, 3166, 3806])
+        counts_ysz = np.array([7007, 6607, 7007, 6607, sfill, 6607, 7007])
         temperature = np.array([320.0, 260.0, 320.0, 260.0, 320.0, 260.0, 320.0])
-        h2s_xpctd = np.array([0.95744, 3.70778, 0.95744, 3.70778, 0.95744, 3.70778, 0.95744])
+        h2s_xpctd = np.array([0.95744, fill_value, 0.95744, 3.70778, fill_value, 3.70778, 0.95744])
 
         h2s_calc = sflfunc.sfl_thsph_sulfide(counts_hs, counts_ysz, temperature, e2l_hs, e2l_ysz, arr_hgo,
                                              arr_logkfh2g, arr_eh2sg, arr_yh2sg)
         np.testing.assert_allclose(h2s_calc, h2s_xpctd, rtol=0.0, atol=0.0001)
 
         # pH: THSPHPH-PH  and  THSPHPH-PH-ACL
-        counts_agcl = np.array([7801, 7001, 7801, 7801, 8201, 7801, 7801])
+        counts_agcl = np.array([7801, 7001, sfill, 7801, 8201, 7801, 7801])
         counts_ysz = np.array([7407, 6207, 6607, 6207, 6207, 5407, 8207])
         temperature = np.tile(300, npackets)
         trhphcc = np.tile(400.0, npackets)  # [chloride] from trhphcc data product has units of mmol/kg
         # THSPHPH-PH
-        pH_xpctd = np.array([fill_value, 6.26505, 5.38573, 4.50641, 3.62709, fill_value, fill_value])
+        pH_xpctd = np.array([fill_value, 6.26505, fill_value, 4.50641, 3.62709, fill_value, fill_value])
         pH_calc = sflfunc.sfl_thsph_ph(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl, arr_hgo,
                                        arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, trhphcc)
         np.testing.assert_allclose(pH_calc, pH_xpctd, rtol=0.0, atol=0.001)
         # THSPHPH-PH-ACL (no chloride measurement supplied)
-        pH_acl_xpctd = np.array([6.99431, 6.11499, 5.23567, 4.35635, 3.47704, fill_value, fill_value])
+        pH_acl_xpctd = np.array([6.99431, 6.11499, fill_value, 4.35635, 3.47704, fill_value, fill_value])
         pH_calc = sflfunc.sfl_thsph_ph_acl(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
                                            arr_hgo, arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3)
         np.testing.assert_allclose(pH_calc, pH_acl_xpctd, rtol=0.0, atol=0.001)
@@ -217,7 +230,7 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
 
     def test_sfl_thsph_temp(self):
         """
-        Test the 6 functions that calculate the THSPHTE data products:
+        Test the 6 functions that calculate the THSPHTE L1 data products:
             sfl_thsph_temp_int : THSPHTE-INT
             sfl_thsph_temp_ref : THSPHTE-REF
             sfl_thsph_temp_tcl : THSPHTE-TCL
@@ -242,6 +255,7 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
 
             2014-05-01: Russell Desiderio. Initial Code
             2014-07-02: Russell Desiderio. Incorporated changes in DPS calibration algorithms.
+            2015-07-24: Russell Desiderio. Incorporated SYSTEM_FILLVALUE checks.
         """
         # calibration constants: b thermistor
         # engineering values to lab calibrated values
@@ -273,10 +287,10 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
 
         # rawdata: aH200B200720C420A1108D3E8C22421FFC#
         # test inputs
-        ts_rawdec_b = 8188.0
-        ts_rawdec_r = 8770.0
-        tc_rawdec_L = 16012.0
-        tc_rawdec_H = 4237.0
+        ts_rawdec_b = 8188
+        ts_rawdec_r = 8770
+        tc_rawdec_L = 16012
+        tc_rawdec_H = 4237
         # set expected outputs
         int_xpctd = 24.53
         ref_xpctd = 21.25
@@ -326,14 +340,14 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
 
         # trap-out-nans-and-inf test -> replace with fill_value
         # test inputs
-        ts_rawdec_b = -9999.9
-        ts_rawdec_r = -9999.9
-        tc_rawdec_L = -9999.9
+        ts_rawdec_b = SYSTEM_FILLVALUE
+        ts_rawdec_r = SYSTEM_FILLVALUE
+        tc_rawdec_L = SYSTEM_FILLVALUE
         tc_rawdec_H = 4237.0
         # set expected outputs
         int_xpctd = fill_value
         ref_xpctd = fill_value
-        tcl_xpctd = -5005.23    # this is unphysical, but no (div by 0) nor np.log(x<0) encountered
+        tcl_xpctd = fill_value
         tl_xpctd = fill_value   # calc uses ref_xpctd
         tch_xpctd = 7.94
         th_xpctd = fill_value   # calc uses ref_xpctd
@@ -360,17 +374,17 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
 
         # DOUBLE VALUED (VECTORIZED) TESTS
         # test inputs
-        ts_rawdec_b = np.array([8188.0, 8185.0])
-        ts_rawdec_r = np.array([8770.0, 8758.0])
-        tc_rawdec_L = np.array([16012.0, 16009.0])
-        tc_rawdec_H = np.array([4237.0, 4236.0])
+        ts_rawdec_b = np.array([8188, 8185])
+        ts_rawdec_r = np.array([8770, 8758])
+        tc_rawdec_L = np.array([16012, 16009])
+        tc_rawdec_H = np.array([4237, SYSTEM_FILLVALUE])
         # set expected outputs
         int_xpctd = np.array([24.53, 24.55])
         ref_xpctd = np.array([21.25, 21.31])
         tcl_xpctd = np.array([637.88, 637.72])
         tl_xpctd = np.array([655.28, 655.17])
-        tch_xpctd = np.array([7.94, 7.87])
-        th_xpctd = np.array([28.91, 28.91])
+        tch_xpctd = np.array([7.94, fill_value])
+        th_xpctd = np.array([28.91, fill_value])
         # tile the cal coeff arrays
         e2l_b = np.tile(e2l_b, (2, 1))
         l2s_b = np.tile(l2s_b, (2, 1))
@@ -662,19 +676,26 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
 
         Implemented by Craig Risien, February 2014
+        Added time-vectorized unit tests, Russell Desiderio, 2015-07-20
         """
 
+    ### scalar test
     # test inputs
     pressure_output = np.array([14.868])
-
     # expected outputs
     pressure_expected = np.array([10.2511])
+    # compute value
+    pressure_calc = sflfunc.sfl_sflpres_rtime(pressure_output)
+    # compare calculated results to expected
+    np.testing.assert_allclose(pressure_calc, pressure_expected, rtol=0.0001, atol=0.0001)
 
-    # compute values
-    pressure_calc = np.zeros(1)
-    for i in range(0, 1):
-        pressure_calc[i] = sflfunc.sfl_sflpres_rtime(pressure_output[i])
-
+    ### time-vectorized test
+    # test inputs
+    pressure_output = np.array([14.868, 14.868])
+    # expected outputs
+    pressure_expected = np.array([10.2511, 10.2511])
+    # compute value
+    pressure_calc = sflfunc.sfl_sflpres_rtime(pressure_output)
     # compare calculated results to expected
     np.testing.assert_allclose(pressure_calc, pressure_expected, rtol=0.0001, atol=0.0001)
 
@@ -691,19 +712,45 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
 
         Implemented by Craig Risien, February 2014
+        Added time-vectorized unit tests, Russell Desiderio, 2015-07-20,22
         """
 
+    ### scalar test
     # test inputs
     p_dec_tide = 4175754
     m = 279620.2
     b = 18641.3
-
-    # expected outputs
+    # expected output
     tide = 10.2504
-
     # compute values
     out = sflfunc.sfl_sflpres_tide(p_dec_tide, b, m)
+    # compare calculated results to expected
+    np.testing.assert_allclose(out, tide, rtol=0.0001, atol=0.0001)
 
+    ### time-vectorized test with system fill value
+    # test inputs
+    p_dec_tide = np.array([4175754, SYSTEM_FILLVALUE, 4175754])
+    m = np.array([279620.2, 279620.2, 279620.2])
+    b = np.array([18641.3, 18641.3, 18641.3])
+    # expected output
+    tide = np.array([10.2504, np.nan, 10.2504])
+    # compute values
+    out = sflfunc.sfl_sflpres_tide(p_dec_tide, b, m)
+    # compare calculated results to expected
+    np.testing.assert_allclose(out, tide, rtol=0.0001, atol=0.0001)
+
+    ### time-vectorized test with system fill value,
+    ### with time-vectorized slope and offset input
+    # test inputs
+    p_dec_tide = np.array([4175754, SYSTEM_FILLVALUE, 4175754])
+    m = np.array([279620.2, 279620.2, 279620.2])
+    b = np.array([18641.3, 18641.3, 18641.3])
+    slope = np.array([1.0, 1.0, 1.0])
+    offset = np.array([0.0, 0.0, 0.0])
+    # expected output
+    tide = np.array([10.2504, np.nan, 10.2504])
+    # compute values
+    out = sflfunc.sfl_sflpres_tide(p_dec_tide, b, m, slope, offset)
     # compare calculated results to expected
     np.testing.assert_allclose(out, tide, rtol=0.0001, atol=0.0001)
 
@@ -720,32 +767,58 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
 
         Implemented by Craig Risien, February 2014
+        Russell Desiderio, 2015-07-20,22: Corrected p_dec_wave input to be a 1D array for
+                                       the scalar time case. Added time-vectorized case.
         """
 
+    ### scalar time case
     # test inputs
+    p_dec_wave = np.array([8900312, SYSTEM_FILLVALUE, 8900312])
     ptcn = 43746280
-    p_dec_wave = 8900312
-    u0 =  5.856409e+00
+    u0 = 5.856409e+00
     y1 = -3.987838e+03
     y2 = -1.049603e+04
-    y3 =  0.000000e+00
-    c1 =  2.305367e+02
-    c2 =  1.198422e+01
+    y3 = 0.000000e+00
+    c1 = 2.305367e+02
+    c2 = 1.198422e+01
     c3 = -2.401512e+02
-    d1 =  4.095400e-02
-    d2 =  0.000000e+00
-    t1 =  2.781994e+01
-    t2 =  6.760780e-01
-    t3 =  1.761829e+01
-    t4 =  6.000932e+00
+    d1 = 4.095400e-02
+    d2 = 0.000000e+00
+    t1 = 2.781994e+01
+    t2 = 6.760780e-01
+    t3 = 1.761829e+01
+    t4 = 6.000932e+00
     poff = 0.0
+    slope = 1.0
+    offset = 0.0
 
-    # expected outputs
-    wave = 10.2511
+    # expected outputs - CI requires a 2D row vector
+    wave = np.array([[10.2511, np.nan, 10.2511]])
 
     # compute values
     out = sflfunc.sfl_sflpres_wave(ptcn, p_dec_wave, u0, y1, y2, y3, c1,
-                                   c2, c3, d1, d2, t1, t2, t3, t4, poff)
+                                   c2, c3, d1, d2, t1, t2, t3, t4, poff, slope, offset)
+
+    # compare calculated results to expected
+    np.testing.assert_allclose(out, wave, rtol=0.0001, atol=0.0001)
+
+    ### time-vectorized
+    npts = 5
+    args = [ptcn, u0, y1, y2, y3, c1, c2, c3, d1, d2, t1, t2, t3, t4, poff, slope, offset]
+    args = [np.tile(x, npts) for x in args]
+    [ptcn, u0, y1, y2, y3, c1, c2, c3, d1, d2, t1, t2, t3, t4, poff, slope, offset] = args
+
+    p_dec_wave = np.tile(p_dec_wave, (npts, 1))
+    wave = np.tile(wave, (npts, 1))
+
+    # change the last ptcn value to a system fill value,
+    ptcn[-1] = SYSTEM_FILLVALUE
+    # which should change the last row of the expected wave output to nans.
+    wave[-1, :] = np.nan
+
+    # compute values
+    out = sflfunc.sfl_sflpres_wave(ptcn, p_dec_wave, u0, y1, y2, y3, c1,
+                                   c2, c3, d1, d2, t1, t2, t3, t4, poff, slope, offset)
 
     # compare calculated results to expected
     np.testing.assert_allclose(out, wave, rtol=0.0001, atol=0.0001)
