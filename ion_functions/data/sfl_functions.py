@@ -10,14 +10,14 @@ import numpy as np
 import numexpr as ne
 from scipy.interpolate import RectBivariateSpline
 
+from ion_functions.data.generic_functions import replace_fill_with_nan
 # used by def sfl_trhph_chloride
 from ion_functions.data.sfl_functions_surface import tdat, sdat, cdat
-from ion_functions.utils import fill_value
-
 
 # .............................................................................
 # THSPH data products: THSPHHC, THSPHHS, THSPHPH (4 PH products) ..............
 # .............................................................................
+
 
 def sfl_thsph_ph(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
                  arr_hgo, arr_agcl, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, chl):
@@ -32,6 +32,7 @@ def sfl_thsph_ph(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
     Implemented by:
 
         2014-07-08: Russell Desiderio. Initial Code.
+        2015-07-24: Russell Desiderio. Incorporated calculate_vent_pH function.
 
     Usage:
 
@@ -67,29 +68,13 @@ def sfl_thsph_ph(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
     """
     # calculate lab calibrated electrode response [V]
     v_labcal_ysz = v_labcal(counts_ysz, e2l_ysz)
+    # AgCl reference electrode
     v_labcal_agcl = v_labcal(counts_agcl, e2l_agcl)
 
-    # calculate intermediate products that depend upon temperature
-    e_nernst = nernst(temperature)
-    e_hgo = eval_poly(temperature, arr_hgo)
-    e_agcl = eval_poly(temperature, arr_agcl)
+    # calculate chloride activity
     act_chl = chloride_activity(temperature, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, chl)
 
-    # calculate pH potential [V]
-    e_phmeas = v_labcal_ysz - v_labcal_agcl
-    # check for unphysical values as specified in the DPS.
-    # logical indexing with boolean arrays is faster than integer indexing using np.where.
-    # ok to apply mask at end of calculation.
-    bad_eph_mask = np.logical_or(np.less(e_phmeas, -0.7), np.greater(e_phmeas, 0.0))
-
-    # final data product calculation
-    pH = (e_phmeas - e_agcl + e_hgo) / e_nernst + np.log10(act_chl)
-
-    # second check for unphysical values, as specified in the DPS
-    bad_ph_mask = np.logical_or(np.less(pH, 3.0), np.greater(pH, 7.0))
-
-    # set all out-of-range values to fill values
-    pH[np.logical_or(bad_eph_mask, bad_ph_mask)] = fill_value
+    pH = calculate_vent_pH(v_labcal_ysz, v_labcal_agcl, temperature, arr_hgo, arr_agcl, act_chl)
 
     return pH
 
@@ -110,6 +95,7 @@ def sfl_thsph_ph_acl(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
     Implemented by:
 
         2014-07-08: Russell Desiderio. Initial Code.
+        2015-07-24: Russell Desiderio. Incorporated calculate_vent_pH function.
 
     Usage:
 
@@ -144,31 +130,14 @@ def sfl_thsph_ph_acl(counts_ysz, counts_agcl, temperature, e2l_ysz, e2l_agcl,
     """
     # calculate lab calibrated electrode response [V]
     v_labcal_ysz = v_labcal(counts_ysz, e2l_ysz)
+    # AgCl reference electrode
     v_labcal_agcl = v_labcal(counts_agcl, e2l_agcl)
 
-    # calculate intermediate products that depend upon temperature
-    e_nernst = nernst(temperature)
-    e_hgo = eval_poly(temperature, arr_hgo)
-    e_agcl = eval_poly(temperature, arr_agcl)
     # chloride activity assuming the default value for chloride concentration
-    # set in the subroutine
+    # set in the chloride_activity subroutine
     act_chl = chloride_activity(temperature, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3)
 
-    # calculate pH potential [V]
-    e_phmeas = v_labcal_ysz - v_labcal_agcl
-    # check for unphysical values as specified in the DPS.
-    # logical indexing with boolean arrays is faster than integer indexing using np.where.
-    # ok to apply mask at end of calculation.
-    bad_eph_mask = np.logical_or(np.less(e_phmeas, -0.7), np.greater(e_phmeas, 0.0))
-
-    # final data product calculation
-    pH = (e_phmeas - e_agcl + e_hgo) / e_nernst + np.log10(act_chl)
-
-    # second check for unphysical values, as specified in the DPS
-    bad_ph_mask = np.logical_or(np.less(pH, 3.0), np.greater(pH, 7.0))
-
-    # set all out-of-range values to fill values
-    pH[np.logical_or(bad_eph_mask, bad_ph_mask)] = fill_value
+    pH = calculate_vent_pH(v_labcal_ysz, v_labcal_agcl, temperature, arr_hgo, arr_agcl, act_chl)
 
     return pH
 
@@ -187,6 +156,7 @@ def sfl_thsph_ph_noref(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hgo,
     Implemented by:
 
         2014-07-08: Russell Desiderio. Initial Code.
+        2015-07-24: Russell Desiderio. Incorporated calculate_vent_pH function.
 
     Usage:
 
@@ -223,28 +193,12 @@ def sfl_thsph_ph_noref(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hgo,
     # calculate lab calibrated electrode response [V]
     v_labcal_ysz = v_labcal(counts_ysz, e2l_ysz)
 
-    # calculate intermediate products that depend upon temperature
+    # theoretical reference value calculated from vent temperature
     e_refcalc = eval_poly(temperature, arr_agclref)
-    e_nernst = nernst(temperature)
-    e_hgo = eval_poly(temperature, arr_hgo)
-    e_agcl = eval_poly(temperature, arr_agcl)
+    # calculate chloride activity
     act_chl = chloride_activity(temperature, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3, chl)
 
-    # calculate pH potential, using theoretical reference value [V]
-    e_phcalc = v_labcal_ysz - e_refcalc
-    # check for unphysical values as specified in the DPS.
-    # logical indexing with boolean arrays is faster than integer indexing using np.where.
-    # ok to apply mask at end of calculation.
-    bad_eph_mask = np.logical_or(np.less(e_phcalc, -0.7), np.greater(e_phcalc, 0.0))
-
-    # final data product calculation
-    pH = (e_phcalc - e_agcl + e_hgo) / e_nernst + np.log10(act_chl)
-
-    # second check for unphysical values, as specified in the DPS
-    bad_ph_mask = np.logical_or(np.less(pH, 3.0), np.greater(pH, 7.0))
-
-    # set all out-of-range values to fill values
-    pH[np.logical_or(bad_eph_mask, bad_ph_mask)] = fill_value
+    pH = calculate_vent_pH(v_labcal_ysz, e_refcalc, temperature, arr_hgo, arr_agcl, act_chl)
 
     return pH
 
@@ -265,6 +219,7 @@ def sfl_thsph_ph_noref_acl(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hg
     Implemented by:
 
         2014-07-08: Russell Desiderio. Initial Code.
+        2015-07-24: Russell Desiderio. Incorporated calculate_vent_pH function.
 
     Usage:
 
@@ -300,30 +255,83 @@ def sfl_thsph_ph_noref_acl(counts_ysz, temperature, arr_agclref, e2l_ysz, arr_hg
     # calculate lab calibrated electrode response [V]
     v_labcal_ysz = v_labcal(counts_ysz, e2l_ysz)
 
-    # calculate intermediate products that depend upon temperature
+    # theoretical reference value calculated from vent temperature
     e_refcalc = eval_poly(temperature, arr_agclref)
-    e_nernst = nernst(temperature)
-    e_hgo = eval_poly(temperature, arr_hgo)
-    e_agcl = eval_poly(temperature, arr_agcl)
     # chloride activity assuming the default value for chloride concentration
     # set in the subroutine
     act_chl = chloride_activity(temperature, arr_tac, arr_tbc1, arr_tbc2, arr_tbc3)
 
-    # calculate pH potential, using theoretical reference value [V]
-    e_phcalc = v_labcal_ysz - e_refcalc
+    pH = calculate_vent_pH(v_labcal_ysz, e_refcalc, temperature, arr_hgo, arr_agcl, act_chl)
+
+    return pH
+
+
+def calculate_vent_pH(e_ph, e_ref, temperature, arr_hgo, arr_agcl, act_chl):
+    """
+    Description:
+
+        Worker function to calculate the vent fluid pH for the THSPH instruments. This
+        function is called by
+            sfl_thsph_ph
+            sfl_thsph_ph_acl
+            sfl_thsph_ph_noref
+            sfl_thsph_ph_noref_acl.
+
+    Implemented by:
+
+        2015-07-24: Russell Desiderio. Initial Code.
+
+    Usage:
+
+        pH = calculate_vent_pH(e_ph, e_ref, temperature, arr_hgo, arr_agcl, act_chl)
+
+            where
+
+        pH = vent fluid pH
+        e_ph = intermediate pH potential uncorrected for reference
+        e_ref = reference pH potential, either measured or calculated
+        temperature = temperature near sample inlet THSPHTE-TH_L1 [deg_C].
+        arr_hgo = array of 5th degree polynomial coefficients to calculate the
+                  electrode material response to temperature.
+        arr_agcl = array of 5th degree polynomial coefficients to calculate the
+                  AgCl electrode material response to temperature.
+        act_chl = calculated chloride activity.
+
+    References:
+
+        OOI (2014). Data Product Specification for Vent Fluid pH. Document Control
+            Number 1341-00190. https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI>> Controlled >> 1000 System Level >>
+            1341-00190_Data_Product_Spec_THSPHPH_OOI.pdf)
+    """
+    # fill value local to this function to avoid python warnings when nans are encountered
+    # in boolean expressions. the masking will convert values derived from this local fill
+    # back to nans.
+    unphysical_pH_fill_value = -99999.0
+
+    # calculate intermediate quantities that depend upon temperature
+    e_nernst = nernst(temperature)
+    e_hgo = eval_poly(temperature, arr_hgo)
+    e_agcl = eval_poly(temperature, arr_agcl)
+
+    # calculate pH potential
+    e_phcalc = e_ph - e_ref
     # check for unphysical values as specified in the DPS.
     # logical indexing with boolean arrays is faster than integer indexing using np.where.
     # ok to apply mask at end of calculation.
+    e_phcalc[np.isnan(e_phcalc)] = unphysical_pH_fill_value
     bad_eph_mask = np.logical_or(np.less(e_phcalc, -0.7), np.greater(e_phcalc, 0.0))
 
     # final data product calculation
+    act_chl[act_chl <= 0.0] = np.nan  # trap out python warning
     pH = (e_phcalc - e_agcl + e_hgo) / e_nernst + np.log10(act_chl)
 
     # second check for unphysical values, as specified in the DPS
+    pH[np.isnan(pH)] = unphysical_pH_fill_value
     bad_ph_mask = np.logical_or(np.less(pH, 3.0), np.greater(pH, 7.0))
 
     # set all out-of-range values to fill values
-    pH[np.logical_or(bad_eph_mask, bad_ph_mask)] = fill_value
+    pH[np.logical_or(bad_eph_mask, bad_ph_mask)] = np.nan
 
     return pH
 
@@ -539,6 +547,7 @@ def v_labcal(counts, array_e2l_coeff):
     Implemented by:
 
         2014-07-08: Russell Desiderio. Initial Code.
+        2015-07-22: Russell Desiderio. Added call to replace_fill_with_nan.
 
     Usage:
 
@@ -553,7 +562,16 @@ def v_labcal(counts, array_e2l_coeff):
                           coefficients for the electrode for which the lab cal values are
                           desired. The coefficients are assumed to be stored in descending
                           order.
+
+    Notes:
+
+        All the THSPH L2 data products call v_labcal to process raw count input data. The
+        action of the replace_fill_with_nan call in this code therefore replaces system fill
+        values with nans for all of these DPAs.
+
     """
+    counts = replace_fill_with_nan(None, counts)
+
     # transform decimal counts to engineering values [volts]
     v_eng = (counts * 0.25 - 2048.0) / 1000.0
 
@@ -645,19 +663,11 @@ def sfl_thsph_temp_th(tc_rawdec_H, e2l_H, l2s_H, ts_rawdec_r, e2l_r, l2s_r, s2v_
 
     # calculate intermediate products T_ts_r, then V_ts_r (June 2014 DPS)
     T_ts_r = sfl_thsph_temp_ref(ts_rawdec_r, e2l_r, l2s_r)
-    # the calculation of T_ts_r could result in non-finite (inf, nan) values, which
-    # the sfl_thsph_temp_ref function above returns as fill values. so, replace
-    # the fill values with np.nans so they can be tracked through to the final
-    # data product variable.
-    T_ts_r[np.equal(T_ts_r, fill_value)] = np.nan
     V_ts_r = eval_poly(T_ts_r, s2v_r)
 
     # Correct thermocouple temperature to account for offset from cold junction as
     # measured by the reference thermistor
     T_H = eval_poly((V_tc_actual_H + V_ts_r), l2s_H)
-
-    # replace nans with fill values
-    T_H[np.isnan(T_H)] = fill_value
 
     return T_H
 
@@ -710,19 +720,11 @@ def sfl_thsph_temp_tl(tc_rawdec_L, e2l_L, l2s_L, ts_rawdec_r, e2l_r, l2s_r, s2v_
 
     # calculate intermediate products T_ts_r, then V_ts_r (June 2014 DPS)
     T_ts_r = sfl_thsph_temp_ref(ts_rawdec_r, e2l_r, l2s_r)
-    # the calculation of T_ts_r could result in non-finite (inf, nan) values, which
-    # the sfl_thsph_temp_ref function above returns as fill values. so, replace
-    # the fill values with np.nans so they can be tracked through to the final
-    # data product variable.
-    T_ts_r[np.equal(T_ts_r, fill_value)] = np.nan
     V_ts_r = eval_poly(T_ts_r, s2v_r)
 
     # Correct thermocouple temperature to account for offset from cold junction as
     # measured by the reference thermistor
     T_L = eval_poly((V_tc_actual_L + V_ts_r), l2s_L)
-
-    # replace nans with fill values
-    T_L[np.isnan(T_L)] = fill_value
 
     return T_L
 
@@ -828,6 +830,8 @@ def sfl_thsph_temp_ref(ts_rawdec_r, e2l_r, l2s_r):
 
         2014-05-01: Russell Desiderio. Initial Code
         2014-06-30: Russell Desiderio. DPS modifications to cal equations implemented.
+        2015-07-24: Russell Desiderio. Added call to replace_fill_with_nan.
+                                       Cleaned up error-checking.
 
     Usage:
 
@@ -850,28 +854,21 @@ def sfl_thsph_temp_ref(ts_rawdec_r, e2l_r, l2s_r):
             >> Controlled >> 1000 System Level >>
             1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
     """
-    # reset exception handling so that when divide by zeros and np.log(x<=0) are
-    # encountered, the warnings are suppressed.
-    oldsettings = np.seterr(divide='ignore', invalid='ignore')
+    ts_rawdec_r = replace_fill_with_nan(None, ts_rawdec_r)
 
     # convert raw decimal output to engineering values [ohms]
     ts_rawdec_r_scaled = ts_rawdec_r * 0.125
-    R_ts_eng_r = 10000.0 * ts_rawdec_r_scaled / (2048.0 - ts_rawdec_r_scaled)
+    denom = 2048.0 - ts_rawdec_r_scaled
+    denom[denom == 0.0] = np.nan
+    R_ts_eng_r = 10000.0 * ts_rawdec_r_scaled / denom
 
     # convert engineering values to lab calibrated values [ohms]
     R_ts_actual_r = eval_poly(R_ts_eng_r, e2l_r)
 
     # convert lab calibrated values to scientific values [degC]
+    R_ts_actual_r[R_ts_actual_r <= 0.0] = np.nan
     pval = eval_poly(np.log(R_ts_actual_r), l2s_r)
     T_ts_r = 1.0 / pval - 273.15
-
-    # restore default exception handling settings
-    np.seterr(**oldsettings)
-
-    # trap out possible occurrences of nans and infs due to log(val<=0) and divide by zero.
-    # nans and infs will be returned only if the variables are elements of numpy arrays.
-    # do not use np.isinf, it does not work as desired if its argument is np.nan.
-    T_ts_r[~np.isfinite(T_ts_r)] = fill_value
 
     return T_ts_r
 
@@ -889,6 +886,8 @@ def sfl_thsph_temp_int(ts_rawdec_b, e2l_b, l2s_b):
 
         2014-05-01: Russell Desiderio. Initial Code
         2014-06-30: Russell Desiderio. DPS modifications to cal equations implemented.
+        2015-07-24: Russell Desiderio. Added call to replace_fill_with_nan.
+                                       Cleaned up error-checking.
 
     Usage:
 
@@ -911,29 +910,22 @@ def sfl_thsph_temp_int(ts_rawdec_b, e2l_b, l2s_b):
             >> Controlled >> 1000 System Level >>
             1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
     """
-    # reset exception handling so that when divide by zeros and np.log(x<=0) are
-    # encountered, the warnings are suppressed.
-    oldsettings = np.seterr(divide='ignore', invalid='ignore')
+    ts_rawdec_b = replace_fill_with_nan(None, ts_rawdec_b)
 
     # convert raw decimal output to engineering values [ohms]
     ts_rawdec_b_scaled = ts_rawdec_b * 0.125
-    R_ts_eng_b = 10000.0 * ts_rawdec_b_scaled / (2048.0 - ts_rawdec_b_scaled)
+    denom = 2048.0 - ts_rawdec_b_scaled
+    denom[denom == 0.0] = np.nan
+    R_ts_eng_b = 10000.0 * ts_rawdec_b_scaled / denom
 
     # convert engineering values to lab calibrated values [ohms]
     R_ts_actual_b = eval_poly(R_ts_eng_b, e2l_b)
 
     # convert lab calibrated values to scientific values [degC]
+    R_ts_actual_b[R_ts_actual_b <= 0.0] = np.nan
     pval = eval_poly(np.log(R_ts_actual_b), l2s_b)
 
     T_ts_b = 1.0 / pval - 273.15
-
-    # restore default exception handling settings
-    np.seterr(**oldsettings)
-
-    # trap out possible occurrences of nans and infs due to log(val<=0) and divide by zero.
-    # nans and infs will be returned only if the variables are elements of numpy arrays.
-    # do not use np.isinf, it does not work as desired if its argument is np.nan.
-    T_ts_b[~np.isfinite(T_ts_b)] = fill_value
 
     return T_ts_b
 
@@ -948,6 +940,7 @@ def sfl_thsph_temp_labcal_h(tc_rawdec_H, e2l_H):
     Implemented by:
 
         2014-06-30: Russell Desiderio. Initial Code
+        2015-07-24: Russell Desiderio. Added call to replace_fill_with_nan.
 
     Usage:
 
@@ -968,6 +961,8 @@ def sfl_thsph_temp_labcal_h(tc_rawdec_H, e2l_H):
             >> Controlled >> 1000 System Level >>
             1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
     """
+    tc_rawdec_H = replace_fill_with_nan(None, tc_rawdec_H)
+
     # convert raw decimal output to engineering values [mV]
     # leave constants as is for clarity
     V_tc_eng_H = (tc_rawdec_H * 0.25 - 1024.0) / 61.606
@@ -988,6 +983,7 @@ def sfl_thsph_temp_labcal_l(tc_rawdec_L, e2l_L):
     Implemented by:
 
         2014-06-30: Russell Desiderio. Initial Code
+        2015-07-24: Russell Desiderio. Added call to replace_fill_with_nan.
 
     Usage:
 
@@ -1008,6 +1004,8 @@ def sfl_thsph_temp_labcal_l(tc_rawdec_L, e2l_L):
             >> Controlled >> 1000 System Level >>
             1341-00120_Data_Product_Specification_THSPHTE_OOI.pdf)
     """
+    tc_rawdec_L = replace_fill_with_nan(None, tc_rawdec_L)
+
     # convert raw decimal output to engineering values [mV]
     # leave constants as is for clarity
     V_tc_eng_L = (tc_rawdec_L * 0.25 - 1024.0) / 61.606
@@ -1097,7 +1095,7 @@ def sfl_trhph_vfltemp(V_ts, V_tc, tc_slope, ts_slope, c0=0.015, c1=0.0024, c2=7.
         T = Vent fluid temperature from TRHPH (TRHPHTE_L1) [deg_C]
         V_ts = Thermistor voltage (TRHPHVS_L0) [volts]
         V_tc = Thermocouple voltage (TRHPHVC_L0) [volts]
-        tc_slope = thermocople slope laboratory calibration coefficients
+        tc_slope = thermocouple slope laboratory calibration coefficients
         ts_slope = thermistor slope laboratory calibration coefficients
         c0 = coefficient from 3rd degree polynomial fit of laboratory
             calibration correction curve (not expected to change).
@@ -1309,7 +1307,6 @@ def sfl_trhph_chloride(V_R1, V_R2, V_R3, T):
     # change units to mmol/kg; round to required # of sigfigs as specified in
     # the DPS
     Cl = np.round(Cl * 1000.)
-    Cl[np.isnan(Cl)] = fill_value
 
     return Cl
 
@@ -1337,18 +1334,17 @@ def sfl_sflpres_rtime(p_psia):
         2014-01-31: Craig Risien. Initial Code
         2014-09-23: Christopher Wingard. Minor edits and adds code for -TIDE
                     and -WAVE.
+        2015-07-22: Russell Desiderio. There are no type integer input arguments,
+                                       don't need replace_fill_with_nan call.
 
     Usage:
 
         rtime = sfl_sflpres_rtime(p_psia):
 
-        Scaling: To convert from psia to dbar, use the Sea-Bird-specified
-        conversion: p_dbar = 0.689475728 * (p_psia)
-
             where
 
-        p_dbar = pressure (SFLPRES-RTIME_L1) [dbar]
-        p_psia = pressure (SFLPRES-RTIME_L0) [psi].
+        rtime = real-time pressure (SFLPRES-RTIME_L1) (hydrostatic + atmospheric) [dbar]
+        p_psia = pressure (SFLPRES-RTIME_L0) [psia].
 
     References:
 
@@ -1380,6 +1376,7 @@ def sfl_sflpres_tide(p_dec_tide, b, m, slope=1.0, offset=0.0):
     Implemented by:
 
         2014-09-23: Christopher Wingard. Initial code
+        2015-07-22: Russell Desiderio. Added call to replace_fill_with_nan.
 
     Usage:
 
@@ -1387,7 +1384,7 @@ def sfl_sflpres_tide(p_dec_tide, b, m, slope=1.0, offset=0.0):
 
             where
 
-        tide = tidal pressure (SFLPRES-TIDE_L1) [dbar]
+        tide = tidal pressure (SFLPRES-TIDE_L1) (hydrostatic + atmospheric) [dbar]
         p_dec_tide = tidal pressure (SFLPRES-TIDE_L0) [].
         b = calibration coefficient.
         m = calibration coefficient.
@@ -1402,6 +1399,9 @@ def sfl_sflpres_tide(p_dec_tide, b, m, slope=1.0, offset=0.0):
         >> Controlled >> 1000 System Level >>
         1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
     """
+    # replace type integer fill values with nans
+    p_dec_tide = replace_fill_with_nan(None, p_dec_tide)
+
     psia = ne.evaluate('slope * ((p_dec_tide - b) / m) + offset')
     tide = ne.evaluate('0.689475728 * psia')
     return tide
@@ -1426,6 +1426,8 @@ def sfl_sflpres_wave(ptcn, p_dec_wave, u0, y1, y2, y3, c1, c2, c3, d1, d2,
     Implemented by:
 
         2014-09-23: Christopher Wingard. Initial code
+        2015-07-20: Russell Desiderio. Modified code to accept p_dec_wave as 2D array.
+        2015-07-22: Russell Desiderio. Added call to replace_fill_with_nan.
 
     Usage:
 
@@ -1434,7 +1436,7 @@ def sfl_sflpres_wave(ptcn, p_dec_wave, u0, y1, y2, y3, c1, c2, c3, d1, d2,
 
             where
 
-        wave = wave burst pressure (SFLPRES-WAVE_L1) [dbar]
+        wave = wave burst pressure (SFLPRES-WAVE_L1) (hydrostatic + atmospheric) [dbar]
         ptcn = pressure temperature compensation number
         p_dec_wave = wave burst pressure (SFLPRES-WAVE_L0) [].
         u0 = calibration coefficient.
@@ -1462,6 +1464,13 @@ def sfl_sflpres_wave(ptcn, p_dec_wave, u0, y1, y2, y3, c1, c2, c3, d1, d2,
         >> Controlled >> 1000 System Level >>
         1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
     """
+    # replace type integer fill values with nans
+    p_dec_wave, ptcn = replace_fill_with_nan(None, p_dec_wave, ptcn)
+
+    # if p_dec_wave is a 1D array make it into a row vector
+    p_dec_wave = np.atleast_2d(p_dec_wave)
+    n_time_points, n_values_in_burst = p_dec_wave.shape
+
     # compute the pressure temperature compensation frequency (PTCF) and
     # pressure frequency (PF) from raw inputs
     PTCF = ne.evaluate('ptcn / 256.0')
@@ -1472,7 +1481,17 @@ def sfl_sflpres_wave(ptcn, p_dec_wave, u0, y1, y2, y3, c1, c2, c3, d1, d2,
     C = ne.evaluate('c1 + (c2 * U) + (c3 * U**2)')
     D = ne.evaluate('d1 + d2')
     T0 = ne.evaluate('(t1 + t2 * U + t3 * U**2 + t4 * U**3) / 1000000')
+    # broadcast T0 to the shape of PF
+    T0 = np.tile(T0, (n_values_in_burst, 1)).T
     W = ne.evaluate('1.0 - (T0**2 * PF**2)')
+    # broadcast C, D, and poff to the shape of W
+    C = np.tile(C, (n_values_in_burst, 1)).T
+    D = np.tile(D, (n_values_in_burst, 1)).T
+    poff = np.tile(poff, (n_values_in_burst, 1)).T
+    # broadcast slope and offset to the shape of W if not a scalar
+    if np.atleast_1d(slope).shape[0] != 1:
+        slope = np.tile(slope, (n_values_in_burst, 1)).T
+        offset = np.tile(offset, (n_values_in_burst, 1)).T
 
     # compute the wave pressure data in dbar
     psia = ne.evaluate('slope * ((C * W * (1.0 - D * W)) + poff) + offset')
