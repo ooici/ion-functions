@@ -311,7 +311,7 @@ def pco2_calc_pco2(light, therm, ea434, eb434, ea620, eb620,
     Tcor_RCO2 = RCO21 + Tcoeff * (therm - calt)
     pco2 = 10.**((-1. * calb + (calb**2 - (4. * cala * (calc - Tcor_RCO2)))**0.5) / (2. * cala))
 
-    return sp.real(pco2)
+    return np.real(pco2)
 
 
 def pco2_ppressure(xco2, p, std=1013.25):
@@ -358,7 +358,7 @@ def pco2_co2flux(pco2w, pco2a, u10, t, s):
     """
     Description:
 
-        OOI Level 2 core date product CO2FLUX is an estimate of the flux CO2
+        OOI Level 2 core date product CO2FLUX is an estimate of the CO2 flux
         from the ocean to the atmosphere. It is computed using data from the
         pCO2 air-sea (PCO2A) and bulk meteorology (METBK) families of
         instruments.
@@ -397,25 +397,25 @@ def pco2_co2flux(pco2w, pco2a, u10, t, s):
     # Compute Schmidt number (after Wanninkhof, 1992, Table A1)
     Sc = 2073.1 - (125.62 * t) + (3.6276 * t**2) - (0.043219 * t**3)
 
-    # Compute gas transfer velocity (after Sweeney et al., 2007, Fig. 3 and Table 1)
-    k = 0.27 * u10**2 * sp.sqrt(660.0 / Sc)
+    # Compute gas transfer velocity (after Sweeney et al. 2007, Fig. 3 and Table 1)
+    k = 0.27 * u10**2 * np.sqrt(660.0 / Sc)
 
     # convert cm h-1 to m s-1
     k = k / (100.0 * 3600.0)
 
-    # Compute absolute temperature
+    # Compute the absolute temperature
     T = t + 273.15
 
-    # Compute solubility (after Weiss, 1974, Eqn. 12 and Table I).
+    # Compute solubility (after Weiss 1974, Eqn. 12 and Table I).
     # Note that there are two versions, one for units per volume and
     # one per mass. Here, the volume version is used.
     # mol atm-1 m-3
     T100 = T / 100
-    K0 = 1000 * sp.exp(-58.0931 + (90.5069 * (100/T)) + (22.2940 * sp.log(T100)) +
+    K0 = 1000 * np.exp(-58.0931 + (90.5069 * (100/T)) + (22.2940 * np.log(T100)) +
                        s * (0.027766 - (0.025888 * T100) + (0.0050578 * T100**2)))
 
     # mol atm-1 kg-1
-    #K0 = sp.exp(-60.2409 + (93.4517 * (100/T)) + (23.3585 * np.log(T100)) +
+    #K0 = np.exp(-60.2409 + (93.4517 * (100/T)) + (23.3585 * np.log(T100)) +
     #            s * (0.023517 - (0.023656 * T100) + (0.0047036 * T100**2)))
 
     # Compute flux (after Wanninkhof, 1992, eqn. A2)
