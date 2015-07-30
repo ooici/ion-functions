@@ -398,7 +398,7 @@ def pco2_co2flux(pco2w, pco2a, u10, t, s):
     Sc = 2073.1 - (125.62 * t) + (3.6276 * t**2) - (0.043219 * t**3)
 
     # Compute gas transfer velocity (after Sweeney et al. 2007, Fig. 3 and Table 1)
-    k = 0.27 * u10**2 * sp.sqrt(660.0 / Sc)
+    k = 0.27 * u10**2 * np.sqrt(660.0 / Sc)
 
     # convert cm h-1 to m s-1
     k = k / (100.0 * 3600.0)
