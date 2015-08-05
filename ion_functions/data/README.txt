@@ -9,7 +9,8 @@ Alphabetical by instrument family Public ID.
 
 Revision History:
 
-    2015-06-08. Russell Desiderio. Updated VEL:vel_functions.py documentation.
+    2015-06-08. Russell Desiderio. Updated VEL: vel_functions.py documentation.
+    2015-08-05. Russell Desiderio. Updated DO2: d02_functions.py documentation.
 
 CO2: Partial Pressure CO2
 
@@ -63,13 +64,26 @@ CTD: Conductivity, Temperature, Depth
 
 DO2: Dissolved Oxygen
 
-    * do2_functions.py -- calculates L1 & L2 DOCONCS and L2 DOCONCF data
-      products.  This module includes:
-    
-      do2_SVU  -- calculates DOCONCS_L1 from DOSTAs
-      do2_salinity_correction -- calculates DOCONCS_L2 from DOSTAs
-      do2_dofst_volt -- calculates DOCONCF_L2 from a DOFST-As (SBE 43)
-      do2_dofst_frequency -- calculates DOCONCF_L2 from a DOFST-Ks (SBE 43F)
+    * do2_functions.py -- calculates DOFST and DOSTA data products:
+
+      DOFST (Seabird) functions:
+        do2_dofst_volt -- calculates DOCONCF_L2 from a DOFST-As (SBE 43)
+        do2_dofst_frequency -- calculates DOCONCF_L2 from a DOFST-Ks (SBE 43F)
+
+      DOSTA (Aanderaa) functions:
+          DOSTA configured for analog output to CTD voltage channels:
+            T_optode_degC = dosta_Topt_volt_to_degC(T_optode_volts)
+            DOCONCS-DEG_L0 = dosta_phase_volt_to_degree(DOCONCS-VLT_L0)
+            DOCONCS_L1 = do2_SVU(DOCONCS-DEG_L0, T_optode_degC, ...)
+            DOXYGEN_L2 = do2_salinity_correction(DOCONCS_L1, ...)
+
+          DOSTA configured for digital output to CTD RS-232:
+            DOCONCS_L1 = o2_counts_to_uM(DOCONCS-CNT_L0)
+            DOXYGEN_L2 = do2_salinity_correction(DOCONCS_L1, ...)
+
+          DOSTA, autonomous operation, digital output:
+            DOCONCS_L1 = do2_SVU(DOCONCS-DEG_L0, T_optode_degC, ...)
+            DOXYGEN_L2 = do2_salinity_correction(DOCONCS_L1, ...)
 
 FDC: Direct Covariance Flux
 
