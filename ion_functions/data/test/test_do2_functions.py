@@ -2,7 +2,7 @@
 """
 @package ion_functions.test.vel_functions
 @file ion_functions/test/vel_functions.py
-@author Stuart Pearce
+@author Stuart Pearce, Russell Desiderio
 @brief Unit tests for vel_functions module
 """
 
@@ -10,11 +10,16 @@ from nose.plugins.attrib import attr
 from ion_functions.test.base_test import BaseUnitTestCase
 
 import numpy as np
+from ion_functions.data.do2_functions import dosta_Topt_volt_to_degC
+from ion_functions.data.do2_functions import dosta_phase_volt_to_degree
 from ion_functions.data.do2_functions import do2_SVU
+from ion_functions.data.do2_functions import o2_counts_to_uM
 from ion_functions.data.do2_functions import do2_salinity_correction
 from ion_functions.data.do2_functions import do2_dofst_frequency
 from ion_functions.data.do2_functions import do2_dofst_volt
 #import pdb
+
+SYSTEM_FILLVALUE = -999999999
 
 
 @attr('UNIT', group='func')
@@ -109,8 +114,8 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         #np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
         np.testing.assert_allclose(do, do_expected, rtol=1e-6, atol=1e-6)
 
-        # R. Desiderio, 10-Apr-2015:
-        # test new CI implementation of time-vectorized cal coeffs
+        ### R. Desiderio
+        # 10-Apr-2015: test new CI implementation of time-vectorized cal coeffs
         tval = freq.shape[0]
         A = np.tile(A, tval)
         B = np.tile(B, tval)
@@ -118,6 +123,10 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         E = np.tile(E, tval)
         Foffset = np.tile(Foffset, tval)
         Soc = np.tile(Soc, tval)
+
+        # 05-Aug-2015: test replacement of type int system fillvalues with nan.
+        freq[7], freq[14], freq[23] = SYSTEM_FILLVALUE, SYSTEM_FILLVALUE, SYSTEM_FILLVALUE
+        do_expected[7], do_expected[14], do_expected[23] = np.nan, np.nan, np.nan
 
         # CALCULATION
         do = do2_dofst_frequency(
@@ -212,8 +221,8 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         #np.testing.assert_allclose(do_int, do_int_expected, rtol=1e-6, atol=1e-6)
         np.testing.assert_allclose(do, do_expected, rtol=1e-6, atol=1e-6)
 
-        # R. Desiderio, 10-Apr-2015:
-        # test new CI implementation of time-vectorized cal coeffs
+        ### R. Desiderio
+        # 10-Apr-2015: test new CI implementation of time-vectorized cal coeffs
         tval = volt_counts.shape[0]
         A = np.tile(A, tval)
         B = np.tile(B, tval)
@@ -221,6 +230,11 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         E = np.tile(E, tval)
         Voffset = np.tile(Voffset, tval)
         Soc = np.tile(Soc, tval)
+
+        # 05-Aug-2015: test replacement of type int system fillvalues with nan.
+        volt_counts[4], do_expected[4] = SYSTEM_FILLVALUE, np.nan
+        volt_counts[11], do_expected[11] = SYSTEM_FILLVALUE, np.nan
+        volt_counts[17], do_expected[17] = SYSTEM_FILLVALUE, np.nan
 
         # CALCULATION
         do = do2_dofst_volt(
@@ -288,7 +302,8 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         ion_functions/data/do2_functions.py for correction of
         oxygen for pressure and salinity.
 
-        2015-04-10: Russell Desiderio. No cal in this function's argument list.
+        2015-04-10: Russell Desiderio. No change, no calcoeffs in this
+                    function's argument list.
         """
         do_svu = np.array([
             3.67038772e+02,   2.89131248e+02,   2.32138540e+02,
@@ -340,3 +355,36 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
             1.64934214e+00,   2.87559085e-01])
 
         np.testing.assert_array_almost_equal(do, do_expected, decimal=6)
+
+    def test_o2_counts_to_uM(self):
+        """
+            2015-08-05: Russell Desiderio. Initial code.
+        """
+        counts = np.array([100000, SYSTEM_FILLVALUE, 2000000, 4000000, SYSTEM_FILLVALUE])
+        do_xpctd = np.array([0.0, np.nan, 190.0, 390.0, np.nan])
+
+        do_calc = o2_counts_to_uM(counts)
+
+        np.testing.assert_array_almost_equal(do_calc, do_xpctd, decimal=6)
+
+    def test_dosta_Topt_volt_to_degC(self):
+        """
+            2015-08-05: Russell Desiderio. Initial code.
+        """
+        volts = np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+        xpctd = np.array([-5.0, 3.0, 11.0, 19.0, 27.0, 35.0])
+
+        calc = dosta_Topt_volt_to_degC(volts)
+
+        np.testing.assert_array_almost_equal(calc, xpctd, decimal=6)
+
+    def test_dosta_phase_volt_to_degree(self):
+        """
+            2015-08-05: Russell Desiderio. Initial code.
+        """
+        volts = np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+        xpctd = np.array([10.0, 22.0, 34.0, 46.0, 58.0, 70.0])
+
+        calc = dosta_phase_volt_to_degree(volts)
+
+        np.testing.assert_array_almost_equal(calc, xpctd, decimal=6)
