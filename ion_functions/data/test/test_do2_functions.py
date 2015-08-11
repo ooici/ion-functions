@@ -253,6 +253,7 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
 
         2015-04-10: Russell Desiderio. Added test for implementation of
                     calibration coefficients as time-vectorized arguments.
+        2015-08-10: Russell Desiderio. Added test of conc_coef implementation.
         """
         calphase = np.array([
             32., 32., 32., 32., 39.825, 39.825, 39.825,
@@ -281,7 +282,6 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
 
         # SVU CALCULATION
         do_svu = do2_SVU(calphase, temp, csv)
-
         # SVU ASSERT
         np.testing.assert_array_almost_equal(do_svu, svu_expected, decimal=6)
 
@@ -289,10 +289,18 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         # test new CI implementation of time-vectorized cal coeffs
         tval = calphase.shape[0]
         csv = np.tile(csv, (tval, 1))
-
         # SVU CALCULATION
         do_svu = do2_SVU(calphase, temp, csv)
+        # SVU ASSERT
+        np.testing.assert_array_almost_equal(do_svu, svu_expected, decimal=6)
 
+        # R. Desiderio, 10-Aug-2015:
+        # test implementation of conc_coef
+        offset, slope = 10.0, 0.9
+        conc_coef = np.tile(np.array([offset, slope]), (calphase.size, 1))
+        svu_expected = offset + slope * svu_expected
+        # SVU CALCULATION
+        do_svu = do2_SVU(calphase, temp, csv, conc_coef)
         # SVU ASSERT
         np.testing.assert_array_almost_equal(do_svu, svu_expected, decimal=6)
 

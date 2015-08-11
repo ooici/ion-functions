@@ -71,17 +71,17 @@ DO2: Dissolved Oxygen
         do2_dofst_frequency -- calculates DOCONCF_L2 from a DOFST-Ks (SBE 43F)
 
       DOSTA (Aanderaa) functions:
-          DOSTA configured for analog output to CTD voltage channels:
+          DOSTA configured for analog output of calphase and T_opt to CTD voltage channels:
             T_optode_degC = dosta_Topt_volt_to_degC(T_optode_volts)
             DOCONCS-DEG_L0 = dosta_phase_volt_to_degree(DOCONCS-VLT_L0)
             DOCONCS_L1 = do2_SVU(DOCONCS-DEG_L0, T_optode_degC, ...)
             DOXYGEN_L2 = do2_salinity_correction(DOCONCS_L1, ...)
 
-          DOSTA configured for digital output to CTD RS-232:
+          DOSTA configured for digital output of oxygen concentration to CTD RS-232:
             DOCONCS_L1 = o2_counts_to_uM(DOCONCS-CNT_L0)
             DOXYGEN_L2 = do2_salinity_correction(DOCONCS_L1, ...)
 
-          DOSTA, autonomous operation, digital output:
+          DOSTA, autonomous operation, digital output of calphase and T_opt:
             DOCONCS_L1 = do2_SVU(DOCONCS-DEG_L0, T_optode_degC, ...)
             DOXYGEN_L2 = do2_salinity_correction(DOCONCS_L1, ...)
 
