@@ -15,17 +15,17 @@ from ion_functions.data.generic_functions import replace_fill_with_nan
 """
 DOSTA Processing Configurations:
 
-    DOSTA configured for analog output to CTD voltage channels:
+    DOSTA configured for analog output of calphase and T_opt to CTD voltage channels:
         T_optode_degC = dosta_Topt_volt_to_degC(T_optode_volts)
         DOCONCS-DEG_L0 = dosta_phase_volt_to_degree(DOCONCS-VLT_L0)
         DOCONCS_L1 = do2_SVU(DOCONCS-DEG_L0, T_optode_degC, ...)
         DOXYGEN_L2 = do2_salinity_correction(DOCONCS_L1, ...)
 
-    DOSTA configured for digital output to CTD RS-232:
+    DOSTA configured for digital output of oxygen concentration to CTD RS-232:
         DOCONCS_L1 = o2_counts_to_uM(DOCONCS-CNT_L0)
         DOXYGEN_L2 = do2_salinity_correction(DOCONCS_L1, ...)
 
-    DOSTA, autonomous operation, digital output:
+    DOSTA, autonomous operation, digital output of calphase and T_opt:
         DOCONCS_L1 = do2_SVU(DOCONCS-DEG_L0, T_optode_degC, ...)
         DOXYGEN_L2 = do2_salinity_correction(DOCONCS_L1, ...)
 
@@ -63,7 +63,7 @@ DOSTA DATA PRODUCTS:
     an analog voltage channel, then Topt[degC] is calculated from Topt[V] by the function
     dosta_Topt_volt_to_degC.
 
-    The temperature input to the function do2_salinity should be TEMPWAT from the co-located CTD.
+    The temperature input to the function do2_salinity_correction is TEMPWAT from the co-located CTD.
 
 
 DOFST DATA PRODUCTS:
@@ -185,7 +185,7 @@ def o2_counts_to_uM(o2_counts):
     return DO
 
 
-def do2_SVU(calphase, temp, csv):
+def do2_SVU(calphase, temp, csv, conc_coef=np.array([[0.0, 1.0]])):
     """
     Description:
 
@@ -196,7 +196,7 @@ def do2_SVU(calphase, temp, csv):
 
     Usage:
 
-        DO = do2_SVU(calphase, temp, csv)
+        DO = do2_SVU(calphase, temp, csv, conc_coef)
 
             where
 
@@ -206,6 +206,10 @@ def do2_SVU(calphase, temp, csv):
         temp = oxygen sensor foil temperature T(optode) [deg C], (see DOCONCS DPS)
         csv = Stern-Volmer-Uchida Calibration Coefficients array.
             7 element float array, (see DOCONCS DPS)
+        conc_coef = 'secondary' calibration coefficients: an array of offset and slope
+            coefficients to apply to the result of the SVU equation. See Notes.
+            conc_coef[0, 0] = offset
+            conc_coef[0, 1] = slope
 
     Example:
         csv = np.array([0.002848, 0.000114, 1.51e-6, 70.42301, -0.10302,
@@ -224,35 +228,70 @@ def do2_SVU(calphase, temp, csv):
                     vectorized arguments (tiled in the time dimension to match the
                     number of data packets). Fix for "blocker #2972".
         2015-08-04: Russell Desiderio. Added documentation.
+        2015-08-10: Russell Desiderio. Added conc_coef calibration array to argument list.
 
     Notes:
 
-        The DOCONCS_L1 data product has units of micromole/liter; SAF incorrectly
-        lists the units for this L1 product as micromole/kg.
+        General:
 
-        The DOCONCS_L1 data product is uncorrected for salinity and pressure.
+            The DOCONCS_L1 data product has units of micromole/liter; SAF incorrectly
+            lists the units for this L1 product as micromole/kg. (To change units from
+            mmole/L to mmole/kg, salinity is required, making the result an L2 data
+            product).
 
-        The optode sensor's thermistor temperature should be used whenever possible
-        because for the OOI DOSTAs (model 4831) it is situated directly at the sensor
-        foil and the cal coefficients are derived in part to compensate for the change
-        in oxygen permeability through the foil as a function of its temperature.
+            The DOCONCS_L1 data product is uncorrected for salinity and pressure.
 
-        The time constant of the model 4831 thermistor is < 2 seconds. Because the foil
-        and therefore the calphase response time itself is 8 sec or 24 sec depending on
-        the particular optode, there is little or no advantage to be gained by using a
-        temperature sensor (eg, from a CTD) with a faster response. It is better to make
-        sure that the temperature used most accurately reflects the foil temperature.
+        Temperature dependence:
 
-        On gliders, there is often a difference in CTD and optode temperature readings of
-        1 degree Celsius, which translates to about a 5% difference in calculated oxygen
-        concentration for a range of typical water column conditions.
+            The optode sensor's thermistor temperature should be used whenever possible
+            because for the OOI DOSTAs (model 4831) it is situated directly at the sensor
+            foil and the SVU cal coefficients are derived in part to compensate for the
+            change in oxygen permeability through the foil as a function of its temperature.
+
+            The time constant of the model 4831 thermistor is < 2 seconds. Because the foil
+            and therefore the calphase response time itself is 8 sec or 24 sec depending on
+            the particular optode, there is little or no advantage to be gained by using a
+            temperature sensor (eg, from a CTD) with a faster response. It is better to make
+            sure that the temperature used most accurately reflects the foil temperature.
+
+            On gliders, there is often a difference in CTD and optode temperature readings of
+            1 degree Celsius, which translates to about a 5% difference in calculated oxygen
+            concentration for a range of typical water column conditions.
+
+        Conc_coef (this information is not currently in the DPS):
+
+            Aanderaa uses two calibration procedures for the 4831 optode. The primary 'multi-point'
+            calibration, done in Norway, determines the SVU foil coefficients (variable csv in the
+            DPA). The secondary two-point calibration, done in Ohio, corrects the multi-point
+            calibration calculation against 0% oxygen and 100% oxygen data points to provide the
+            conc_coef values. (Aanderaa is in the process of changing the secondary cal to a one
+            point cal, using just the 100% oxygen data point, but the result will still be expressed
+            as offset and slope conc_coef values.) For standard optode refurbishment Aanderaa recommends
+            a secondary calibration instead of a new multi-point SVU foil calibration.
+
+            Secondary calibrations are not done on new optodes nor on optodes with new determinations
+            of the SVU foil coefficients; in these cases Aanderaa sets the conc_coef values to 0 (offset)
+            and 1 (slope) in the optode firmware by default. Conc_coef determinations resulting from the
+            secondary calibration procedure are also incorporated into the optode firmware and are also
+            listed on the Aanderaa Form No. 710 calibration certificate, although they are currently
+            mislabelled on this form as "PhaseCoef".
+
+            The conc_coef correction to optode-calculated values for oxygen concentration is automatically
+            applied by the optode firmware. However, this correction must be done manually when oxygen
+            concentration is calculated from calphase and optode temperature external to the optode, as in
+            this DPA do2_SVU.
 
     References:
+
         OOI (2012). Data Product Specification for Oxygen Concentration
             from "Stable" Instruments. Document Control Number
             1341-00520. https://alfresco.oceanobservatories.org/ (See:
             Company Home >> OOI >> Controlled >> 1000 System Level
             >> 1341-00520_Data_Product_SPEC_DOCONCS_OOI.pdf)
+
+        Aanderaa Data Instruments (August 2012). TD 269 Operating Manual Oxygen Optode 4330, 4831, 4835.
+
+        August 2015. Shawn Sneddon, Xylem-Aanderaa technical support, MA, USA, 800-765-4974
     """
     # this will work for both old and new CI implementations of cal coeffs.
     csv = np.atleast_2d(csv)
@@ -262,6 +301,10 @@ def do2_SVU(calphase, temp, csv):
     P0 = csv[:, 3] + csv[:, 4]*temp
     Pc = csv[:, 5] + csv[:, 6]*calphase
     DO = ((P0/Pc) - 1) / Ksv
+
+    # apply refurbishment calibration
+    # conc_coef can be a 2D array of either 1 row or DO.size rows.
+    DO = conc_coef[:, 0] + conc_coef[:, 1] * DO
     return DO
 
 
@@ -307,6 +350,7 @@ def do2_salinity_correction(DO, P, T, SP, lat, lon, pref=0):
 
     Implemented by:
         2013-04-26: Stuart Pearce. Initial Code.
+        2015-08-04: Russell Desiderio. Added Garcia-Gordon reference.
 
     References:
         OOI (2012). Data Product Specification for Oxygen Concentration
@@ -509,6 +553,7 @@ def dofst_calc(do_raw, offset, Soc, A, B, C, E, P, T, SP, lat, lon):
 
     Implemented by:
         2013-08-20: Stuart Pearce. Initial Code.
+        2015-08-04: Russell Desiderio. Added Garcia-Gordon reference.
 
     References:
          OOI (2013). Data Product Specification for Fast Dissolved
