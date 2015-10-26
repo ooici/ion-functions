@@ -109,20 +109,20 @@ FDC: Direct Covariance Flux
 
 FLO: Fluorometer
 
-    * flo_functions.py -- Covers calculation of the L1 CDOMFLO, CHLAFLO and
-      FLUBSCT data products from the FLORT and FLORD instrument classes.
-      This module contains the following functions:
+    * flo_functions.py -- Covers calculation of the L1 CDOMFLO, L1 CHLAFLO, and
+      L1 and L2 FLUBSCT data products from the FLORT, FLORD, and FLNTU instrument
+      classes. This module contains the following functions:
       
       ### Core functions
-      flo_bback_total -- calculates FLUBSCT-BBACK_L1 from FLORT and FLORD
+      flo_bback_total -- calculates FLUBSCT_L2 from FLORT, FLORD, and FLNTU
             (all series)
       flo_scat_seawater -- calculates the scattering coefficient of
             seawater from Zhang et al 2009, a required metadata parameter
             for FLUBSCT
-      flo_beta -- calculates FLUBSCT-BETA_L1 from FLORT and FLORD
+      flo_beta -- calculates FLUBSCT_L1 from FLORT, FLORD, and FLNTU
             (all series)
       flo_cdom -- calculates CDOMFLO_L1 from FLORT (all series)
-      flo_chla -- calculates CHLAFLO_L1 from FLORT and FLORD (all series)
+      flo_chla -- calculates CHLAFLO_L1 from FLORT, FLORD, and FLNTU (all series)
 
       ### Auxiallary functions
       flo_scale_and_offset -- applies scale and offset calculations used by

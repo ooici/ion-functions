@@ -1694,7 +1694,7 @@ def met_sphum2m(tC_sea, wnd, tC_air, relhum, timestamp, lon, ztmpwat,
     (_, _, qsr, _, _, _, _, L, _, _, _, _, _, _) = seasurface_skintemp_correct(*args)
 
     # make the necessary processed hourly data available for the final calculation
-    (_, _, _, _, _, _, _, tC_air, _, relhum, _, pr_air, _, _, _, _, _, _) = args
+    (_, _, _, _, _, _, _, tC_air, _, relhum, zhumair, pr_air, _, _, _, _, _, _) = args
 
     sphum2m = spechum_at_refheight(tC_air, pr_air, relhum, qsr, zrefht, zhumair, L)
 
@@ -1769,6 +1769,9 @@ def met_stablty(tC_sea, wnd, tC_air, relhum, timestamp, lon, ztmpwat,
 
     # L is the Obukhov length scale [m]
     (_, _, _, _, _, _, _, L, _, _, _, _, _, _) = seasurface_skintemp_correct(*args)
+
+    # make the necessary processed hourly data available for the final calculation
+    (_, _, _, _, _, _, zwindsp, _, _, _, _, _, _, _, _, _, _, _) = args
 
     return zwindsp / L
 
@@ -1845,7 +1848,7 @@ def met_tempa2m(tC_sea, wnd, tC_air, relhum, timestamp, lon, ztmpwat,
     (_, tsr, _, _, _, _, _, L, _, _, _, _, _, _) = seasurface_skintemp_correct(*args)
 
     # make the necessary processed hourly data available for the final calculation
-    (_, _, _, _, _, _, _, tC_air, _, _, _, _, _, _, lat, _, _, _) = args
+    (_, _, _, _, _, _, _, tC_air, ztmpair, _, _, _, _, _, lat, _, _, _) = args
 
     tempa2m = airtemp_at_refheight(tC_air, tsr, zrefht, ztmpair, L, lat)
 
@@ -2004,7 +2007,7 @@ def met_wind10m(tC_sea, wnd, tC_air, relhum, timestamp, lon, ztmpwat,
     (usr, _, _, ut, _, _, _, L, _, _, _, _, _, _) = seasurface_skintemp_correct(*args)
 
     # make the necessary processed hourly data available for the final calculation
-    (_, _, _, _, _, wnd, _, _, _, _, _, _, _, _, _, _, _, _) = args
+    (_, _, _, _, _, wnd, zwindsp, _, _, _, _, _, _, _, _, _, _, _) = args
 
     wind10m = windspeed_at_refheight(wnd, usr, ut, zrefht, zwindsp, L)
 

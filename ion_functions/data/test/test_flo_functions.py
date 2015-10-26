@@ -29,6 +29,10 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
             1341-00540_Data_Product_SPEC_FLUBSCT_OOI.pdf)
 
         Implemented by Christopher Wingard, April 2013
+        Modified by Russell Desiderio, October 26, 2015. Default values for theta,
+            wlngth, and xfactor have been removed from the DPA argument list
+            necessitating their inclusion in the call to flo_bback_total in the
+            unit test.
         """
         counts_output = np.array([
             55, 57, 55, 56, 54, 54, 55, 54, 55, 56, 55
@@ -46,12 +50,12 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
         # set default constants
         degC = np.ones(11) * 20.0
         psu = np.ones(11) * 32.0
-        #theta = np.ones(11) * 117.0
-        #wlngth = np.ones(11) * 700.0
-        #xfactor = np.ones(11) * 1.08
+        theta = np.ones(11) * 117.0
+        wlngth = np.ones(11) * 700.0
+        xfactor = np.ones(11) * 1.08
 
         # calculate the total optical backscatter
-        bbout = flofunc.flo_bback_total(beta, degC, psu)
+        bbout = flofunc.flo_bback_total(beta, degC, psu, theta, wlngth, xfactor)
 
         # How'd we do?
         np.testing.assert_allclose(bbout, bback, rtol=1e-6, atol=1e-6)

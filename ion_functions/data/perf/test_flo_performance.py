@@ -24,6 +24,9 @@ class TestADCPPerformance(PerformanceTestCase):
         self.beta = fl.flo_beta(self.scat_counts, self.scat_dark, self.scat_scale)
         self.degC = 20.0
         self.psu = 32.0
+        self.theta = 140.0
+        self.wavelength = 700.0
+        self.chi_factor = 1.096
 
         ### chla ###
         self.chla_counts = 55
@@ -41,8 +44,11 @@ class TestADCPPerformance(PerformanceTestCase):
         beta = np.repeat(self.beta, 1000000)
         degC = np.repeat(self.degC, 1000000)
         psu = np.repeat(self.psu, 1000000)
+        theta = np.repeat(self.theta, 1000000)
+        wavelength = np.repeat(self.wavelength, 1000000)
+        chi_factor = np.repeat(self.chi_factor, 1000000)
 
-        self.profile(stats, fl.flo_bback_total, beta, degC, psu)
+        self.profile(stats, fl.flo_bback_total, beta, degC, psu, theta, wavelength, chi_factor)
 
     def test_flo_beam(self):
         stats = []

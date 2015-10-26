@@ -209,23 +209,23 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                                    zinvpbl)
 
         # construct argument list to test time_vectorization of sensor heights.
-        nrep = self.lat.shape[0]
+        self.npts = self.lat.shape[0]
         self.args_vector_ztmvec = (self.tC_sea,
                                    self.wnd,
                                    self.tC_air,
                                    self.relhum,
                                    self.timestamp,
                                    self.lon,
-                                   np.tile(ztmpwat, nrep),
-                                   np.tile(zwindsp, nrep),
-                                   np.tile(ztmpair, nrep),
-                                   np.tile(zhumair, nrep),
+                                   np.tile(ztmpwat, self.npts),
+                                   np.tile(zwindsp, self.npts),
+                                   np.tile(ztmpair, self.npts),
+                                   np.tile(zhumair, self.npts),
                                    self.lat,
                                    self.pr_air,
                                    self.Rshort_down,
                                    self.Rlong_down,
                                    self.cumu_prcp,
-                                   np.tile(zinvpbl, nrep))
+                                   np.tile(zinvpbl, self.npts))
 
         # construct sets of arguments to test warmlayer_time_keys.py (placement of nans
         # in output when a day's data does not start before sunrise, taken to be 6AM).
@@ -285,10 +285,21 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         2014-09-20: Russell Desiderio. Added tests of DPAs on sub-hourly testdata.
         2014-10-28: Russell Desiderio. New derivation of rain heat flux coded.
         2014-10-29: Russell Desiderio. Incorporated new unit test values for all data products
-                                       using warmlayer algorithm (which uses rain heat flux).
+                    using warmlayer algorithm (which uses rain heat flux).
         2014-12-29: Russell Desiderio. Incorporated tests on Irminger METBK data.
-        2015-07-13: Russell Desiderio. Incorporated tests using time-vectorized input for
-                                       sensor heights and algorithm switches.
+        2015-07-13: Russell Desiderio. Incorporated tests using time-vectorized input for sensor
+                    heights and algorithm switches; tested only met_latnflx as a proxy for all
+                    the functions using the coolskin\warmlayer algorithm.
+        2015-10-26: Russell Desiderio. Expanded tests developed on 7-13 to test all data products
+                    using the coolskin\warmlayer algorithm (fixes problem exposed in redmine ticket
+                    #8592).
+
+                    Also fixed test_met_mommflx within this test module, which had been named
+                    met_mommflx, so that up to this time the met_mommflx unit test function had
+                    never been run. The unit test values turned out to be old values (probably
+                    before the new rain heat flux code was written). The procedure detailed in
+                    the Description section above was followed to generate the present unit test
+                    values from the matlab code, which do agree with the python DPA code results.
 
     References
 
@@ -321,12 +332,24 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 calc[ctr, :] = mb.met_stablty(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
-    def met_mommflx(self):
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_stablty(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    def test_met_mommflx(self):
         # cases: [jwarm, jcool]
         xpctd = np.array([[0.030974330742, 0.016090125876, 0.020303436138],
                           [0.030614459503, 0.015910513076, 0.020067006629],
-                          [0.030974330742, 0.016096471089, 0.020312413574],
-                          [0.030614459503, 0.015918213926, 0.020078251168]])
+                          [0.030974330742, 0.016096471089, 0.020310838724],
+                          [0.030614459503, 0.015918213926, 0.020076101791]])
 
         # SCALAR CASES [00] and [01]:
         calc = np.zeros(2)
@@ -342,6 +365,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_mommflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
                 calc[ctr, :] = mb.met_mommflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
@@ -369,6 +404,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 calc[ctr, :] = mb.met_buoyflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_buoyflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
     def test_met_buoyfls(self):
         # cases: [jwarm, jcool]
         xpctd = np.array([[36.10919371, 28.32153986, 33.56844146],
@@ -390,6 +437,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_buoyfls(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
                 calc[ctr, :] = mb.met_buoyfls(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
@@ -417,6 +476,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 calc[ctr, :] = mb.met_latnflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_latnflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
     def test_met_sensflx(self):
         # cases: [jwarm, jcool]
         xpctd = np.array([[24.34435275, 19.84019748, 23.96742950],
@@ -438,6 +509,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_sensflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
                 calc[ctr, :] = mb.met_sensflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
@@ -466,6 +549,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 calc[ctr, :] = mb.met_rainflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_rainflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
     def test_met_netlirr(self):
         # cases: [jwarm, jcool]
         xpctd = np.array([[41.43188924, 28.54298163, 42.15187511],
@@ -487,6 +582,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_netlirr(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
                 calc[ctr, :] = mb.met_netlirr(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
@@ -535,6 +642,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 calc[ctr, :] = mb.met_heatflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_heatflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
     def test_met_tempa2m(self):
         # cases: [jwarm, jcool]
         xpctd = np.array([[28.36851533, 28.09024408, 27.81395793],
@@ -556,6 +675,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_tempa2m(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
                 calc[ctr, :] = mb.met_tempa2m(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
@@ -583,6 +714,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 calc[ctr, :] = mb.met_sphum2m(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_sphum2m(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
     def test_met_wind10m(self):
         # cases: [jwarm, jcool]
         xpctd = np.array([[4.84933264, 3.42025464, 3.87210524],
@@ -604,6 +747,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_wind10m(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
                 calc[ctr, :] = mb.met_wind10m(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
@@ -631,6 +786,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 calc[ctr, :] = mb.met_frshflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_frshflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
     def test_met_tempskn(self):
         # cases: [jwarm, jcool]
         xpctd = np.array([[31.12500000, 31.03300000, 31.02200000],
@@ -652,6 +819,18 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_tempskn(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
                 calc[ctr, :] = mb.met_tempskn(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
@@ -1265,33 +1444,93 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         xpctd = np.array([True, True, True, False])
         np.testing.assert_equal(calc, xpctd)
 
-    def test_time_vectorized_heights_and_switches(self):
-        """
-        Description:
+    #def test_time_vectorized_heights_and_switches(self):
+    #    """
+    #    Description:
+    #
+    #        Time-vectorization of the sensor heights (ztmpwat, ztmpair, zhumair, zwindsp,
+    #        and zinvpbl) and algorithm switches (jwarm, jcool) are tested using the DPA
+    #        met_latnflx which calculates the latent heat flux L2 data product. The check
+    #        values are identical to the vector case values in test_met_latnflx.
+    #
+    #    Implemented by:
+    #
+    #        2014-07-14: Russell Desiderio. Initial Code.
+    #    """
+    #    xpctd = np.array([[184.91334211, 133.43175366, 151.19456789],
+    #                      [170.45205774, 123.62963458, 139.11084942],
+    #                      [184.91334211, 133.78969897, 151.58612581],
+    #                      [170.45205774, 124.03365974, 139.55690009]])
+    #
+    #    # Time-vectorized cases only
+    #    # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+    #    npts = self.args_vector_ztmvec[0].shape  # number of time points
+    #    calc = np.zeros((4, 3))
+    #    for iwarm in range(2):
+    #        jwarm_tmvec = np.tile(iwarm, npts)  # time vectorize jwarm
+    #        for icool in range(2):
+    #            ctr = icool + iwarm * 2
+    #            jcool_tmvec = np.tile(icool, npts)  # time vectorize jcool
+    #            args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+    #            calc[ctr, :] = mb.met_latnflx(*args_vector)
+    #    np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+    #
+    #
+    #
+    #    xpctd = np.array([[4.84933264, 3.42025464, 3.87210524],
+    #                      [4.85069650, 3.42094844, 3.87301659],
+    #                      [4.84933264, 3.42023139, 3.87207813],
+    #                      [4.85069650, 3.42091723, 3.87297987]])
+    #
+    #    # Time-vectorized cases only
+    #    # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+    #    npts = self.args_vector_ztmvec[0].shape  # number of time points
+    #    calc = np.zeros((4, 3))
+    #    for iwarm in range(2):
+    #        jwarm_tmvec = np.tile(iwarm, npts)  # time vectorize jwarm
+    #        for icool in range(2):
+    #            ctr = icool + iwarm * 2
+    #            jcool_tmvec = np.tile(icool, npts)  # time vectorize jcool
+    #            args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+    #            calc[ctr, :] = mb.met_wind10m(*args_vector)
+    #    np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
-            Time-vectorization of the sensor heights (ztmpwat, ztmpair, zhumair, zwindsp,
-            and zinvpbl) and algorithm switches (jwarm, jcool) are tested using the DPA
-            met_latnflx which calculates the latent heat flux L2 data product. The check
-            values are identical to the vector case values in test_met_latnflx.
-
-        Implemented by:
-
-            2014-07-14: Russell Desiderio. Initial Code.
-        """
-        xpctd = np.array([[184.91334211, 133.43175366, 151.19456789],
-                          [170.45205774, 123.62963458, 139.11084942],
-                          [184.91334211, 133.78969897, 151.58612581],
-                          [170.45205774, 124.03365974, 139.55690009]])
-
-        # Time-vectorized cases only
-        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
-        npts = self.args_vector_ztmvec[0].shape  # number of time points
-        calc = np.zeros((4, 3))
-        for iwarm in range(2):
-            jwarm_tmvec = np.tile(iwarm, npts)  # time vectorize jwarm
-            for icool in range(2):
-                ctr = icool + iwarm * 2
-                jcool_tmvec = np.tile(icool, npts)  # time vectorize jcool
-                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-                calc[ctr, :] = mb.met_latnflx(*args_vector)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+    #def fast_test(self):
+    #    tC_sea = np.zeros(43) + 15.0
+    #    wnd = np.zeros(43) + .5
+    #    tC_air = np.zeros(43) + 12.5
+    #    relhum = np.zeros(43) + 56.5
+    #
+    #    #timestamp = np.array([  3.62559589e+09,   3.62559589e+09,   3.62559590e+09,
+    #    timestamp = np.array([  3625553890,   3625553898,   3625563892,
+    #     3.62564315e+09,   3.62569050e+09,   3.62573784e+09,
+    #     3.62578513e+09,   3.62583246e+09,   3.62587979e+09,
+    #     3.62592708e+09,   3.62597436e+09,   3.62602169e+09,
+    #     3.62606905e+09,   3.62611637e+09,   3.62616366e+09,
+    #     3.62621100e+09,   3.62625828e+09,   3.62630562e+09,
+    #     3.62635295e+09,   3.62640023e+09,   3.62644758e+09,
+    #     3.62649486e+09,   3.62652416e+09,   3.62672640e+09,
+    #     3.62677877e+09,   3.62682610e+09,   3.62687339e+09,
+    #     3.62692074e+09,   3.62696802e+09,   3.62701535e+09,
+    #     3.62706266e+09,   3.62711000e+09,   3.62715145e+09,
+    #     3.62732849e+09,   3.62748853e+09,   3.62753586e+09,
+    #     3.62758313e+09,   3.62763049e+09,   3.62767780e+09,
+    #     3.62772511e+09,   3.62773303e+09,   3.62778304e+09,
+    #     3.62791436e+09])
+    #    lon = np.zeros(43) + 89.5
+    #    ztmpwat = np.zeros(43) + 5.5
+    #    zwindsp = np.zeros(43) + 12.5
+    #    ztmpair = np.zeros(43) + 3.5
+    #    zhumair = np.zeros(43) + 6.5
+    #    lat = np.zeros(43) + 33.5
+    #    pr_air = np.zeros(43) + 1005.5
+    #    Rshort_down = np.zeros(43) + 100.5
+    #    Rlong_down = np.zeros(43) + 400.5
+    #    cumu_prcp = np.zeros(43) + 25.5
+    #    zinvpbl = np.zeros(43) + 600.0
+    #    jwarm = np.zeros(43) + 1
+    #    jcool = np.zeros(43) + 1
+    #    
+    #    out = mb.met_wind10m(tC_sea, wnd, tC_air, relhum, timestamp, lon, ztmpwat, zwindsp, ztmpair, zhumair, lat, pr_air, Rshort_down, Rlong_down, cumu_prcp, zinvpbl, jwarm, jcool)
+    #    print out.shape
+    #    
