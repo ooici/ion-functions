@@ -185,7 +185,7 @@ def o2_counts_to_uM(o2_counts):
     return DO
 
 
-def do2_SVU(calphase, temp, csv, conc_coef=np.array([[0.0, 1.0]])):
+def do2_SVU(calphase, temp, csv, conc_coef=np.array([0.0, 1.0])):
     """
     Description:
 
@@ -229,6 +229,12 @@ def do2_SVU(calphase, temp, csv, conc_coef=np.array([[0.0, 1.0]])):
                     number of data packets). Fix for "blocker #2972".
         2015-08-04: Russell Desiderio. Added documentation.
         2015-08-10: Russell Desiderio. Added conc_coef calibration array to argument list.
+                    Required to be a 2D row vector for broadcasting purposes.
+        2015-10-28: Russell Desiderio. Added conc_coef = np.atleast_2d(conc_coef) line so
+                    that function will now accept conc_coef as a 1D array (so that 1D array
+                    entries in Omaha cal sheets won't result in DPA exceptions being raised).
+                    So. Also changed default value for conc_coef in argument list to be
+                    the 1D array [0.0, 1.0].
 
     Notes:
 
@@ -293,6 +299,7 @@ def do2_SVU(calphase, temp, csv, conc_coef=np.array([[0.0, 1.0]])):
 
         August 2015. Shawn Sneddon, Xylem-Aanderaa technical support, MA, USA, 800-765-4974
     """
+    conc_coef = np.atleast_2d(conc_coef)
     # this will work for both old and new CI implementations of cal coeffs.
     csv = np.atleast_2d(csv)
 

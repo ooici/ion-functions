@@ -56,7 +56,9 @@ CTD: Conductivity, Temperature, Depth
       ctd_density -- calculates DENSITY_L2 from all CTDs
       
       CTDAV (all series) and CTDGV (all series) produce the L1 data
-      products directly.
+      products directly, except for the CTDGV PRESWAT metadata product:
+      
+      ctd_glider_preswat  --  calculates PRESWAT_L1 from CTDGV.
 
       New series for which DPAs are not written (probably not required):
       CTDBP (P) SBE16Plus-IM V2
@@ -346,6 +348,7 @@ SFL: Seafloor Properties
         sfl_sflpres_rtime:                 SFLPRES-RTIME_L1
         sfl_sflpres_tide:                  SFLPRES-TIDE_L1
         sfl_sflpres_wave:                  SFLPRES-WAVE_L1
+        sfl_sbe26plus_prestmp:             PRESTMP_L1 (DPS metadata)
   
     * sfl_functions_surface.py -- Recreates the 3 arrays of temperature
       (tdat), conductivty (sdat) and chloride (cdat) from the Larson et al

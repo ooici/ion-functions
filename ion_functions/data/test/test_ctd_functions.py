@@ -179,6 +179,18 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
         p = ctdfunc.ctd_sbe37im_preswat(p0, p_range_psia)
         np.testing.assert_allclose(p, 0.04536611, rtol=1e-6, atol=0)
 
+    def test_ctd_glider_preswat(self):
+        """
+        Test ctd_glider_preswat function.
+
+        Implemented by Russell Desiderio, October 28, 2015
+        """
+        p0 = np.array([0.9, 5.6789, 11.07, 121.212, 1234.5678])
+        xpctd = np.array([9.0, 56.789, 110.7, 1212.12, 12345.678])
+
+        p = ctdfunc.ctd_glider_preswat(p0)
+        np.testing.assert_allclose(p, xpctd, rtol=1e-8, atol=1e-8)
+
     def test_ctd_sbe52mp_preswat(self):
         """
         Test ctd_sbe52mp_preswat function.

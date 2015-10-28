@@ -308,6 +308,43 @@ def ctd_sbe37im_preswat(p0, p_range_psia):
     return p_dbar
 
 
+def ctd_glider_preswat(pr_bar):
+    """
+    Description:
+
+        OOI Level 1 Pressure (Depth) data product, which is calculated using
+        data from the Sea-Bird Electronics conductivity, temperature and depth
+        (CTD) family of instruments.
+
+        This data product is derived from Seabird CTDs installed on gliders and
+        applies to CTDGV instruments.
+
+    Implemented by:
+
+        2015-10-28: Russell Desiderio. Initial Code
+
+    Usage:
+
+        pr_dbar = ctd_glider_preswat(pr_bar)
+
+            where
+
+        pr_dbar = sea water pressure (PRESWAT_L1) [dbar]
+        pr_bar = sea water pressure value from glider [bar]
+
+    References:
+
+        OOI (2015). Data Product Specification for Coastal Glider Data Products
+            (version 1-03). Document Control Number 1341-00020.
+            https://alfresco.oceanobservatories.org/
+            (See: Company Home >> OOI >> Controlled >> 1000 System Level >>
+            1341-20001_Data_Product_SPEC_CSGLIDR_OOI.docx)
+    """
+
+    pr_dbar = pr_bar * 10.0
+    return pr_dbar
+
+
 def ctd_sbe52mp_preswat(p0):
     """
     Description:

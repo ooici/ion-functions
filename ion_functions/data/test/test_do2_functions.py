@@ -294,11 +294,31 @@ class TestDo2FunctionsUnit(BaseUnitTestCase):
         # SVU ASSERT
         np.testing.assert_array_almost_equal(do_svu, svu_expected, decimal=6)
 
-        # R. Desiderio, 10-Aug-2015:
-        # test implementation of conc_coef
+        # R. Desiderio, 10-Aug-2015.  test implementation of conc_coef
+        #               28-Oct-2015.  updated to handle 1D conc_coef arguments (case 3)
+
         offset, slope = 10.0, 0.9
-        conc_coef = np.tile(np.array([offset, slope]), (calphase.size, 1))
         svu_expected = offset + slope * svu_expected
+
+        # case 1:
+        conc_coef = np.array([[offset, slope]])
+
+        # SVU CALCULATION
+        do_svu = do2_SVU(calphase, temp, csv, conc_coef)
+        # SVU ASSERT
+        np.testing.assert_array_almost_equal(do_svu, svu_expected, decimal=6)
+
+        # case 2:
+        conc_coef = np.tile(np.array([offset, slope]), (calphase.size, 1))
+
+        # SVU CALCULATION
+        do_svu = do2_SVU(calphase, temp, csv, conc_coef)
+        # SVU ASSERT
+        np.testing.assert_array_almost_equal(do_svu, svu_expected, decimal=6)
+
+        # case 3 (added so that 1D entries into Omaha cal sheets won't crash):
+        conc_coef = np.array([offset, slope])
+
         # SVU CALCULATION
         do_svu = do2_SVU(calphase, temp, csv, conc_coef)
         # SVU ASSERT
