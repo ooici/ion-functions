@@ -822,3 +822,16 @@ class TestSFLFunctionsUnit(BaseUnitTestCase):
 
     # compare calculated results to expected
     np.testing.assert_allclose(out, wave, rtol=0.0001, atol=0.0001)
+
+    def test_sfl_sbe26plus_prestmp(self):
+        """
+        Test sfl_sbe26plus_prestmp function.
+
+        Implemented by Russell Desiderio, October 28, 2015
+        """
+        t0 = np.array([12345.678, 901234.567, 89012.345])
+        xpctd = np.array([2.345678, 891.234657, 79.012345])
+
+        t = sflfunc.sfl_sbe26plus_prestmp(t0)
+        np.testing.assert_allclose(t, xpctd, rtol=0.000001, atol=0.000001)
+

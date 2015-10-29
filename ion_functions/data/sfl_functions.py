@@ -1497,3 +1497,38 @@ def sfl_sflpres_wave(ptcn, p_dec_wave, u0, y1, y2, y3, c1, c2, c3, d1, d2,
     psia = ne.evaluate('slope * ((C * W * (1.0 - D * W)) + poff) + offset')
     wave = ne.evaluate('0.689475728 * psia')
     return wave
+
+
+def sfl_sbe26plus_prestmp(t0):
+    """
+    Description:
+
+        Calculates the sea water temperature meta-data product PRESTMP_L1 from
+        the Sea-Bird Electronics SBE26Plus (PRESF) instrument, as specified in
+        the DPS referenced below (sections 4.2.1 and 4.4) for recovered instrument
+        (not DCL) data.
+
+    Implemented by:
+
+        2015-10-28: Russell Desiderio. Initial Code
+
+    Usage:
+
+        t = sfl_sbe26plus_prestmp(t0)
+
+            where
+
+        t = sea water temperature (PRESTMP_L1) [deg_C]
+        t0 = temperature number [hex converted to decimal]
+
+    References:
+
+        OOI (2013). Data Product Specification for Seafloor Pressure from
+        Sea-Bird SBE 26PLUS. Document Control Number 1341-00230.
+        https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+        >> Controlled >> 1000 System Level >>
+        1341-00230_Data_Product_SPEC_SFLPRES_OOI.pdf)
+    """
+
+    t = t0 / 1000.0 - 10.0
+    return t
