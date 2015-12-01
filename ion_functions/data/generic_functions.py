@@ -13,6 +13,7 @@ import numpy as np
 import numexpr as ne
 import pkg_resources
 import time
+from numbers import Integral
 
 # ION Functions imports
 from ion_functions.data.wmm import WMM
@@ -88,14 +89,8 @@ def replace_fill_with_nan(instrument_fillvalue, *args):
     # dealing with ndarrays of sizes from empty to multiple elements - some of my tests
     # with these revealed non-intuitive results when subjected to boolean testing.
     if isinstance(instrument_fillvalue, np.ndarray):
-        instrument_fillvalue = np.ndarray.tolist(np.ndarray.flatten(instrument_fillvalue))
-    if instrument_fillvalue is None:
-        # this branch is included so that None is not appended to the list of fill values
-        # in the variable all_fillvalues, even though the unit tests will still pass.
-        pass
-    # if an instrument_fillvalue of 0 is passed as a scalar 0, then it will test as false.
-    # a list of one element which is a 0 will test as true, the desired behavior.
-    elif [instrument_fillvalue]:
+        instrument_fillvalue = list(instrument_fillvalue.flatten())
+    if instrument_fillvalue is not None:
         all_fillvalues = np.hstack((all_fillvalues, instrument_fillvalue))
 
     ## original coding loops
@@ -111,7 +106,7 @@ def replace_fill_with_nan(instrument_fillvalue, *args):
     # more pythonic, perhaps faster
     for ii, val in enumerate(args):
         # check to see if the first element is an integer datatype
-        if isinstance(np.ndarray.flatten(val)[0], (long, int)):
+        if isinstance(val.flatten()[0], Integral):
             mask = np.zeros_like(val, dtype=bool)
             for jj, fil in enumerate(all_fillvalues):
                 mask = np.logical_or(mask, val == fil)
