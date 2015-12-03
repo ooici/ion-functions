@@ -187,15 +187,16 @@ def fdc_windtur_north(timestamp, sonicU, sonicV, sonicW, heading,
                  frame of reference
         sonicW = WINDTUR-W_L0 [cm/s]; w-component of windspeed measured in the buoy
                  frame of reference
-        heading = MOTFLUX-YAW_L0 [radians] measured by the magnetometer (NOT msrd by the gyro).
+        heading = MOTFLUX-YAW_L0 (MOTFLUX-HDG_L0) [radians] measured by the magnetometer
+                  (NOT msrd by the gyro).
         ***NOT USED*** roll: MOTFLUX-ROLL_L0 [radians] ***NOT USED***
         ***NOT USED*** pitch: MOTFLUX-PITCH_L0 [radians] ***NOT USED***
-        rateX = MOTFLUX-ROLL_RATE_L0 [radians/s] measured by the gyro
-        rateY = MOTFLUX-PITCH_RATE_L0 [radians/s] measured by the gyro
-        rateZ = MOTFLUX-YAW_RATE_L0 [radians/s] measured by the gyro
-        accX = MOTFLUX-ACX_L0 [9.80665 m^2/s^2] x-component of platform linear acceleration
-        accY = MOTFLUX-ACY_L0 [9.80665 m^2/s^2] y-component of platform linear acceleration
-        accZ = MOTFLUX-ACZ_L0 [9.80665 m^2/s^2] z-component of platform linear acceleration
+        rateX = MOTFLUX-ROLL_RATEX_L0 [radians/s] measured by the gyro
+        rateY = MOTFLUX-PITCH_RATEY_L0 [radians/s] measured by the gyro
+        rateZ = MOTFLUX-YAW_RATEZ_L0 [radians/s] measured by the gyro
+        accX = MOTFLUX-ACX_L0 [9.80665 m/s^2] x-component of platform linear acceleration
+        accY = MOTFLUX-ACY_L0 [9.80665 m/s^2] y-component of platform linear acceleration
+        accZ = MOTFLUX-ACZ_L0 [9.80665 m/s^2] z-component of platform linear acceleration
         lat = latitude of instrument in decimal degrees
 
     References:
@@ -246,15 +247,16 @@ def fdc_windtur_up(timestamp, sonicU, sonicV, sonicW, heading,
                  frame of reference
         sonicW = WINDTUR-W_L0 [cm/s]; w-component of windspeed measured in the buoy
                  frame of reference
-        heading = MOTFLUX-YAW_L0 [radians] measured by the magnetometer (NOT msrd by the gyro).
+        heading = MOTFLUX-YAW_L0 (MOTFLUX-HDG_L0) [radians] measured by the magnetometer
+                  (NOT msrd by the gyro).
         ***NOT USED*** roll: MOTFLUX-ROLL_L0 [radians] ***NOT USED***
         ***NOT USED*** pitch: MOTFLUX-PITCH_L0 [radians] ***NOT USED***
-        rateX = MOTFLUX-ROLL_RATE_L0 [radians/s] measured by the gyro
-        rateY = MOTFLUX-PITCH_RATE_L0 [radians/s] measured by the gyro
-        rateZ = MOTFLUX-YAW_RATE_L0 [radians/s] measured by the gyro
-        accX = MOTFLUX-ACX_L0 [9.80665 m^2/s^2] x-component of platform linear acceleration
-        accY = MOTFLUX-ACY_L0 [9.80665 m^2/s^2] y-component of platform linear acceleration
-        accZ = MOTFLUX-ACZ_L0 [9.80665 m^2/s^2] z-component of platform linear acceleration
+        rateX = MOTFLUX-ROLL_RATEX_L0 [radians/s] measured by the gyro
+        rateY = MOTFLUX-PITCH_RATEY_L0 [radians/s] measured by the gyro
+        rateZ = MOTFLUX-YAW_RATEZ_L0 [radians/s] measured by the gyro
+        accX = MOTFLUX-ACX_L0 [9.80665 m/s^2] x-component of platform linear acceleration
+        accY = MOTFLUX-ACY_L0 [9.80665 m/s^2] y-component of platform linear acceleration
+        accZ = MOTFLUX-ACZ_L0 [9.80665 m/s^2] z-component of platform linear acceleration
         lat = latitude of instrument in decimal degrees
 
     References:
@@ -305,15 +307,16 @@ def fdc_windtur_west(timestamp, sonicU, sonicV, sonicW, heading,
                  frame of reference
         sonicW = WINDTUR-W_L0 [cm/s]; w-component of windspeed measured in the buoy
                  frame of reference
-        heading = MOTFLUX-YAW_L0 [radians] measured by the magnetometer (NOT msrd by the gyro).
+        heading = MOTFLUX-YAW_L0 (MOTFLUX-HDG_L0) [radians] measured by the magnetometer
+                  (NOT msrd by the gyro).
         ***NOT USED*** roll: MOTFLUX-ROLL_L0 [radians] ***NOT USED***
         ***NOT USED*** pitch: MOTFLUX-PITCH_L0 [radians] ***NOT USED***
-        rateX = MOTFLUX-ROLL_RATE_L0 [radians/s] measured by the gyro
-        rateY = MOTFLUX-PITCH_RATE_L0 [radians/s] measured by the gyro
-        rateZ = MOTFLUX-YAW_RATE_L0 [radians/s] measured by the gyro
-        accX = MOTFLUX-ACX_L0 [9.80665 m^2/s^2] x-component of platform linear acceleration
-        accY = MOTFLUX-ACY_L0 [9.80665 m^2/s^2] y-component of platform linear acceleration
-        accZ = MOTFLUX-ACZ_L0 [9.80665 m^2/s^2] z-component of platform linear acceleration
+        rateX = MOTFLUX-ROLL_RATEX_L0 [radians/s] measured by the gyro
+        rateY = MOTFLUX-PITCH_RATEY_L0 [radians/s] measured by the gyro
+        rateZ = MOTFLUX-YAW_RATEZ_L0 [radians/s] measured by the gyro
+        accX = MOTFLUX-ACX_L0 [9.80665 m/s^2] x-component of platform linear acceleration
+        accY = MOTFLUX-ACY_L0 [9.80665 m/s^2] y-component of platform linear acceleration
+        accZ = MOTFLUX-ACZ_L0 [9.80665 m/s^2] z-component of platform linear acceleration
         lat = latitude of instrument in decimal degrees
 
     References:
@@ -377,15 +380,16 @@ def fdc_fluxhot(timestamp, sonicU, sonicV, sonicW, sonicT, heading,
         sonicW = WINDTUR-W_L0 [cm/s]; w-component of windspeed measured in the buoy
                  frame of reference
         sonicT = TMPATUR_L0 [counts]; speed of sound measured by the sonic anemometer
-        heading = MOTFLUX-YAW_L0 [radians] measured by the magnetometer (NOT msrd by the gyro).
+        heading = MOTFLUX-YAW_L0 (MOTFLUX-HDG_L0) [radians] measured by the magnetometer
+                  (NOT msrd by the gyro).
         ***NOT USED*** roll: MOTFLUX-ROLL_L0 [radians] ***NOT USED***
         ***NOT USED*** pitch: MOTFLUX-PITCH_L0 [radians] ***NOT USED***
-        rateX = MOTFLUX-ROLL_RATE_L0 [radians/s] measured by the gyro
-        rateY = MOTFLUX-PITCH_RATE_L0 [radians/s] measured by the gyro
-        rateZ = MOTFLUX-YAW_RATE_L0 [radians/s] measured by the gyro
-        accX = MOTFLUX-ACX_L0 [9.80665 m^2/s^2] x-component of platform linear acceleration
-        accY = MOTFLUX-ACY_L0 [9.80665 m^2/s^2] y-component of platform linear acceleration
-        accZ = MOTFLUX-ACZ_L0 [9.80665 m^2/s^2] z-component of platform linear acceleration
+        rateX = MOTFLUX-ROLL_RATEX_L0 [radians/s] measured by the gyro
+        rateY = MOTFLUX-PITCH_RATEY_L0 [radians/s] measured by the gyro
+        rateZ = MOTFLUX-YAW_RATEZ_L0 [radians/s] measured by the gyro
+        accX = MOTFLUX-ACX_L0 [9.80665 m/s^2] x-component of platform linear acceleration
+        accY = MOTFLUX-ACY_L0 [9.80665 m/s^2] y-component of platform linear acceleration
+        accZ = MOTFLUX-ACZ_L0 [9.80665 m/s^2] z-component of platform linear acceleration
         lat = latitude of instrument in decimal degrees
 
     References:
@@ -434,15 +438,16 @@ def fdc_fluxmom_alongwind(timestamp, sonicU, sonicV, sonicW, heading,
                  frame of reference
         sonicW = WINDTUR-W_L0 [cm/s]; w-component of windspeed measured in the buoy
                  frame of reference
-        heading = MOTFLUX-YAW_L0 [radians] measured by the magnetometer (NOT msrd by the gyro).
+        heading = MOTFLUX-YAW_L0 (MOTFLUX-HDG_L0) [radians] measured by the magnetometer
+                  (NOT msrd by the gyro).
         ***NOT USED*** roll: MOTFLUX-ROLL_L0 [radians] ***NOT USED***
         ***NOT USED*** pitch: MOTFLUX-PITCH_L0 [radians] ***NOT USED***
-        rateX = MOTFLUX-ROLL_RATE_L0 [radians/s] measured by the gyro
-        rateY = MOTFLUX-PITCH_RATE_L0 [radians/s] measured by the gyro
-        rateZ = MOTFLUX-YAW_RATE_L0 [radians/s] measured by the gyro
-        accX = MOTFLUX-ACX_L0 [9.80665 m^2/s^2] x-component of platform linear acceleration
-        accY = MOTFLUX-ACY_L0 [9.80665 m^2/s^2] y-component of platform linear acceleration
-        accZ = MOTFLUX-ACZ_L0 [9.80665 m^2/s^2] z-component of platform linear acceleration
+        rateX = MOTFLUX-ROLL_RATEX_L0 [radians/s] measured by the gyro
+        rateY = MOTFLUX-PITCH_RATEY_L0 [radians/s] measured by the gyro
+        rateZ = MOTFLUX-YAW_RATEZ_L0 [radians/s] measured by the gyro
+        accX = MOTFLUX-ACX_L0 [9.80665 m/s^2] x-component of platform linear acceleration
+        accY = MOTFLUX-ACY_L0 [9.80665 m/s^2] y-component of platform linear acceleration
+        accZ = MOTFLUX-ACZ_L0 [9.80665 m/s^2] z-component of platform linear acceleration
         lat = latitude of instrument in decimal degrees
 
     References:
@@ -493,15 +498,16 @@ def fdc_fluxmom_crosswind(timestamp, sonicU, sonicV, sonicW, heading,
                  frame of reference
         sonicW = WINDTUR-W_L0 [cm/s]; w-component of windspeed measured in the buoy
                  frame of reference
-        heading = MOTFLUX-YAW_L0 [radians] measured by the magnetometer (NOT msrd by the gyro).
+        heading = MOTFLUX-YAW_L0 (MOTFLUX-HDG_L0) [radians] measured by the magnetometer
+                  (NOT msrd by the gyro).
         ***NOT USED*** roll: MOTFLUX-ROLL_L0 [radians] ***NOT USED***
         ***NOT USED*** pitch: MOTFLUX-PITCH_L0 [radians] ***NOT USED***
-        rateX = MOTFLUX-ROLL_RATE_L0 [radians/s] measured by the gyro
-        rateY = MOTFLUX-PITCH_RATE_L0 [radians/s] measured by the gyro
-        rateZ = MOTFLUX-YAW_RATE_L0 [radians/s] measured by the gyro
-        accX = MOTFLUX-ACX_L0 [9.80665 m^2/s^2] x-component of platform linear acceleration
-        accY = MOTFLUX-ACY_L0 [9.80665 m^2/s^2] y-component of platform linear acceleration
-        accZ = MOTFLUX-ACZ_L0 [9.80665 m^2/s^2] z-component of platform linear acceleration
+        rateX = MOTFLUX-ROLL_RATEX_L0 [radians/s] measured by the gyro
+        rateY = MOTFLUX-PITCH_RATEY_L0 [radians/s] measured by the gyro
+        rateZ = MOTFLUX-YAW_RATEZ_L0 [radians/s] measured by the gyro
+        accX = MOTFLUX-ACX_L0 [9.80665 m/s^2] x-component of platform linear acceleration
+        accY = MOTFLUX-ACY_L0 [9.80665 m/s^2] y-component of platform linear acceleration
+        accZ = MOTFLUX-ACZ_L0 [9.80665 m/s^2] z-component of platform linear acceleration
         lat = latitude of instrument in decimal degrees
 
     References:
