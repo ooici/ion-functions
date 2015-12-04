@@ -5,7 +5,6 @@ import numpy as np
 
 
 class TestNITPerformance(PerformanceTestCase):
-
     def test_ts_corrected_nitrate(self):
 
         wllower = 217
@@ -28,8 +27,12 @@ class TestNITPerformance(PerformanceTestCase):
         ctd_sp = np.tile(ctd_sp, (a_deca, 1))
         dark_value = np.tile(dark_value, (a_deca, 1))
         frame_type = np.tile(frame_type, 2500)
+        wl = np.tile(wl, (a_deca, 1))
+        eno3 = np.tile(eno3, (a_deca, 1))
+        eswa = np.tile(eswa, (a_deca, 1))
+        di = np.tile(di, (a_deca, 1))
+        cal_temp = np.tile(cal_temp, a_deca)
 
         # timing test
-        self.profile(stats, ts_corrected_nitrate, wllower, wlupper,
-                     cal_temp, wl, eno3, eswa, di, dark_value,
-                     ctd_t, ctd_sp, data_in, frame_type)
+        self.profile(stats, ts_corrected_nitrate, cal_temp, wl, eno3, eswa, di,
+                     dark_value, ctd_t, ctd_sp, data_in, frame_type, wllower, wlupper)
