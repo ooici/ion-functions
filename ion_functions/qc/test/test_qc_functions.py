@@ -100,6 +100,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         self.assertTrue(np.allclose(np.nan_to_num(got), np.nan_to_num(out),
                                     rtol=1e-8, atol=0))
 
+
     def test_dataqc_polyvaltest(self):
         """
         Test Numpy polyval function.
@@ -271,7 +272,7 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         got = qcfunc.dataqc_spiketest(dat, acc, N, L)
 
         np.testing.assert_array_equal(got,out)
-    
+
     def test_dataqc_spiketest_extended(self):
         dat = [-1 , 3 , 40 , -1 , 1 , -6 , -6 , 1 , 2 , 4 , 3 , 1 , -1 , 40 , 1 , 1 , 4 , 2 , 2 , 2 , 1 , 2 , 100]
         out = [ 1 , 1 , 1  , 1  , 1 , 1  , 1  , 1 , 1 , 1 , 1 , 1 , 1  , 0  , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 0]
@@ -603,10 +604,10 @@ class TestQCFunctionsUnit(BaseUnitTestCase):
         usec = doy * 24 * 60 * 60 * 1e6
         #Edited by Craig Risien on 02/12/2014 to fix issue/error using np.timedelta
         #Changed dt = np.datetime64('2012-01-01') + np.timedelta64(usec) to the following:
-        dt1 = np.datetime64('2012-01-01')
+        dt1 = np.datetime64('2012-01-01T00:00:00.000000-0000')
         dt2 = np.array(usec, dtype='timedelta64[us]')
         dt = dt1+dt2
-        
+
         dt = dt.astype(np.float) / 1e6
 
         z = np.array([87.8905, 39.8829, -0.0847, 0.0847,
