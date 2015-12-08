@@ -1014,84 +1014,84 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
         # test results
         np.testing.assert_array_almost_equal(calc, xpctd, 6)
 
-    def test_adcp_bin_depths_pd8(self):
-                """
-        Test the adcp_bin_depths_pd8 function.
+    def test_adcp_bin_depths_meters(self):
+        """
+        Test the adcp_bin_depths_meters function.
 
         Implemented by:
             Craig Risien, January 2015. Initial code.
             Russell Desiderio. 26-Jun-2015. Added time-vectorized unit test after modifying DPA.
                                30-Jun-2015. Added fill value unit test.
         """
-    sfill = SYSTEM_FILLVALUE
+        sfill = SYSTEM_FILLVALUE
 
-    ### scalar time case (1) - adcp looking up
-    # test inputs - note, CI will be sending these into the DPAs as ndarrays, not python scalars.
-    adcp_orientation = 1
-    bin_size = 400
-    dist_first_bin = 900
-    num_bins = 29
-    sensor_depth = 450
-    # expected outputs
-    # note that the output should be a row vector, not a 1D array.
-    xpctd_bins_up = np.array([[441., 437., 433., 429., 425., 421., 417., 413., 409., 405., 401., 397., 393., 389.,
-                              385., 381., 377., 373., 369., 365., 361., 357., 353., 349., 345., 341., 337., 333.,
-                              329.]])
-     # calculate bin depths
-    calc_bins_up = af.adcp_bin_depths_pd8(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
+        ### scalar time case (1) - adcp looking up
+        # test inputs - note, CI will be sending these into the DPAs as ndarrays, not python scalars.
+        adcp_orientation = 1
+        bin_size = 400
+        dist_first_bin = 900
+        num_bins = 29
+        sensor_depth = 450
+        # expected outputs
+        # note that the output should be a row vector, not a 1D array.
+        xpctd_bins_up = np.array([[441., 437., 433., 429., 425., 421., 417., 413., 409., 405., 401., 397., 393., 389.,
+                                  385., 381., 377., 373., 369., 365., 361., 357., 353., 349., 345., 341., 337., 333.,
+                                  329.]])
+         # calculate bin depths
+        calc_bins_up = af.adcp_bin_depths_meters(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
 
-    # compare calculated results to expected results
-    np.testing.assert_allclose(calc_bins_up, xpctd_bins_up, rtol=0.000001, atol=0.000001)
+        # compare calculated results to expected results
+        np.testing.assert_allclose(calc_bins_up, xpctd_bins_up, rtol=0.000001, atol=0.000001)
 
-    ### scalar time case (2) - adcp looking down
-    # test inputs
-    adcp_orientation = np.array([0])
-    bin_size = np.array([400])
-    dist_first_bin = np.array([900])
-    num_bins = np.array([29])
-    sensor_depth = np.array([7])
-    # expected outputs
-    xpctd_bins_down = np.array([[16., 20., 24., 28., 32., 36., 40., 44., 48., 52., 56., 60., 64., 68., 72., 76., 80.,
-                                84., 88., 92., 96., 100., 104., 108., 112., 116., 120., 124., 128.]])
-    # calculate bin depths
-    calc_bins_down = af.adcp_bin_depths_pd8(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
+        ### scalar time case (2) - adcp looking down
+        # test inputs
+        adcp_orientation = np.array([0])
+        bin_size = np.array([400])
+        dist_first_bin = np.array([900])
+        num_bins = np.array([29])
+        sensor_depth = np.array([7])
+        # expected outputs
+        xpctd_bins_down = np.array([[16., 20., 24., 28., 32., 36., 40., 44., 48., 52., 56., 60., 64., 68., 72., 76., 80.,
+                                    84., 88., 92., 96., 100., 104., 108., 112., 116., 120., 124., 128.]])
+        # calculate bin depths
+        calc_bins_down = af.adcp_bin_depths_meters(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
 
-    # compare calculated results to expected results
-    np.testing.assert_allclose(calc_bins_down, xpctd_bins_down, rtol=0.000001, atol=0.000001)
+        # compare calculated results to expected results
+        np.testing.assert_allclose(calc_bins_down, xpctd_bins_down, rtol=0.000001, atol=0.000001)
 
-    ### time-vectorized case; cat the above two scalar cases together.
-    # inputs
-    dist_first_bin = np.array([900, 900])
-    bin_size = np.array([400, 400])
-    num_bins = np.array([29, 29])
-    sensor_depth = np.array([450, 7])
-    adcp_orientation = np.array([1, 0])
-    # expected
-    xpctd_bins = np.vstack((xpctd_bins_up, xpctd_bins_down))
-    # calculated
-    calc_bins = af.adcp_bin_depths_pd8(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
-    # compare calculated results to expected results
-    np.testing.assert_allclose(calc_bins, xpctd_bins, rtol=0.000001, atol=0.000001)
+        ### time-vectorized case; cat the above two scalar cases together.
+        # inputs
+        dist_first_bin = np.array([900, 900])
+        bin_size = np.array([400, 400])
+        num_bins = np.array([29, 29])
+        sensor_depth = np.array([450, 7])
+        adcp_orientation = np.array([1, 0])
+        # expected
+        xpctd_bins = np.vstack((xpctd_bins_up, xpctd_bins_down))
+        # calculated
+        calc_bins = af.adcp_bin_depths_meters(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
+        # compare calculated results to expected results
+        np.testing.assert_allclose(calc_bins, xpctd_bins, rtol=0.000001, atol=0.000001)
 
-    ### time-vectorized fill cases - test the action on a fill value in each of the 5 input data streams,
-    # plus one instance of all good data.
-    num_bins = np.array([29, 29, 29, sfill, 29, 29])  # NOTE: DPA uses only first num_bins value
-    dist_first_bin = np.array([900, sfill, 900, 900, 900, 900])
-    bin_size = np.array([400, 400, sfill, 400, 400, 400])
-    sensor_depth = np.array([450, 7, 450, 7, 450, sfill])
-    adcp_orientation = np.array([1, 0, 1, 0, sfill, 0])
-    # 1st and 4th rows will have non-Nan data.
-    xpctd_bins = np.tile(np.nan, (6, 29))
-    xpctd_bins[0, :] = xpctd_bins_up
-    xpctd_bins[3, :] = xpctd_bins_down
-    # calculated
-    calc_bins = af.adcp_bin_depths_pd8(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
-    # compare calculated results to expected results
-    np.testing.assert_allclose(calc_bins, xpctd_bins, rtol=0.000001, atol=0.000001)
+        ### time-vectorized fill cases - test the action on a fill value in each of the 5 input data streams,
+        # plus one instance of all good data.
+        num_bins = np.array([29, 29, 29, sfill, 29, 29])  # NOTE: DPA uses only first num_bins value
+        dist_first_bin = np.array([900, sfill, 900, 900, 900, 900])
+        bin_size = np.array([400, 400, sfill, 400, 400, 400])
+        sensor_depth = np.array([450, 7, 450, 7, 450, sfill])
+        adcp_orientation = np.array([1, 0, 1, 0, sfill, 0])
+        # 1st and 4th rows will have non-Nan data.
+        xpctd_bins = np.tile(np.nan, (6, 29))
+        xpctd_bins[0, :] = xpctd_bins_up
+        xpctd_bins[3, :] = xpctd_bins_down
+        # calculated
+        calc_bins = af.adcp_bin_depths_meters(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
+        # compare calculated results to expected results
+        np.testing.assert_allclose(calc_bins, xpctd_bins, rtol=0.000001, atol=0.000001)
 
-    def test_adcp_bin_depths(self):
-                """
-        Test the adcp_bin_depths function.
+    def test_adcp_bin_depths_dapa(self):
+        """
+        Test the adcp_bin_depths_dapa function.
 
         Values based on z_from_p check values.
 
@@ -1100,76 +1100,155 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
             Russell Desiderio. 26-Jun-2015. Corrected pressure type and units and z_from_p usage.
                                30-Jun-2015. Added fill value unit test.
         """
-    sfill = SYSTEM_FILLVALUE
+        sfill = SYSTEM_FILLVALUE
 
-    ### scalar time case (1) - adcp looking up
-    # test inputs - note, CI will be sending these into the DPAs as ndarrays, not python scalars.
-    # test inputs
-    adcp_orientation = np.array([1])
-    bin_size = np.array([400])
-    dist_first_bin = np.array([900])
-    latitude = np.array([4.0])
-    num_bins = np.array([10])
-    # input adcp pressure has units of decaPascals
-    pressure = np.array([600000])
-    # according to the z_from_p check value at 600db, this gives a depth of 595.8262 m
-    # expected outputs
-    # note that the output should be a row vector, not a 1D array.
-    expected_bins_up = 0.8253480 + np.array([[586, 582, 578, 574, 570, 566, 562, 558, 554, 550]])
-    # calculate bin depths
-    calculated_bins = af.adcp_bin_depths(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
-    # compare calculated results to expected results
-    np.testing.assert_allclose(calculated_bins, expected_bins_up, rtol=0.0, atol=0.000001)
+        ### scalar time case (1) - adcp looking up
+        # test inputs - note, CI will be sending these into the DPAs as ndarrays, not python scalars.
+        # test inputs
+        adcp_orientation = np.array([1])
+        bin_size = np.array([400])
+        dist_first_bin = np.array([900])
+        latitude = np.array([4.0])
+        num_bins = np.array([10])
+        # input adcp pressure has units of decaPascals
+        pressure = np.array([600000])
+        # according to the z_from_p check value at 600db, this gives a depth of 595.8262 m
+        # expected outputs
+        # note that the output should be a row vector, not a 1D array.
+        expected_bins_up = 0.8253480 + np.array([[586, 582, 578, 574, 570, 566, 562, 558, 554, 550]])
+        # calculate bin depths
+        calculated_bins = af.adcp_bin_depths_dapa(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
+        # compare calculated results to expected results
+        np.testing.assert_allclose(calculated_bins, expected_bins_up, rtol=0.0, atol=0.000001)
 
-    ### scalar time case (2) - adcp looking down
-    # test inputs - should also work with python scalars, but this is not necessary
-    adcp_orientation = 0
-    bin_size = 400
-    dist_first_bin = 900
-    latitude = 4.0
-    num_bins = 10
-    pressure = 10000
-    # expected depth from a pressure of 10000 decapascals is 9.94460074 m
-    # expected outputs
-    expected_bins_down = 0.9445834 + np.array([[18, 22, 26, 30, 34, 38, 42, 46, 50, 54]])
-    # calculate bin depths
-    calculated_bins = af.adcp_bin_depths(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
-    # compare calculated results to expected results
-    np.testing.assert_allclose(calculated_bins, expected_bins_down, rtol=0.0, atol=0.000001)
+        ### scalar time case (2) - adcp looking down
+        # test inputs - should also work with python scalars, but this is not necessary
+        adcp_orientation = 0
+        bin_size = 400
+        dist_first_bin = 900
+        latitude = 4.0
+        num_bins = 10
+        pressure = 10000
+        # expected depth from a pressure of 10000 decapascals is 9.94460074 m
+        # expected outputs
+        expected_bins_down = 0.9445834 + np.array([[18, 22, 26, 30, 34, 38, 42, 46, 50, 54]])
+        # calculate bin depths
+        calculated_bins = af.adcp_bin_depths_dapa(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
+        # compare calculated results to expected results
+        np.testing.assert_allclose(calculated_bins, expected_bins_down, rtol=0.0, atol=0.000001)
 
-    ### time-vectorized test - combine the 2 above
-    adcp_orientation = np.array([1, 0])
-    bin_size = np.array([400, 400])
-    dist_first_bin = np.array([900, 900])
-    latitude = np.array([4.0, 4.0])
-    num_bins = np.array([10, 10])
-    pressure = np.array([600000, 10000])
-    #
-    expected_bins = np.vstack((expected_bins_up, expected_bins_down))
-    #
-    calculated_bins = af.adcp_bin_depths(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
-    #
-    np.testing.assert_allclose(calculated_bins, expected_bins, rtol=0.0, atol=0.001)
+        ### time-vectorized test - combine the 2 above
+        adcp_orientation = np.array([1, 0])
+        bin_size = np.array([400, 400])
+        dist_first_bin = np.array([900, 900])
+        latitude = np.array([4.0, 4.0])
+        num_bins = np.array([10, 10])
+        pressure = np.array([600000, 10000])
+        #
+        expected_bins = np.vstack((expected_bins_up, expected_bins_down))
+        #
+        calculated_bins = af.adcp_bin_depths_dapa(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
+        #
+        np.testing.assert_allclose(calculated_bins, expected_bins, rtol=0.0, atol=0.001)
 
-    ### time-vectorized fill cases - test the action on a fill value in each of the 5 input data streams,
-    # plus one instance of all good data.
-    num_bins = np.array([10, 10, 10, sfill, 10, 10])  # NOTE: DPA uses only first num_bins value
-    dist_first_bin = np.array([900, sfill, 900, 900, 900, 900])
-    bin_size = np.array([400, 400, sfill, 400, 400, 400])
-    pressure = np.array([600000, 10000, 600000, 10000, 600000, sfill])
-    adcp_orientation = np.array([1, 0, 1, 0, sfill, 0])
-    latitude = np.array([4.0, 4.0, 4.0, 4.0, 4.0, 4.0])
-    # 1st and 4th rows will have non-Nan data.
-    expected_bins = np.tile(np.nan, (6, 10))
-    expected_bins[0, :] = expected_bins_up
-    expected_bins[3, :] = expected_bins_down
-    # calculated
-    calculated_bins = af.adcp_bin_depths(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
-    # compare calculated results to expected results
-    np.testing.assert_allclose(calculated_bins, expected_bins, rtol=0.0, atol=0.001)
+        ### time-vectorized fill cases - test the action on a fill value in each of the 5 input data streams,
+        # plus one instance of all good data.
+        num_bins = np.array([10, 10, 10, sfill, 10, 10])  # NOTE: DPA uses only first num_bins value
+        dist_first_bin = np.array([900, sfill, 900, 900, 900, 900])
+        bin_size = np.array([400, 400, sfill, 400, 400, 400])
+        pressure = np.array([600000, 10000, 600000, 10000, 600000, sfill])
+        adcp_orientation = np.array([1, 0, 1, 0, sfill, 0])
+        latitude = np.array([4.0, 4.0, 4.0, 4.0, 4.0, 4.0])
+        # 1st and 4th rows will have non-Nan data.
+        expected_bins = np.tile(np.nan, (6, 10))
+        expected_bins[0, :] = expected_bins_up
+        expected_bins[3, :] = expected_bins_down
+        # calculated
+        calculated_bins = af.adcp_bin_depths_dapa(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
+        # compare calculated results to expected results
+        np.testing.assert_allclose(calculated_bins, expected_bins, rtol=0.0, atol=0.001)
+
+    def test_adcp_bin_depths_bar(self):
+        """
+        Test the adcp_bin_depths_bar function.
+
+        Values based on z_from_p check values.
+
+        Implemented by:
+            Craig Risien, January 2015. Initial code.
+            Russell Desiderio. 26-Jun-2015. Corrected pressure type and units and z_from_p usage.
+                               30-Jun-2015. Added fill value unit test.
+        """
+        sfill = SYSTEM_FILLVALUE
+
+        ### scalar time case (1) - adcp looking up
+        # test inputs - note, CI will be sending these into the DPAs as ndarrays, not python scalars.
+        # test inputs
+        adcp_orientation = np.array([1])
+        bin_size = np.array([400])
+        dist_first_bin = np.array([900])
+        latitude = np.array([4.0])
+        num_bins = np.array([10])
+        # water pressure of gliders has units of bar
+        pressure = np.array([60])
+        # according to the z_from_p check value at 600db, this gives a depth of 595.8262 m
+        # expected outputs
+        # note that the output should be a row vector, not a 1D array.
+        expected_bins_up = 0.8253480 + np.array([[586, 582, 578, 574, 570, 566, 562, 558, 554, 550]])
+        # calculate bin depths
+        calculated_bins = af.adcp_bin_depths_bar(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
+        # compare calculated results to expected results
+        np.testing.assert_allclose(calculated_bins, expected_bins_up, rtol=0.0, atol=0.000001)
+
+        ### scalar time case (2) - adcp looking down
+        # test inputs - should also work with python scalars, but this is not necessary
+        adcp_orientation = 0
+        bin_size = 400
+        dist_first_bin = 900
+        latitude = 4.0
+        num_bins = 10
+        pressure = 1
+        # expected depth from a pressure of 1 bar is 9.94460074 m
+        # expected outputs
+        expected_bins_down = 0.9445834 + np.array([[18, 22, 26, 30, 34, 38, 42, 46, 50, 54]])
+        # calculate bin depths
+        calculated_bins = af.adcp_bin_depths_bar(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
+        # compare calculated results to expected results
+        np.testing.assert_allclose(calculated_bins, expected_bins_down, rtol=0.0, atol=0.000001)
+
+        ### time-vectorized test - combine the 2 above
+        adcp_orientation = np.array([1, 0])
+        bin_size = np.array([400, 400])
+        dist_first_bin = np.array([900, 900])
+        latitude = np.array([4.0, 4.0])
+        num_bins = np.array([10, 10])
+        pressure = np.array([60, 1])
+        #
+        expected_bins = np.vstack((expected_bins_up, expected_bins_down))
+        #
+        calculated_bins = af.adcp_bin_depths_bar(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
+        #
+        np.testing.assert_allclose(calculated_bins, expected_bins, rtol=0.0, atol=0.001)
+
+        ### time-vectorized fill cases - test the action on a fill value in each of the 5 input data streams,
+        # plus one instance of all good data.
+        num_bins = np.array([10, 10, 10, sfill, 10, 10])  # NOTE: DPA uses only first num_bins value
+        dist_first_bin = np.array([900, sfill, 900, 900, 900, 900])
+        bin_size = np.array([400, 400, sfill, 400, 400, 400])
+        pressure = np.array([60, 1, 60, 1, 60, sfill])
+        adcp_orientation = np.array([1, 0, 1, 0, sfill, 0])
+        latitude = np.array([4.0, 4.0, 4.0, 4.0, 4.0, 4.0])
+        # 1st and 4th rows will have non-Nan data.
+        expected_bins = np.tile(np.nan, (6, 10))
+        expected_bins[0, :] = expected_bins_up
+        expected_bins[3, :] = expected_bins_down
+        # calculated
+        calculated_bins = af.adcp_bin_depths_bar(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude)
+        # compare calculated results to expected results
+        np.testing.assert_allclose(calculated_bins, expected_bins, rtol=0.0, atol=0.001)
 
     def test_z_from_p(self):
-                """
+        """
         Test the z_from_p function, which calculates depth in meters from pressure in decibars
         assuming a TEOS-10 standard ocean salinity and a TEOS-10 conservative temperature of 0 deg_C.
 
@@ -1184,14 +1263,14 @@ class TestADCPFunctionsUnit(BaseUnitTestCase):
             2014-06-26: Russell Desiderio. Initial code.
             2015-07-01: Russell Desiderio. Updated check values to TEOS-10 ver. 3.05.
         """
-    # test inputs
-    p = np.array([10.0, 50.0, 125.0, 250.0, 600.0, 1000.0])
-    lat = np.ones(6) * 4.0
-    # outputs
-    xpctd = np.array([-9.9445834469453,  -49.7180897012550, -124.2726219409978,
-                      -248.4700576548589, -595.8253480356214, -992.0919060719987])
-    calc = af.z_from_p(p, lat)
-    # test relative accuracy
-    np.testing.assert_allclose(calc, xpctd, rtol=0.00000001, atol=0.0)
-    # test absolute accuracy
-    np.testing.assert_allclose(calc, xpctd, rtol=0.0, atol=0.00000001)
+        # test inputs
+        p = np.array([10.0, 50.0, 125.0, 250.0, 600.0, 1000.0])
+        lat = np.ones(6) * 4.0
+        # outputs
+        xpctd = np.array([-9.9445834469453,  -49.7180897012550, -124.2726219409978,
+                          -248.4700576548589, -595.8253480356214, -992.0919060719987])
+        calc = af.z_from_p(p, lat)
+        # test relative accuracy
+        np.testing.assert_allclose(calc, xpctd, rtol=0.00000001, atol=0.0)
+        # test absolute accuracy
+        np.testing.assert_allclose(calc, xpctd, rtol=0.0, atol=0.00000001)
