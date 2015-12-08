@@ -1129,8 +1129,7 @@ def magnetic_correction(theta, u, v):
     return (u_cor, v_cor)
 
 
-# Calculates bin depths tRDI ADCPs configured to output data using the PD0 and PD12 formats
-def adcp_bin_depths(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude):
+def adcp_bin_depths_bar(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude):
     """
     Description:
 
@@ -1158,7 +1157,7 @@ def adcp_bin_depths(dist_first_bin, bin_size, num_bins, pressure, adcp_orientati
         dist_first_bin = distance to the first ADCP bin [centimeters]
         bin_size = depth of each ADCP bin [centimeters]
         num_bins = number of ADCP bins [unitless]
-        pressure = pressure at the sensor head [dPa]
+        pressure = pressure at the sensor head [bar]
         adcp_orientation = 1=upward looking or 0=downward looking [unitless]
         latitude = latitude of the instrument [degrees]
 
@@ -1171,18 +1170,60 @@ def adcp_bin_depths(dist_first_bin, bin_size, num_bins, pressure, adcp_orientati
             1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
     """
     # check for CI fill values.
-    dist_first_bin, bin_size, num_bins, pressure, adcp_orientation = replace_fill_with_nan(
-        None, dist_first_bin, bin_size, num_bins, pressure, adcp_orientation)
+    pressure = replace_fill_with_nan(None, pressure)
 
-    # note, there is a CI problem not yet addressed if the time-vectorized values
-    # in num_bins are not all the same!! For now, assume they are all the same:
-    num_bins_constant = num_bins[0]
-    # make bin_numbers a row vector
-    bin_numbers = np.array([np.arange(num_bins_constant)])
+    # Convert pressure from bar to decibar
+    pressure_dbar = pressure * 10.0
 
-    # Convert from cm to meters
-    dist_first_bin = dist_first_bin / 100.0
-    bin_size = bin_size / 100.0
+    # Calculate sensor depth using TEOS-10 toolbox z_from_p function
+    # note change of sign to make the sensor_depth variable positive
+    sensor_depth = -z_from_p(pressure_dbar, latitude)
+
+    return adcp_bin_depths_meters(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
+
+
+def adcp_bin_depths_dapa(dist_first_bin, bin_size, num_bins, pressure, adcp_orientation, latitude):
+    """
+    Description:
+
+        Calculates the center bin depths for PD0 and PD12 ADCP data. As defined
+        in the Data Product Specification for Velocity Profile and Echo
+        Intensity - DCN 1341-00750.
+
+    Implemented by:
+
+        2015-01-29: Craig Risien. Initial code.
+        2015-06-26: Russell Desiderio. Fixed the handling of the pressure variables.
+                                       Time-vectorized the code by finessing the conditional.
+        2015-06-30: Russell Desiderio. Incorporated int fillvalue -> Nan.
+
+
+    Usage:
+
+        bin_depths = adcp_bin_depths(dist_first_bin, bin_size, num_bins, pressure,
+                                    adcp_orientation, latitude)
+
+            where
+
+        bin_depths =  [meters]
+
+        dist_first_bin = distance to the first ADCP bin [centimeters]
+        bin_size = depth of each ADCP bin [centimeters]
+        num_bins = number of ADCP bins [unitless]
+        pressure = pressure at the sensor head [daPa]
+        adcp_orientation = 1=upward looking or 0=downward looking [unitless]
+        latitude = latitude of the instrument [degrees]
+
+    References:
+
+        OOI (2012). Data Product Specification for Velocity Profile and Echo
+            Intensity. Document Control Number 1341-00750.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI
+            >> Controlled >> 1000 System Level >>
+            1341-00050_Data_Product_SPEC_VELPROF_OOI.pdf)
+    """
+    # check for CI fill values.
+    pressure = replace_fill_with_nan(None, pressure)
 
     # Convert pressure from decaPascal to decibar
     pressure_dbar = pressure / 1000.0
@@ -1191,22 +1232,7 @@ def adcp_bin_depths(dist_first_bin, bin_size, num_bins, pressure, adcp_orientati
     # note change of sign to make the sensor_depth variable positive
     sensor_depth = -z_from_p(pressure_dbar, latitude)
 
-    # For the PD0 convention:
-    #     adcp_orientation = 0 is downward looking, bindepths are added to sensor depth
-    #                      = 1 is upward looking, bindepths are subtracted from sensor depth
-    z_sign = 1.0 - 2.0 * adcp_orientation
-
-    # to broadcast the vertical time dimension correctly with the horizontal bin_numbers dimension,
-    # make all the 1D time arrays into column vectors to be processed with the bin_numbers row vector.
-    sensor_depth = sensor_depth.reshape(-1, 1)
-    z_sign = z_sign.reshape(-1, 1)
-    dist_first_bin = dist_first_bin.reshape(-1, 1)
-    bin_size = bin_size.reshape(-1, 1)
-
-    # Calculate bin depths
-    bin_depths = sensor_depth + z_sign * (dist_first_bin + bin_size * bin_numbers)
-
-    return bin_depths
+    return adcp_bin_depths_meters(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation)
 
 
 def z_from_p(p, lat, geo_strf_dyn_height=0, sea_surface_geopotential=0):
@@ -1256,8 +1282,8 @@ def z_from_p(p, lat, geo_strf_dyn_height=0, sea_surface_geopotential=0):
      Intergovernmental Oceanographic Commission, Manuals and Guides No. 56,
      UNESCO (English), 196 pp.  Available from the TEOS-10 web site.
 
-    McDougall, T.J., D.R. Jackett, D.G. Wright and R. Feistel, 2003: 
-     Accurate and computationally efficient algorithms for potential 
+    McDougall, T.J., D.R. Jackett, D.G. Wright and R. Feistel, 2003:
+     Accurate and computationally efficient algorithms for potential
      temperature and density of seawater.  J. Atmosph. Ocean. Tech., 20,
      pp. 730-741.
 
@@ -1332,12 +1358,11 @@ def enthalpy_SSO_0_p(p):
     return enthalpy_SSO_0
 
 
-# Calculates bin depths tRDI ADCPs configured to output data using the PD8 format
-def adcp_bin_depths_pd8(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation):
+def adcp_bin_depths_meters(dist_first_bin, bin_size, num_bins, sensor_depth, adcp_orientation):
     """
     Description:
 
-        Calculates the center bin depths for PD8 ADCP data. As defined
+        Calculates the center bin depths for PD0, PD8 and PD12 ADCP data. As defined
         in the Data Product Specification for Velocity Profile and Echo
         Intensity - DCN 1341-00750.
 
