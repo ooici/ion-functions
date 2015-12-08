@@ -517,6 +517,8 @@ def opt_scatter_corr(apd_ts, awlngth, cpd_ts, cwlngth, rwlngth=715.):
         2013-04-25: Christopher Wingard. Initial implementation.
         2014-02-19: Russell Desiderio. Trapped out potential problems in
                     scat_ratio calculation.
+        2015-12-08: Russell Desiderio. Made the scat_ratio calculation more robust.
+                    See Notes.
 
     Usage:
 
@@ -553,7 +555,49 @@ def opt_scatter_corr(apd_ts, awlngth, cpd_ts, cwlngth, rwlngth=715.):
             https://alfresco.oceanobservatories.org/ (See: Company Home >> OOI >>
             >> REFERENCE >> Data Product Specification Artifacts >> 1341-00700_OPTABSN >>
             OPTAA_unit_test.xlsx)
+
+    Notes:
+
+        The 2014-02-19 version of this function passed its unit tests in the program
+        test_opt_functions_OPTAA_sub_functions in the test_opt_functions module when using numpy
+        version 1.8.0. However, these tests failed with numpy ver 1.10.1: instead of the scatter-
+        correction to absorption *not* being applied when cref = aref, unphysical absorption
+        values of -10^15 were calculated, presumably resulting from applying a subtractive
+        scattering correction proportional to 1/(cref-aref) = 1/10^(-15) when using numpy ver
+        1.10.1 interpolation routines.
+
+        The solution is to trap out the divide by zero in a more robust manner, not just to
+        avoid the round-off error problems above, but also to account for baseline variability
+        in the optical signals (none of this is specified in the DPS). Physically, because a+b=c
+        and a,b,c are all non-negative, beam attenuation c is always >= absorption a, so that at
+        any given wavelength the scattering b = c-a >= 0. And, if there is very little scattering,
+        c-a could fluctuate around a small value like 0.005, in which case the scattering correction
+        to the absorption readings should not be applied because the fluctuations in the corrections
+        would introduce an unnatural variability which would obscure the actual data. Therefore a
+        minimum reference wavelength scattering leakage value (ref_scatter_leakage_min) needs to be
+        specified, below which the scattering correction is not applied. The initial setting for this
+        parameter has been chosen to be 0.02.
+
+        There are instrumental and mechanical factors which also influence the validity and robustness
+        of this scattering correction. When the ac-s is plumbed with one intake tube which splits its flow
+        using a wye junction, with the aim of providing homogeneous water samples to the 'a' and 'c' tubes,
+        experiments have shown that presumed asymmetries in the plumbing paths result in a differential
+        partitioning of particles flowing through the two flow tubes. Because of this the accepted ac-s
+        plumbing deployment protocol is to have separate intakes for each flow tube. However, in this
+        configuration the 'a' and 'c' flow tubes do not sample exactly the same water, leading to inaccuracies
+        in the cref-aref quantity because the natural variability in these signals won't be precisely
+        correlated. In addition, the drifts in absorption versus beam attenuation baselines will differ
+        as a function of time due to electronic drift and bio-fouling accumulation, particularly for
+        moored instruments left unattended for long periods of time.
+
+        I would suggest that in the future the scattering correction algorithm be changed to the
+        more robust algorithm of just subtracting the aref value from all of the abs values. This
+        makes the assumption that the absorption signal at the reference wavelength is solely due to
+        scattering 'leakage' and is the most robust of the 3 scattering correction algorithms described
+        in the WETLabs ac-s protocol document.
     """
+    ref_scatter_leakage_min = 0.02  # see Notes
+
     # Absorption and the absorption wavelength values are imported as 1D
     # arrays. They must be the same length.
     apd_ts = np.atleast_1d(apd_ts)
@@ -584,10 +628,11 @@ def opt_scatter_corr(apd_ts, awlngth, cpd_ts, cwlngth, rwlngth=715.):
 
     # trap out potential problems in scat_ratio calculation:
     # scat_ratio = aref / (cref - aref).
-    # aref must be > 0 AND scat_ratio must be > 0; else, scat_ratio = 0.
+    #     aref must be > 0 AND scat_ratio must be > a pre-determined minimum;
+    #     else, scat_ratio = 0.
     if aref <= 0.0:
         scat_ratio = 0.
-    elif cref - aref <= 0.0:
+    elif cref - aref <= ref_scatter_leakage_min:
         scat_ratio = 0.
     else:
         scat_ratio = aref / (cref - aref)
