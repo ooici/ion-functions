@@ -6,10 +6,10 @@
 @brief Module containing calculations related to instruments in the Seafloor
     Pressure family.
 """
-
+import pkg_resources
 import numexpr as ne
 import numpy as np
-import scipy as sp
+import scipy.io as spio
 from scipy import signal
 
 
@@ -381,23 +381,18 @@ def prs_botsflu_predtide(time):
     # for unit test data, only, feb-apr 2011
     if time[0] < time0:
         time0 = 3502828800.0  # midnight, 2011-01-01
-        # tide values are signed 4 byte integers, units [0.001mm]
-        matpath = 'ion_functions/data/matlab_scripts/botpt/'
-        dict_tides = sp.io.loadmat(matpath + 'tides_15sec_2011_for_unit_tests.mat')
-        tidevector = 0.000001 * dict_tides['tides_mat']
-        tidevector = tidevector.reshape((-1))
-        # calculate tide vector index as a function of timestamp
-        idx = np.around((time - time0)/time_interval)
-        tide = tidevector[idx.astype(int)]
-        return tide
+        matpath = 'data/matlab_scripts/botpt/tides_15sec_2011_for_unit_tests.mat'
+    else:
+        # else, OOI data from 2014 onwards
+        matpath = 'data/prs_functions_tides_2014_thru_2019.mat'
 
-    # else, OOI data from 2014 onwards
+    matstream = pkg_resources.resource_stream('ion_functions', matpath)
+    dict_tides = spio.loadmat(matstream)
     # tide values are signed 4 byte integers, units [0.001mm]
-    dict_tides = sp.io.loadmat('ion_functions/data/prs_functions_tides_2014_thru_2019.mat')
     tidevector = 0.000001 * dict_tides['tides_mat']
     tidevector = tidevector.reshape((-1))
     # calculate tide vector index as a function of timestamp
-    idx = np.around((time - time0)/time_interval)
+    idx = np.around((time - time0) / time_interval)
     tide = tidevector[idx.astype(int)]
     return tide
 
