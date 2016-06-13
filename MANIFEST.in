@@ -1,0 +1,3 @@
+include ion_functions/data/WMM*.COF
+include ion_functions/data/*.mat
+recursive-include ion_functions/data/matlab_scripts *
