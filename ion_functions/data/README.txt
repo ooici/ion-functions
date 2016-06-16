@@ -11,6 +11,7 @@ Revision History:
 
     2015-06-08. Russell Desiderio. Updated VEL: vel_functions.py documentation.
     2015-08-05. Russell Desiderio. Updated DO2: d02_functions.py documentation.
+    2016-06-16. Russell Desiderio. Updated CTD: ctd_functions.py documentation.
 
 CO2: Partial Pressure CO2
 
@@ -46,12 +47,20 @@ CTD: Conductivity, Temperature, Depth
             CTDPF(AB)
       ctd_sbe16digi_preswat -- calculates PRESWAT_L1 from CTDBP(N and O
             series) only
+
+      SBE37IM, telemetered and recovered_host data:
       ctd_sbe37im_condwat   -- calculates CONDWAT_L1 from CTDMO all (GHQR)
       ctd_sbe37im_tempwat   -- calculates TEMPWAT_L1 from CTDMO all (GHQR)
       ctd_sbe37im_preswat   -- calculates PRESWAT_L1 from CTDMO all (GHQR)
+      SBE37IM, recovered_instrument data:
+      ctd_sbe37im_condwat_instrument_recovered -- calculates CONDWAT_L1 from CTDMO all (GHQR)
+      ctd_sbe37im_tempwat_instrument_recovered -- calculates TEMPWAT_L1 from CTDMO all (GHQR)
+      ctd_sbe37im_preswat_instrument_recovered -- calculates PRESWAT_L1 from CTDMO all (GHQR)
+
       ctd_sbe52mp_condwat   -- calculates CONDWAT_L1 from CTDPF (CKL)
       ctd_sbe52mp_tempwat   -- calculates TEMPWAT_L1 from CTDPF (CKL)
       ctd_sbe52mp_preswat   -- calculates PRESWAT_L1 from CTDPF (CKL)
+
       ctd_pracsal -- calculates PRACSAL_L2 from all CTDs
       ctd_density -- calculates DENSITY_L2 from all CTDs
       
