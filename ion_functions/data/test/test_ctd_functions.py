@@ -41,6 +41,27 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
     #        #sys.stderr.write(stringout)
     #        self.assertTrue(np.isnan(retval))
 
+    def test_ctd_sbe37im_tempwat_instrument_recovered(self):
+        """
+        Test ctd_sbe37im_tempwat_instrument_recovered function.
+
+        Values based on matlab script in the ctd folder in the matlab scripts folder:
+        calc_sbe37im_instrument_recovered_unit_test.m
+
+        Implemented by Russell Desiderio, June 16, 2016
+        """
+        # test inputs
+        t0 = np.array([366964, 499888, 465784, 500403])
+        a0 = -1.179278E-04
+        a1 = 3.097942E-04
+        a2 = -4.688854E-06
+        a3 = 2.081274E-07
+        output = ctdfunc.ctd_sbe37im_tempwat_instrument_recovered(t0, a0, a1, a2, a3)
+        # check values are from SBE data processing
+        check_values = np.array([10.9818000, 3.8488000, 5.4520000, 3.8255000])
+        # check tolerance to 0.1 millidegree C, which is the precision of these SBE values.
+        np.testing.assert_allclose(output, check_values, rtol=0, atol=1.e-4)
+
     def test_ctd_sbe16plus_tempwat(self):
         """
         Test ctd_sbe16plus_tempwat function.
@@ -100,6 +121,38 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
 
         tout = ctdfunc.ctd_sbe52mp_tempwat(t0)
         np.testing.assert_allclose(tout, 15.000000, rtol=1e-6, atol=0)
+
+    def test_ctd_sbe37im_preswat_instrument_recovered(self):
+        """
+        Test ctd_sbe37im_preswat_instrument_recovered function.
+
+        Values based on matlab script in the ctd folder in the matlab scripts folder:
+        calc_sbe37im_instrument_recovered_unit_test.m
+
+        Implemented by Russell Desiderio, June 16, 2016
+        """
+        p0 = np.array([533152, 571309, 632465, 828170])
+        therm0 = np.array([1608, 1452, 1471, 1453])
+        pa0 = 1.202594e-1
+        pa1 = 4.514834e-3
+        pa2 = -1.091899e-11
+        ptempa0 = -6.953022e1
+        ptempa1 = 5.115592e-2
+        ptempa2 = -3.918145e-7
+        ptca0 = 5.247204e5
+        ptca1 = 9.617295e-1
+        ptca2 = 6.296724e-3
+        ptcb0 = 2.498163e1
+        ptcb1 = -2.75e-4
+        ptcb2 = 0
+
+        output = ctdfunc.ctd_sbe37im_preswat_instrument_recovered(
+                     p0, therm0, ptempa0, ptempa1, ptempa2, ptca0,
+                     ptca1, ptca2, ptcb0, ptcb1, ptcb2, pa0, pa1, pa2)
+        # check values are from SBE data processing
+        check_values = np.array([16.1590, 134.9500, 325.2580, 933.8820])
+        # check tolerance to about 5mm, which is about the precision of these SBE values.
+        np.testing.assert_allclose(output, check_values, rtol=0, atol=0.005)
 
     def test_ctd_sbe16plus_preswat(self):
         """
@@ -208,6 +261,33 @@ class TestCTDFunctionsUnit(BaseUnitTestCase):
 
         p = ctdfunc.ctd_sbe52mp_preswat(p0)
         np.testing.assert_allclose(p, 2000.000000, rtol=1e-6, atol=0)
+
+    def test_ctd_sbe37im_condwat_instrument_recovered(self):
+        """
+        Test ctd_sbe37im_condwat_instrument_recovered function.
+
+        Values based on matlab script in the ctd folder in the matlab scripts folder:
+        calc_sbe37im_instrument_recovered_unit_test.m
+
+        Implemented by Russell Desiderio, June 16, 2016
+        """
+        c0 = np.array([1564991, 1457279, 1484332, 1462659])
+        t1 = np.array([10.9818000, 3.8488000, 5.4520000, 3.8255000])
+        p1 = np.array([16.1590, 134.9500, 325.2580, 933.8820])
+        g = -9.899853E-01
+        h = 1.314100E-01
+        i = -4.181710E-04
+        j = 4.723872E-05
+        cpcor = -9.570000E-08
+        ctcor = 3.250000E-06
+        wbotc = 4.842900E-07
+
+        output = ctdfunc.ctd_sbe37im_condwat_instrument_recovered(c0, t1, p1, g, h, i, j,
+                                                                  cpcor, ctcor, wbotc)
+        # check values are from SBE data processing
+        check_values = np.array([3.891373, 3.240767, 3.399795, 3.272396])
+        # check tolerance to the 6th decimal place, the precision of these SBE values.
+        np.testing.assert_allclose(output, check_values, rtol=0, atol=1e-6)
 
     def test_ctd_sbe16plus_condwat(self):
         """
