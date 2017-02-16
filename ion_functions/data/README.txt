@@ -12,6 +12,7 @@ Revision History:
     2015-06-08. Russell Desiderio. Updated VEL: vel_functions.py documentation.
     2015-08-05. Russell Desiderio. Updated DO2: d02_functions.py documentation.
     2016-06-16. Russell Desiderio. Updated CTD: ctd_functions.py documentation.
+    2017-02-03. Russell Desiderio. Updated MET: met_functions.py documentation.
 
 CO2: Partial Pressure CO2
 
@@ -170,17 +171,22 @@ MET: Meteorology
         CURRENT_DIR (meta)
         CURRENT_SPD (meta)
         FRSHFLX_L2
-        HEATFLX_L2
-        LATNFLX_L2
+        HEATFLX_L2:         hour time base
+        HEATFLX_MINUTE_L2:  minute time base
+        LATNFLX_L2:         hour time base
+        LATNFLX_MINUTE_L2:  minute time base
         MOMMFLX_L2
-        NETLIRR_L2
-        NETSIRR_L2 (this may operationally be an L1 product)
+        NETLIRR_L2:         hour time base  
+        NETLIRR_MINUTE_L2:  minute time base
+        NETSIRR_L2:         minute time base (this may operationally be an L1 product)
+        NETSIRR_HOURLY_L2:  hour time base
         RAINFLX_L2
         RAINRTE_L2
         RELWIND_DIR-AUX (meta)
         RELWIND_SPD-AUX (meta)
         SALSURF_L2
-        SENSFLX_L2
+        SENSFLX_L2:         hour time base
+        SENSFLX_MINUTE_L2:  minute time base
         SPECHUM_L2
         SPHUM2M_L2
         STABLTY_L2:  metadata

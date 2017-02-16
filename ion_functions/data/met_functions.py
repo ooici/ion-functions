@@ -102,11 +102,12 @@ JWARMFL = 1      # 1=do warmlayer calc
     Functions to compute the (simpler) L2 METBK data products that do not require
     the 'warmlayer/coolskin' iteration algorithm:
         NETSIRR (this may operationally be an L1 product)
+        NETSIRR_HOURLY (on an hourly time base)
         RAINRTE
         SALSURF
         SPECHUM
     These products are calculated at the native temporal resolution of the
-    instrument suite (roughly each minute).
+    instrument suite (roughly each minute) except as noted.
 #...................................................................................
 #...................................................................................
     Functions to compute the L2 METBK data products that do require
@@ -126,6 +127,17 @@ JWARMFL = 1      # 1=do warmlayer calc
         TEMPSKN:  metadata
         WIND10M
     These products are calculated on hourly averages.
+#...................................................................................
+#...................................................................................
+    Functions to compute the L2 METBK data products (that do require
+    the 'warmlayer/coolskin' iteration algorithm) at the native temporal
+    resolution of the instrument suite (roughly per minute).
+
+    These functions were not specified in the DPS.
+        HEATFLX_MINUTE
+        LATNFLX_MINUTE
+        NETLIRR_MINUTE
+        SENSFLX_MINUTE
 #...................................................................................
 #...................................................................................
     Simple subroutines used in the routines in the sections above.
@@ -170,6 +182,8 @@ JWARMFL = 1      # 1=do warmlayer calc
 
 """
 
+####################################################################################
+####################################################################################
 ####################################################################################
 
 """
@@ -671,12 +685,13 @@ def met_timeflx(timestamp):
     the 'warmlayer/coolskin' iteration algorithm:
 
         NETSIRR (this may operationally be an L1 product)
+        NETSIRR_HOURLY (hourly time base)
         RAINRTE
         SALSURF
         SPECHUM
 
     These products are calculated at the native temporal resolution of the
-    instrument suite (roughly each minute).
+    instrument suite (roughly each minute) except as noted.
 #...................................................................................
 #...................................................................................
 
@@ -691,9 +706,12 @@ def met_netsirr(shortwave_down):
         (wavelengths between 0.3 and 3.0 um) in the downward direction, for the METBK
         instrument. This data product may have been misclassified (it looks like L1).
 
+        This data product is calculated on its native timebase (roughly per minute)
+
     Implemented by:
 
         2014-08-27: Russell Desiderio. Initial code.
+        2017-02-03: Russell Desiderio. Added timebase documentation.
 
     Usage:
 
@@ -718,6 +736,47 @@ def met_netsirr(shortwave_down):
     net_shortwave_down = (1.0 - albedo) * shortwave_down
 
     return net_shortwave_down
+
+
+def met_netsirr_hourly(shortwave_down, timestamp):
+    """
+    Description:
+
+        Calculates NETSIRR_HOURLY_L2, the OOI core data product net shortwave radiation
+        (wavelengths between 0.3 and 3.0 um) in the downward direction, for the METBK
+        instrument on an hourly time base. This data product does not require the
+        coolskin\warmlayer algorithms.
+
+    Implemented by:
+
+        2017-02-03: Russell Desiderio. Initial code.
+
+    Usage:
+
+        net_shortwave_down_hourly = met_netsirr_hourly(shortwave_down, timestamp)
+
+            where
+
+        net_shortwave_down_hourly = net shortwave radiation in the downward direction
+                                    on an hourly time base (NETSIRR_HOURLY_L2) [W/m^2]
+        shortwave_down = measured downward shortwave radiation (SHRTIRR_L1) [W/m^2]
+        timestamp = sample date and time value [seconds since 1900-01-01]
+
+    References:
+
+        OOI (2014). Data Product Specification for L2 BULKFLX Data Products.
+            Document Control Number 1341-00370.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >>
+            OOI >> Controlled >> 1000 System Level >>
+            1341-00370_Data_Product_Spec_BULKFLX_OOI.pdf)
+    """
+    shortwave_down, timestamp = condition_data(shortwave_down, timestamp)
+
+    (shortwave_down_hourly, _) = make_hourly_data(shortwave_down, timestamp)
+
+    net_shortwave_down_hourly = met_netsirr(shortwave_down_hourly)
+
+    return net_shortwave_down_hourly
 
 
 def met_rainrte(cumulative_precipitation, timestamp):
@@ -2013,6 +2072,370 @@ def met_wind10m(tC_sea, wnd, tC_air, relhum, timestamp, lon, ztmpwat,
 
     return wind10m
 
+"""
+#...................................................................................
+#...................................................................................
+    Functions to compute the L2 METBK data products that do require
+    the 'warmlayer/coolskin' iteration algorithm, but at the native
+    temporal resolution of the instrument suite (roughly per minute).
+
+    These functions were not specified in the DPS.
+        HEATFLX_MINUTE
+        LATNFLX_MINUTE
+        NETLIRR_MINUTE
+        SENSFLX_MINUTE
+#...................................................................................
+#...................................................................................
+"""
+
+
+def met_heatflx_minute(tC_sea, wnd, tC_air, relhum, timestamp, lon, ztmpwat,
+                       zwindsp, ztmpair, zhumair, lat=45.0, pr_air=1013.0,
+                       Rshort_down=150.0, Rlong_down=370.0, cumu_prcp=0.0,
+                       zinvpbl=600.0, jwarm=JWARMFL, jcool=JCOOLFL):
+    """
+    Description:
+
+        Calculates the total net upward heat flux data product HEATFLX_MINUTE_L2,
+        calculated on the native METBK time base (per minute).
+
+    Implemented by:
+
+        2017-02-13: Russell Desiderio. Initial code.
+
+    Usage:
+
+        Normally this routine will be called with all input arguments populated except
+        for the last 3: zinvpbl is not a sensor height, and the jwarm and jcool switches
+        should always be globally set to 1.
+
+        The values for ztwmpwat, zwindsp, ztmpair, and zhumair
+        may be dependent on mooring type.
+
+        heatflx_minute = met_heatflx_minute(tC_sea, wnd, tC_air, relhum, timestamp, lon,
+                                            ztmpwat, zwindsp, ztmpair, zhumair, lat,
+                                            pr_air, Rshort_down, Rlong_down, cumu_prcp]
+
+            where
+
+        heatflx_minute = total net upward heat flux HEATFLX_MINUTE_L2 [W/m^2]
+        tC_sea = sea temperature TEMPSRF_L1 [degC]
+        wnd = windspeed relative to current RELWIND_SPD-AUX [m/s]
+        tC_air = air temperature TEMPAIR [degC]
+        relhum = relative humidity RELHUMI [%]
+        timestamp = seconds since 01-01-1900
+        lon = longitude of METBK instrument. East, positive; West, negative. [deg]
+        ztmpwat = depth of sea temperature measurement TEMPSRF [m]
+        zwindsp = height of windspeed measurement WINDAVG_L0 [m]
+        ztmpair = height of air temperature measurement TEMPAIR [m]
+        zhumair = height of air humidity measurement RELHUMI [m]
+        lat = latitude of METBK instrument [deg]
+        pr_air = air pressure BARPRES_L0 [mb] (mb, not pascal)
+        Rshort_down = downwelling shortwave irradiation SHRTIRR_L1 [W/m^2]
+        Rlong_down = downwelling longwave irradiation LONGIRR_L1 [W/m^2]
+        cumu_prcp = cumulative precipitation PRECIPM_L1 [mm]
+
+    Notes:
+
+        This data product is not specifically included in the DPS.
+
+        This routine differs from met_heatflx only in that the function
+        make_hourly_data is not called to bin the input data into hourly bins.
+
+    References:
+
+        OOI (2014). Data Product Specification for L2 BULKFLX Data Products.
+            Document Control Number 1341-00370.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >>
+            OOI >> Controlled >> 1000 System Level >>
+            1341-00370_Data_Product_Spec_BULKFLX_OOI.pdf)
+    """
+    # package input arguments.
+    # 1st 4 arguments are warmlayer, followed by coolskin, then switches.
+    args = [cumu_prcp, timestamp, lon, ztmpwat, tC_sea, wnd, zwindsp,
+            tC_air, ztmpair, relhum, zhumair, pr_air, Rshort_down,
+            Rlong_down, lat, zinvpbl, jcool, jwarm]
+
+    args = condition_data(*args)
+
+    args[0] = calc_rain_rate(*args[0:2])
+
+    (usr, tsr, qsr, _, dter, dqer, _, _, _, _, _, _, _, dsea) = seasurface_skintemp_correct(*args)
+
+    # make the necessary processed hourly data available for the final calculation
+    (rain_rate, _, _, _, tC_sea, _, _, tC_air, _, relhum, _, pr_air, Rshort_down,
+        Rlong_down, _, _, _, _) = args
+
+    cpa = 1004.67  # specific heat capacity of (dry) air [J/kg/K]
+    rhoa = air_density(tC_air, pr_air, relhum)
+    Le = latent_heat_vaporization_pure_water(tC_sea + dsea)
+
+    hlb = -rhoa * Le * usr * qsr                                              # positive up
+    hsb = -rhoa * cpa * usr * tsr                                             # positive up
+    Rns_down = met_netsirr(Rshort_down)                                       # positive down
+    Rnl_up = net_longwave_up(tC_sea + dsea - dter, Rlong_down)                # positive up
+    rainflx = rain_heat_flux(rain_rate, tC_sea+dsea, tC_air, relhum, pr_air)  # positive up
+
+    heatflx = hlb + hsb - Rns_down + Rnl_up + rainflx
+
+    return heatflx
+
+
+def met_latnflx_minute(tC_sea, wnd, tC_air, relhum, timestamp, lon, ztmpwat,
+                       zwindsp, ztmpair, zhumair, lat=45.0, pr_air=1013.0,
+                       Rshort_down=150.0, Rlong_down=370.0, cumu_prcp=0.0,
+                       zinvpbl=600.0, jwarm=JWARMFL, jcool=JCOOLFL):
+    """
+    Description:
+
+        Calculates the upward latent heat flux data product LATNFLX_MINUTE_L2,
+        calculated on the native METBK time base (per minute).
+
+    Implemented by:
+
+        2017-02-13: Russell Desiderio. Initial code.
+
+    Usage:
+
+        Normally this routine will be called with all input arguments populated except
+        for the last 3: zinvpbl is not a sensor height, and the jwarm and jcool switches
+        should always be globally set to 1.
+
+        The values for ztwmpwat, zwindsp, ztmpair, and zhumair
+        may be dependent on mooring type.
+
+        latnflx_minute = met_latnflx_minute(tC_sea, wnd, tC_air, relhum, timestamp, lon,
+                                            ztmpwat, zwindsp, ztmpair, zhumair, lat,
+                                            pr_air, Rshort_down, Rlong_down, cumu_prcp]
+
+            where
+
+        latnflx_minute = upward latent heat flux LATNFLX_MINUTE_L2 [W/m^2]
+        tC_sea = sea temperature TEMPSRF_L1 [degC]
+        wnd = windspeed relative to current RELWIND_SPD-AUX [m/s]
+        tC_air = air temperature TEMPAIR [degC]
+        relhum = relative humidity RELHUMI [%]
+        timestamp = seconds since 01-01-1900
+        lon = longitude of METBK instrument. East, positive; West, negative. [deg]
+        ztmpwat = depth of sea temperature measurement TEMPSRF [m]
+        zwindsp = height of windspeed measurement WINDAVG_L0 [m]
+        ztmpair = height of air temperature measurement TEMPAIR [m]
+        zhumair = height of air humidity measurement RELHUMI [m]
+        lat = latitude of METBK instrument [deg]
+        pr_air = air pressure BARPRES_L0 [mb] (mb, not pascal)
+        Rshort_down = downwelling shortwave irradiation SHRTIRR_L1 [W/m^2]
+        Rlong_down = downwelling longwave irradiation LONGIRR_L1 [W/m^2]
+        cumu_prcp = cumulative precipitation PRECIPM_L1 [mm]
+
+    Notes:
+
+        This data product is not specifically included in the DPS.
+
+        This routine differs from met_latnflx only in that the function
+        make_hourly_data is not called to bin the input data into hourly bins.
+
+    References:
+
+        OOI (2014). Data Product Specification for L2 BULKFLX Data Products.
+            Document Control Number 1341-00370.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >>
+            OOI >> Controlled >> 1000 System Level >>
+            1341-00370_Data_Product_Spec_BULKFLX_OOI.pdf)
+    """
+    # package input arguments.
+    # 1st 4 arguments are warmlayer, followed by coolskin, then switches.
+    args = [cumu_prcp, timestamp, lon, ztmpwat, tC_sea, wnd, zwindsp,
+            tC_air, ztmpair, relhum, zhumair, pr_air, Rshort_down,
+            Rlong_down, lat, zinvpbl, jcool, jwarm]
+
+    args = condition_data(*args)
+
+    args[0] = calc_rain_rate(*args[0:2])
+
+    # dsea is the warmlayer correction to the sea surface temperature
+    (usr, _, qsr, _, _, _, _, _, _, _, _, _, _, dsea) = seasurface_skintemp_correct(*args)
+
+    # make the necessary processed hourly data available for the final calculation
+    (_, _, _, _, tC_sea, _, _, tC_air, _, relhum, _, pr_air, _, _, _, _, _, _) = args
+
+    rhoa = air_density(tC_air, pr_air, relhum)
+
+    # note that the original (coare ver. 3.5) code:
+    #    (a) uses Le for pure water, not seawater.
+    #    (b) does not include the coolskin correction to sea surface temperature.
+    Le = latent_heat_vaporization_pure_water(tC_sea + dsea)
+
+    hlb = -rhoa * Le * usr * qsr
+
+    return hlb
+
+
+def met_netlirr_minute(tC_sea, wnd, tC_air, relhum, timestamp, lon, ztmpwat,
+                       zwindsp, ztmpair, zhumair, lat=45.0, pr_air=1013.0,
+                       Rshort_down=150.0, Rlong_down=370.0, cumu_prcp=0.0,
+                       zinvpbl=600.0, jwarm=JWARMFL, jcool=JCOOLFL):
+    """
+    Description:
+
+        Calculates the data product NETLIRR_MINUTE_L2, the net upward longwave irradiance
+        calculated on the native METBK time base (per minute).
+
+    Implemented by:
+
+        2017-02-13: Russell Desiderio. Initial code.
+
+    Usage:
+
+        Normally this routine will be called with all input arguments populated except
+        for the last 3: zinvpbl is not a sensor input, and the jwarm and jcool switches
+        should always be globally set to 1.
+
+        The values for ztwmpwat, zwindsp, ztmpair, and zhumair
+        may be dependent on mooring type.
+
+        netlirr_minute = met_netlirr_minute(tC_sea, wnd, tC_air, relhum, timestamp, lon,
+                                            ztmpwat, zwindsp, ztmpair, zhumair, lat,
+                                            pr_air, Rshort_down, Rlong_down, cumu_prcp]
+
+            where
+
+        netlirr_minute = net upward longwave irradiance NETLIRR_MINUTE_L2 [W/m^2]
+        tC_sea = sea temperature TEMPSRF_L1 [degC]
+        wnd = windspeed relative to current RELWIND_SPD-AUX [m/s]
+        tC_air = air temperature TEMPAIR [degC]
+        relhum = relative humidity RELHUMI [%]
+        timestamp = seconds since 01-01-1900
+        lon = longitude of METBK instrument. East, positive; West, negative. [deg]
+        ztmpwat = depth of sea temperature measurement TEMPSRF [m]
+        zwindsp = height of windspeed measurement WINDAVG_L0 [m]
+        ztmpair = height of air temperature measurement TEMPAIR [m]
+        zhumair = height of air humidity measurement RELHUMI [m]
+        lat = latitude of METBK instrument [deg]
+        pr_air = air pressure BARPRES_L0 [mb] (mb, not pascal)
+        Rshort_down = downwelling shortwave irradiation SHRTIRR_L1 [W/m^2]
+        Rlong_down = downwelling longwave irradiation LONGIRR_L1 [W/m^2]
+        cumu_prcp = cumulative precipitation PRECIPM_L1 [mm]
+
+    Notes:
+
+        This data product is not specifically included in the DPS.
+
+        This routine differs from met_netlirr only in that the function
+        make_hourly_data is not called to bin the input data into hourly bins.
+
+    References:
+
+        OOI (2014). Data Product Specification for L2 BULKFLX Data Products.
+            Document Control Number 1341-00370.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >>
+            OOI >> Controlled >> 1000 System Level >>
+            1341-00370_Data_Product_Spec_BULKFLX_OOI.pdf)
+    """
+    # package input arguments.
+    # 1st 4 arguments are warmlayer, followed by coolskin, then switches.
+    args = [cumu_prcp, timestamp, lon, ztmpwat, tC_sea, wnd, zwindsp,
+            tC_air, ztmpair, relhum, zhumair, pr_air, Rshort_down,
+            Rlong_down, lat, zinvpbl, jcool, jwarm]
+
+    args = condition_data(*args)
+
+    args[0] = calc_rain_rate(*args[0:2])
+
+    # dter is the coolskin temperature depression [degC]
+    # dsea is the warmlayer correction to the sea surface temperature [degC]
+    (_, _, _, _, dter, _, _, _, _, _, _, _, _, dsea) = seasurface_skintemp_correct(*args)
+
+    # make the necessary processed hourly data available for the final calculation
+    (_, _, _, _, tC_sea, _, _, _, _, _, _, _, _, Rlong_down, _, _, _, _) = args
+
+    Rnl_native = net_longwave_up(tC_sea + dsea - dter, Rlong_down)
+
+    return Rnl_native
+
+
+def met_sensflx_minute(tC_sea, wnd, tC_air, relhum, timestamp, lon, ztmpwat,
+                       zwindsp, ztmpair, zhumair, lat=45.0, pr_air=1013.0,
+                       Rshort_down=150.0, Rlong_down=370.0, cumu_prcp=0.0,
+                       zinvpbl=600.0, jwarm=JWARMFL, jcool=JCOOLFL):
+    """
+    Description:
+
+        Calculates the net upward sensible heat flux SENSFLX_MINUTE_L2.
+        calculated on the native METBK time base (per minute).
+
+    Implemented by:
+
+        2017-02-13: Russell Desiderio. Initial code.
+
+    Usage:
+
+        Normally this routine will be called with all input arguments populated except
+        for the last 3: zinvpbl is not a sensor input, and the jwarm and jcool switches
+        should always be globally set to 1.
+
+        The values for ztwmpwat, zwindsp, ztmpair, and zhumair
+        may be dependent on mooring type.
+
+        sensflx_minute = met_sensflx_minute(tC_sea, wnd, tC_air, relhum, timestamp, lon,
+                                            ztmpwat, zwindsp, ztmpair, zhumair, lat,
+                                            pr_air, Rshort_down, Rlong_down, cumu_prcp]
+
+            where
+
+        sensflx_minute = net upward sensible heat flux SENSFLX_MINUTE_L2 [W/m^2]
+        tC_sea = sea temperature TEMPSRF_L1 [degC]
+        wnd = windspeed relative to current RELWIND_SPD-AUX [m/s]
+        tC_air = air temperature TEMPAIR [degC]
+        relhum = relative humidity RELHUMI [%]
+        timestamp = seconds since 01-01-1900
+        lon = longitude of METBK instrument. East, positive; West, negative. [deg]
+        ztmpwat = depth of sea temperature measurement TEMPSRF [m]
+        zwindsp = height of windspeed measurement WINDAVG_L0 [m]
+        ztmpair = height of air temperature measurement TEMPAIR [m]
+        zhumair = height of air humidity measurement RELHUMI [m]
+        lat = latitude of METBK instrument [deg]
+        pr_air = air pressure BARPRES_L0 [mb] (mb, not pascal)
+        Rshort_down = downwelling shortwave irradiation SHRTIRR_L1 [W/m^2]
+        Rlong_down = downwelling longwave irradiation LONGIRR_L1 [W/m^2]
+        cumu_prcp = cumulative precipitation PRECIPM_L1 [mm]
+
+    Notes:
+
+        This data product is not specifically included in the DPS.
+
+        This routine differs from met_sensflx only in that the function
+        make_hourly_data is not called to bin the input data into hourly bins.
+
+    References:
+
+        OOI (2014). Data Product Specification for L2 BULKFLX Data Products.
+            Document Control Number 1341-00370.
+            https://alfresco.oceanobservatories.org/ (See: Company Home >>
+            OOI >> Controlled >> 1000 System Level >>
+            1341-00370_Data_Product_Spec_BULKFLX_OOI.pdf)
+    """
+    # package input arguments.
+    # 1st 4 arguments are warmlayer, followed by coolskin, then switches.
+    args = [cumu_prcp, timestamp, lon, ztmpwat, tC_sea, wnd, zwindsp,
+            tC_air, ztmpair, relhum, zhumair, pr_air, Rshort_down,
+            Rlong_down, lat, zinvpbl, jcool, jwarm]
+
+    args = condition_data(*args)
+
+    args[0] = calc_rain_rate(*args[0:2])
+
+    (usr, tsr, _, _, _, _, _, _, _, _, _, _, _, _) = seasurface_skintemp_correct(*args)
+
+    # make the necessary processed hourly data available for the final calculation
+    (_, _, _, _, _, _, _, tC_air, _, relhum, _, pr_air, _, _, _, _, _, _) = args
+
+    rhoa = air_density(tC_air, pr_air, relhum)
+
+    cpa = 1004.67  # specific heat capacity of (dry) air [J/kg/K]
+    hsb = -rhoa * cpa * usr * tsr
+
+    return hsb
+
 
 """
 #...................................................................................
@@ -2536,12 +2959,7 @@ def rain_heat_flux_FLAWED(rain_rate, tC_sea, tC_air, relhum, pr_air, dter, dqer,
                 as an added benefit will avoid the confusion that arose when the sea temperature
                 was used as the expansion temperature.
 
-        Calculates net upward rain heat flux.
-
-        Note: As of 22-Sep-2014, there is an unresolved issue with respect to
-        how this product is correctly calculated (see code below). This will
-        affect all calculations of data products in this section, because
-        rain heat flux is used in the warmlayer calculation.
+        Incorrectly calculates net upward rain heat flux.
 
     """
     Rgas = 287.05  # gas constant [J/kg/K] for dry(!) air
@@ -3024,7 +3442,7 @@ def warmlayer(rain_rate, timestamp, lon, ztmpwat, tC_sea, wnd, zwindsp, tC_air, 
         hl_old = -rhoa[ii-1] * Le * usr * qsr                      # latent heat flux
 
         # note:
-        #     the original matlab code is followed here: it does not use dsea
+        #     the source v3.5 matlab code is followed here: it does not use dsea
         #     in the Rnl expression used in the warmlayer calculation, although
         #     dsea is used in the expression for RF_old.
         Rnl = net_longwave_up(tC_sea[ii]-dter, Rlong_down[ii])
@@ -3804,25 +4222,36 @@ def warmlayer_time_keys(localdate):
 
         idx_warm = indices of data records to be processed by the warmlayer routine;
                    these are data for days for which there are data before a threshold
-                   time value early in the morning (usually set to equatorial sunrise).
+                   time value early in the morning (set to 6AM).
         newday = boolean array: true for the first record of a day, false otherwise.
         nanmask = boolean array: true for indices of data records not to be processed
                   by the warmlayer routine.
-        localdate = local (not UTC) date and time [sec since 01-01-1900]; at this stage
-                    in the warmlayer calculation these are hourly.
+        localdate = local (not UTC) date and time [sec since 01-01-1900].
 
     Notes
 
+        Although this routine was written to process hourly data, it will work with
+        data on any time base.
+
+        This function provides a measure of quality control for the automated calculation
+        of metbk data products. One case: if there are data during one day from 5AM to 10AM,
+        then an absence of data so that the next data immediately following are from the
+        next day from 11AM to 4PM, the matlab code will treat these data as all coming from
+        the same day. Using warmlayer_time_keys will result in the first day's data products
+        being calculated as expected and will result in Nans for the second day's data as
+        desired.
+
         The original fortran and matlab versions of the warmlayer function hard-coded
-        a 6 AM threshold. The OOI routines coded here construct hourly averages from
-        each-minute data and assign a timestamp at the midpoint of the binning interval.
-        So, if a day's first each-minute data record timestamp is at 5:45 AM local, then the
-        the first hourly timestamp will be 6:15 AM, in which case the warmlayer routine
-        would not be run on that day's data.
+        a 6 AM threshold (equatorial sunrise). The OOI routines coded here construct
+        hourly averages from each-minute data and assign a timestamp at the midpoint of
+        the binning interval. So, if a day's first each-minute data record timestamp is
+        at 5:45 AM local, then the the first hourly timestamp will be 6:15 AM, in which
+        case the warmlayer routine would not be run on that day's data.
 
         The threshold is set here at 6:00 AM local just as it is in the original code. The
         rationale is that the first day's data should start before sunrise at the beginning
-        of the daily heating cycle.
+        of the daily heating cycle. At some point it may be desirable to replace this value
+        with one calculated as a function of time of year, latitude, and perhaps longitude.
 
         If the timestamp assigned to the hourly intervals is changed to either the first or
         last time of the binning interval, it may be desirable to also change the warmlayer
