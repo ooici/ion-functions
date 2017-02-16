@@ -15,24 +15,83 @@ import os
 
 import ion_functions.data.met_functions as mb
 
+"""
+    List of tests:
+
+        L2 on an hour time base (for netsirr see L1)
+            test_met_buoyfls
+            test_met_buoyflx
+            test_met_frshflx
+            test_met_heatflx
+            test_met_latnflx
+            test_met_mommflx
+            test_met_netlirr
+            test_met_rainflx
+            test_met_sensflx
+            test_met_sphum2m
+            test_met_stablty
+            test_met_tempa2m
+            test_met_tempskn
+            test_met_wind10m
+
+        L2 on a minute time base
+            test_met_heatflx_minute
+            test_met_latnflx_minute
+            test_met_netlirr_minute
+            test_met_sensflx_minute
+
+        L1
+            test_met_barpres
+            test_met_netsirr
+            test_met_netsirr_hourly
+            test_met_rainrte
+            test_met_salsurf
+            test_met_spechum
+
+        Current and Wind
+            test_met_current_direction
+            test_met_current_speed
+            test_met_relwind_direction
+            test_met_relwind_speed
+            test_met_windavg
+
+        Time
+            test_make_hourly_data
+            test_met_timeflx
+            test_multiple_days
+            test_time_calcs_with_actual_metbk_data
+            test_warmlayer_time_keys
+
+        Misc
+            test_rain_heat_flux
+            test_time_vectorized_heights_and_switches
+"""
+
 
 @attr('UNIT', group='func')
 class TestMetFunctionsUnit(BaseUnitTestCase):
 
     def setUp(self):
         """
-            "SCALAR" TESTSET (first values are selected for test):
+            "SCALAR" TESTSET of 3-element vector data
+                First values are selected for the scalar tests.
+                All 3 values are selected for L2 perminute data product tests.
 
             These test values are adapted from array indices 1356, 1357, and
             1358 from the test dataset Revelle10minutesLeg3_r3.mat, from
             ftp://ftp.etl.noaa.gov/users/cfairall/bulkalg/cor3_5/.
 
             They were chosen because 1357 had significant Solar, IR, and Rainrate
-            sensor values. the first time record was changed so that a local time
+            sensor values. The first time record was changed so that a local time
             (which is a function of longitude) earlier than 6:00 AM would result
             so that the warmlayer code would run and give non-trivial results; time
-            records are spaced 600 seconds apart. The vectorized warmlayer tests do
-            NOT use these test data.
+            records were initially spaced 600 seconds apart, but were changed to
+            be 60 seconds apart so that unit tests for the L2 minute data products
+            could be easily constructed. The timestamps are not used when scalar
+            data are processed.
+
+            The vectorized warmlayer tests producing hourly data do NOT use the
+            3-element scalar testset data as inputs.
 
             Sensor heights are changed so that:
                (1) they are not all the same.
@@ -48,7 +107,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         wnd = np.array([4.805, 3.396, 3.843])
         tC_air = np.array([28.220, 27.961, 27.670])
         relhum = np.array([79.47, 82.30, 82.72])
-        timestamp = np.array([2200.0, 2800.0, 3400.0])
+        timestamp = np.array([2200.0, 2260.0, 2320.0])
         lon = np.array([80.5, 80.6, 80.7]) - 40.0
         ztmpwat = 1.5
         zwindsp = 8.0
@@ -58,7 +117,8 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         pr_air = np.array([1005.1, 1006.2, 1007.3])
         Rshort_down = np.array([572.7, 659.0, 634.0])
         Rlong_down = np.array([443.3, 456.0, 441.9])
-        rain_rate = np.array([0.0, 17.3, 1.5])
+        rain_rate = np.array([0.0, 17.3, 1.5])    # for scalar test input
+        cm_prcp = np.array([0.0, 17.3, 18.8])/60  # for L2 minute product tests
         zinvpbl = 600.0
 
         """
@@ -74,10 +134,11 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             the routines to be tested.
         """
         self.kk = 0  # so that any one of the 3 records can be easily selected
-        # NOTE that the correct results for data products involving rain will only
-        #     be obtained for self.kk=0, because by definition if there is only one
-        #     value for cumulative precipitation, then the rain rate is 0.
+        #   NOTE that the correct scalar results for data products involving rain will
+        #   only be obtained for self.kk=0, because by definition if there is only one
+        #   value for cumulative precipitation, then the rain rate is 0.
 
+        # for scalar unit tests
         self.args_scalar_inputs = (tC_sea[self.kk],
                                    wnd[self.kk],
                                    tC_air[self.kk],
@@ -95,8 +156,26 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                                    rain_rate[self.kk],
                                    zinvpbl)
 
+        # for L2 perminute unit tests
+        self.args_permin_inputs = (tC_sea,
+                                   wnd,
+                                   tC_air,
+                                   relhum,
+                                   timestamp,
+                                   lon,
+                                   ztmpwat,
+                                   zwindsp,
+                                   ztmpair,
+                                   zhumair,
+                                   lat,
+                                   pr_air,
+                                   Rshort_down,
+                                   Rlong_down,
+                                   cm_prcp,
+                                   zinvpbl)
+
         """
-            VECTOR TESTSET:
+            "VECTOR" TESTSET for L2 products producing hourly data:
 
             The vector testset was constructed so that when processed into hourly data,
             it will give the scalar testset above. The timestamps were changed to span
@@ -111,11 +190,11 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             (per minute-ish); better to calculate rain rate fresh within the DPA itself).
 
             The test for the make_hourly_data routine takes as input the following vector
-            testset data and produces the scalar testset data.
+            testset data and should produce the scalar testset data.
         """
         # roughly 6-minute input, to be made into hourly testset.
-        # note that the time points are not evenly spaced; and, there
-        # are 12 points in the 1st hour, 8 and 10 in the next two.
+        # Note that the time points are not evenly spaced; and, there are
+        # 12 points in the 1st hour, 8 in the second, and 10 in the last.
         self.tC_sea = np.array([33.162, 30.446, 30.899, 29.540, 32.257,
                                 31.351, 33.615, 29.993, 28.635, 31.804,
                                 29.088, 32.710, 27.930, 34.136, 28.816,
@@ -209,6 +288,8 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                                    zinvpbl)
 
         # construct argument list to test time_vectorization of sensor heights.
+        # The DPAs were originally written without time vectorization of sensor
+        # heights, nor of the jcool and jwarm switches.
         self.npts = self.lat.shape[0]
         self.args_vector_ztmvec = (self.tC_sea,
                                    self.wnd,
@@ -279,6 +360,15 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         the refactored code were then incorporated as the target test values for the python
         code to calculate.
 
+        The coolskin\warmlayer 'xpctd' arrays are dimensioned as 4 x 3:
+        {4 permutations of the [jwarm,jcool] switches} x {3 hourly data points}
+        The switch assignments as a function of row are:
+                jwarm   jcool
+        row 1     0       0
+        row 2     0       1
+        row 3     1       0
+        row 4     1       1
+
     Implemented by:
 
         2014-09-13: Russell Desiderio. Initial Code.
@@ -300,6 +390,11 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                     before the new rain heat flux code was written). The procedure detailed in
                     the Description section above was followed to generate the present unit test
                     values from the matlab code, which do agree with the python DPA code results.
+        2017-02-03: Russell Desiderio. Added [jwarm,jcool] switch documentation as a function of row
+                    in the Description section above.
+                    Added test_met_netsirr_hourly.
+        2017-02-14: Russell Desiderio. Added tests for the 4 new L2 data products that process
+                    perminute data. Re-organized test placement, added documentation.
 
     References
 
@@ -308,19 +403,19 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             >> 1341-00370_BULKFLX
     """
 
-    def test_met_stablty(self):
+    def test_met_buoyfls(self):
         # cases: [jwarm, jcool]
-        xpctd = np.array([[-0.75134556, -1.53410291, -1.29155675],   # [00]
-                          [-0.67713848, -1.40615623, -1.17706256],   # [01]
-                          [-0.75134556, -1.53871067, -1.29521084],   # [10]
-                          [-0.67713848, -1.41154284, -1.18138703]])  # [11]
+        xpctd = np.array([[36.10919371, 28.32153986, 33.56844146],
+                          [31.81003830, 25.38513247, 29.90539752],
+                          [36.10919371, 28.42887220, 33.68714437],
+                          [31.81003830, 25.50702812, 30.04173816]])
 
         # SCALAR CASES [00] and [01]:
         calc = np.zeros(2)
         iwarm = 0
         for icool in range(2):
             args_scalar = self.args_scalar_inputs + (iwarm, icool)
-            calc[icool] = mb.met_stablty(*args_scalar)
+            calc[icool] = mb.met_buoyfls(*args_scalar)
         np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
 
         # VECTOR CASES
@@ -329,7 +424,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
-                calc[ctr, :] = mb.met_stablty(*args_vector)
+                calc[ctr, :] = mb.met_buoyfls(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
         # VECTOR CASES with time-vectorized sensor heights and algorithm switches
@@ -341,43 +436,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 ctr = icool + iwarm * 2
                 jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
                 args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-                calc[ctr, :] = mb.met_stablty(*args_vector)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-    def test_met_mommflx(self):
-        # cases: [jwarm, jcool]
-        xpctd = np.array([[0.030974330742, 0.016090125876, 0.020303436138],
-                          [0.030614459503, 0.015910513076, 0.020067006629],
-                          [0.030974330742, 0.016096471089, 0.020310838724],
-                          [0.030614459503, 0.015918213926, 0.020076101791]])
-
-        # SCALAR CASES [00] and [01]:
-        calc = np.zeros(2)
-        iwarm = 0
-        for icool in range(2):
-            args_scalar = self.args_scalar_inputs + (iwarm, icool)
-            calc[icool] = mb.met_mommflx(*args_scalar)
-        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASES
-        calc = np.zeros((4, 3))
-        for iwarm in range(2):
-            for icool in range(2):
-                ctr = icool + iwarm * 2
-                args_vector = self.args_vector_inputs + (iwarm, icool)
-                calc[ctr, :] = mb.met_mommflx(*args_vector)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
-        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
-        calc = np.zeros((4, 3))
-        for iwarm in range(2):
-            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
-            for icool in range(2):
-                ctr = icool + iwarm * 2
-                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
-                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-                calc[ctr, :] = mb.met_mommflx(*args_vector)
+                calc[ctr, :] = mb.met_buoyfls(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
     def test_met_buoyflx(self):
@@ -416,19 +475,19 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 calc[ctr, :] = mb.met_buoyflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
-    def test_met_buoyfls(self):
+    def test_met_frshflx(self):
         # cases: [jwarm, jcool]
-        xpctd = np.array([[36.10919371, 28.32153986, 33.56844146],
-                          [31.81003830, 25.38513247, 29.90539752],
-                          [36.10919371, 28.42887220, 33.68714437],
-                          [31.81003830, 25.50702812, 30.04173816]])
+        xpctd = np.array([[0.27428050, -17.10209951, -1.27575685],
+                          [0.25283019, -17.11663761, -1.29367873],
+                          [0.27428050, -17.10156642, -1.27517361],
+                          [0.25283019, -17.11603581, -1.29301424]])
 
         # SCALAR CASES [00] and [01]:
         calc = np.zeros(2)
         iwarm = 0
         for icool in range(2):
             args_scalar = self.args_scalar_inputs + (iwarm, icool)
-            calc[icool] = mb.met_buoyfls(*args_scalar)
+            calc[icool] = mb.met_frshflx(*args_scalar)
         np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
 
         # VECTOR CASES
@@ -437,7 +496,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
-                calc[ctr, :] = mb.met_buoyfls(*args_vector)
+                calc[ctr, :] = mb.met_frshflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
         # VECTOR CASES with time-vectorized sensor heights and algorithm switches
@@ -449,152 +508,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 ctr = icool + iwarm * 2
                 jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
                 args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-                calc[ctr, :] = mb.met_buoyfls(*args_vector)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-    def test_met_latnflx(self):
-        # cases: [jwarm, jcool]
-        xpctd = np.array([[184.91334211, 133.43175366, 151.19456789],
-                          [170.45205774, 123.62963458, 139.11084942],
-                          [184.91334211, 133.78969897, 151.58612581],
-                          [170.45205774, 124.03365974, 139.55690009]])
-
-        # SCALAR CASES [00] and [01]:
-        calc = np.zeros(2)
-        iwarm = 0
-        for icool in range(2):
-            args_scalar = self.args_scalar_inputs + (iwarm, icool)
-            calc[icool] = mb.met_latnflx(*args_scalar)
-        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASES
-        calc = np.zeros((4, 3))
-        for iwarm in range(2):
-            for icool in range(2):
-                ctr = icool + iwarm * 2
-                args_vector = self.args_vector_inputs + (iwarm, icool)
-                calc[ctr, :] = mb.met_latnflx(*args_vector)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
-        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
-        calc = np.zeros((4, 3))
-        for iwarm in range(2):
-            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
-            for icool in range(2):
-                ctr = icool + iwarm * 2
-                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
-                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-                calc[ctr, :] = mb.met_latnflx(*args_vector)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-    def test_met_sensflx(self):
-        # cases: [jwarm, jcool]
-        xpctd = np.array([[24.34435275, 19.84019748, 23.96742950],
-                          [20.96527540, 17.52684365, 21.07171423],
-                          [24.34435275, 19.92468342, 24.06116088],
-                          [20.96527540, 17.62294816, 21.17960462]])
-
-        # SCALAR CASES [00] and [01]:
-        calc = np.zeros(2)
-        iwarm = 0
-        for icool in range(2):
-            args_scalar = self.args_scalar_inputs + (iwarm, icool)
-            calc[icool] = mb.met_sensflx(*args_scalar)
-        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASES
-        calc = np.zeros((4, 3))
-        for iwarm in range(2):
-            for icool in range(2):
-                ctr = icool + iwarm * 2
-                args_vector = self.args_vector_inputs + (iwarm, icool)
-                calc[ctr, :] = mb.met_sensflx(*args_vector)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
-        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
-        calc = np.zeros((4, 3))
-        for iwarm in range(2):
-            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
-            for icool in range(2):
-                ctr = icool + iwarm * 2
-                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
-                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-                calc[ctr, :] = mb.met_sensflx(*args_vector)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-    def test_met_rainflx(self):
-        # cases: [jwarm, jcool]
-        xpctd = np.array([[0.00000000, 110.67785202, 9.96157245],
-                          [0.00000000, 110.67785202, 9.96157245],
-                          [0.00000000, 110.90622850, 9.98146410],
-                          [0.00000000, 110.96535859, 9.98688156]])
-
-        # SCALAR CASES [00] and [01]:
-        calc = np.zeros(2)
-        iwarm = 0
-        for icool in range(2):
-            args_scalar = self.args_scalar_inputs + (iwarm, icool)
-            calc[icool] = mb.met_rainflx(*args_scalar)
-        # for scalar inputs, rain_rate is by definition 0. set xpctd to 0.
-        np.testing.assert_allclose(calc, xpctd[0:2, 0], rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASES
-        calc = np.zeros((4, 3))
-        for iwarm in range(2):
-            for icool in range(2):
-                ctr = icool + iwarm * 2
-                args_vector = self.args_vector_inputs + (iwarm, icool)
-                calc[ctr, :] = mb.met_rainflx(*args_vector)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
-        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
-        calc = np.zeros((4, 3))
-        for iwarm in range(2):
-            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
-            for icool in range(2):
-                ctr = icool + iwarm * 2
-                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
-                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-                calc[ctr, :] = mb.met_rainflx(*args_vector)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-    def test_met_netlirr(self):
-        # cases: [jwarm, jcool]
-        xpctd = np.array([[41.43188924, 28.54298163, 42.15187511],
-                          [39.19850664, 26.60211114, 39.95207621],
-                          [41.43188924, 28.61328117, 42.22248731],
-                          [39.19850664, 26.68338061, 40.03470156]])
-
-        # SCALAR CASES [00] and [01]:
-        calc = np.zeros(2)
-        iwarm = 0
-        for icool in range(2):
-            args_scalar = self.args_scalar_inputs + (iwarm, icool)
-            calc[icool] = mb.met_netlirr(*args_scalar)
-        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASES
-        calc = np.zeros((4, 3))
-        for iwarm in range(2):
-            for icool in range(2):
-                ctr = icool + iwarm * 2
-                args_vector = self.args_vector_inputs + (iwarm, icool)
-                calc[ctr, :] = mb.met_netlirr(*args_vector)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
-        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
-        calc = np.zeros((4, 3))
-        for iwarm in range(2):
-            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
-            for icool in range(2):
-                ctr = icool + iwarm * 2
-                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
-                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-                calc[ctr, :] = mb.met_netlirr(*args_vector)
+                calc[ctr, :] = mb.met_frshflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
     def test_met_heatflx(self):
@@ -654,19 +568,19 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 calc[ctr, :] = mb.met_heatflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
-    def test_met_tempa2m(self):
+    def test_met_latnflx(self):
         # cases: [jwarm, jcool]
-        xpctd = np.array([[28.36851533, 28.09024408, 27.81395793],
-                          [28.35732615, 28.08200008, 27.80462176],
-                          [28.36851533, 28.09054198, 27.81425524],
-                          [28.35732615, 28.08234637, 27.80497552]])
+        xpctd = np.array([[184.91334211, 133.43175366, 151.19456789],
+                          [170.45205774, 123.62963458, 139.11084942],
+                          [184.91334211, 133.78969897, 151.58612581],
+                          [170.45205774, 124.03365974, 139.55690009]])
 
         # SCALAR CASES [00] and [01]:
         calc = np.zeros(2)
         iwarm = 0
         for icool in range(2):
             args_scalar = self.args_scalar_inputs + (iwarm, icool)
-            calc[icool] = mb.met_tempa2m(*args_scalar)
+            calc[icool] = mb.met_latnflx(*args_scalar)
         np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
 
         # VECTOR CASES
@@ -675,7 +589,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
-                calc[ctr, :] = mb.met_tempa2m(*args_vector)
+                calc[ctr, :] = mb.met_latnflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
         # VECTOR CASES with time-vectorized sensor heights and algorithm switches
@@ -687,7 +601,152 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 ctr = icool + iwarm * 2
                 jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
                 args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-                calc[ctr, :] = mb.met_tempa2m(*args_vector)
+                calc[ctr, :] = mb.met_latnflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    def test_met_mommflx(self):
+        # cases: [jwarm, jcool]
+        xpctd = np.array([[0.030974330742, 0.016090125876, 0.020303436138],
+                          [0.030614459503, 0.015910513076, 0.020067006629],
+                          [0.030974330742, 0.016096471089, 0.020310838724],
+                          [0.030614459503, 0.015918213926, 0.020076101791]])
+
+        # SCALAR CASES [00] and [01]:
+        calc = np.zeros(2)
+        iwarm = 0
+        for icool in range(2):
+            args_scalar = self.args_scalar_inputs + (iwarm, icool)
+            calc[icool] = mb.met_mommflx(*args_scalar)
+        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_mommflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_mommflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    def test_met_netlirr(self):
+        # cases: [jwarm, jcool]
+        xpctd = np.array([[41.43188924, 28.54298163, 42.15187511],
+                          [39.19850664, 26.60211114, 39.95207621],
+                          [41.43188924, 28.61328117, 42.22248731],
+                          [39.19850664, 26.68338061, 40.03470156]])
+
+        # SCALAR CASES [00] and [01]:
+        calc = np.zeros(2)
+        iwarm = 0
+        for icool in range(2):
+            args_scalar = self.args_scalar_inputs + (iwarm, icool)
+            calc[icool] = mb.met_netlirr(*args_scalar)
+        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_netlirr(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_netlirr(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    def test_met_rainflx(self):
+        # cases: [jwarm, jcool]
+        xpctd = np.array([[0.00000000, 110.67785202, 9.96157245],
+                          [0.00000000, 110.67785202, 9.96157245],
+                          [0.00000000, 110.90622850, 9.98146410],
+                          [0.00000000, 110.96535859, 9.98688156]])
+
+        # SCALAR CASES [00] and [01]:
+        calc = np.zeros(2)
+        iwarm = 0
+        for icool in range(2):
+            args_scalar = self.args_scalar_inputs + (iwarm, icool)
+            calc[icool] = mb.met_rainflx(*args_scalar)
+        # for scalar inputs, rain_rate is by definition 0. set xpctd to 0.
+        np.testing.assert_allclose(calc, xpctd[0:2, 0], rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_rainflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_rainflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    def test_met_sensflx(self):
+        # cases: [jwarm, jcool]
+        xpctd = np.array([[24.34435275, 19.84019748, 23.96742950],
+                          [20.96527540, 17.52684365, 21.07171423],
+                          [24.34435275, 19.92468342, 24.06116088],
+                          [20.96527540, 17.62294816, 21.17960462]])
+
+        # SCALAR CASES [00] and [01]:
+        calc = np.zeros(2)
+        iwarm = 0
+        for icool in range(2):
+            args_scalar = self.args_scalar_inputs + (iwarm, icool)
+            calc[icool] = mb.met_sensflx(*args_scalar)
+        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_sensflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_sensflx(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
     def test_met_sphum2m(self):
@@ -726,19 +785,19 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 calc[ctr, :] = mb.met_sphum2m(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
-    def test_met_wind10m(self):
+    def test_met_stablty(self):
         # cases: [jwarm, jcool]
-        xpctd = np.array([[4.84933264, 3.42025464, 3.87210524],
-                          [4.85069650, 3.42094844, 3.87301659],
-                          [4.84933264, 3.42023139, 3.87207813],
-                          [4.85069650, 3.42091723, 3.87297987]])
+        xpctd = np.array([[-0.75134556, -1.53410291, -1.29155675],   # [00]
+                          [-0.67713848, -1.40615623, -1.17706256],   # [01]
+                          [-0.75134556, -1.53871067, -1.29521084],   # [10]
+                          [-0.67713848, -1.41154284, -1.18138703]])  # [11]
 
         # SCALAR CASES [00] and [01]:
         calc = np.zeros(2)
         iwarm = 0
         for icool in range(2):
             args_scalar = self.args_scalar_inputs + (iwarm, icool)
-            calc[icool] = mb.met_wind10m(*args_scalar)
+            calc[icool] = mb.met_stablty(*args_scalar)
         np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
 
         # VECTOR CASES
@@ -747,7 +806,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
-                calc[ctr, :] = mb.met_wind10m(*args_vector)
+                calc[ctr, :] = mb.met_stablty(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
         # VECTOR CASES with time-vectorized sensor heights and algorithm switches
@@ -759,22 +818,22 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 ctr = icool + iwarm * 2
                 jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
                 args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-                calc[ctr, :] = mb.met_wind10m(*args_vector)
+                calc[ctr, :] = mb.met_stablty(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
-    def test_met_frshflx(self):
+    def test_met_tempa2m(self):
         # cases: [jwarm, jcool]
-        xpctd = np.array([[0.27428050, -17.10209951, -1.27575685],
-                          [0.25283019, -17.11663761, -1.29367873],
-                          [0.27428050, -17.10156642, -1.27517361],
-                          [0.25283019, -17.11603581, -1.29301424]])
+        xpctd = np.array([[28.36851533, 28.09024408, 27.81395793],
+                          [28.35732615, 28.08200008, 27.80462176],
+                          [28.36851533, 28.09054198, 27.81425524],
+                          [28.35732615, 28.08234637, 27.80497552]])
 
         # SCALAR CASES [00] and [01]:
         calc = np.zeros(2)
         iwarm = 0
         for icool in range(2):
             args_scalar = self.args_scalar_inputs + (iwarm, icool)
-            calc[icool] = mb.met_frshflx(*args_scalar)
+            calc[icool] = mb.met_tempa2m(*args_scalar)
         np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
 
         # VECTOR CASES
@@ -783,7 +842,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             for icool in range(2):
                 ctr = icool + iwarm * 2
                 args_vector = self.args_vector_inputs + (iwarm, icool)
-                calc[ctr, :] = mb.met_frshflx(*args_vector)
+                calc[ctr, :] = mb.met_tempa2m(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
         # VECTOR CASES with time-vectorized sensor heights and algorithm switches
@@ -795,7 +854,7 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 ctr = icool + iwarm * 2
                 jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
                 args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-                calc[ctr, :] = mb.met_frshflx(*args_vector)
+                calc[ctr, :] = mb.met_tempa2m(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
     def test_met_tempskn(self):
@@ -834,14 +893,186 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
                 calc[ctr, :] = mb.met_tempskn(*args_vector)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
-    """
-        Description
+    def test_met_wind10m(self):
+        # cases: [jwarm, jcool]
+        xpctd = np.array([[4.84933264, 3.42025464, 3.87210524],
+                          [4.85069650, 3.42094844, 3.87301659],
+                          [4.84933264, 3.42023139, 3.87207813],
+                          [4.85069650, 3.42091723, 3.87297987]])
 
-        Tests for products that require neither coolskin nor warmlayer corrections.
+        # SCALAR CASES [00] and [01]:
+        calc = np.zeros(2)
+        iwarm = 0
+        for icool in range(2):
+            args_scalar = self.args_scalar_inputs + (iwarm, icool)
+            calc[icool] = mb.met_wind10m(*args_scalar)
+        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
 
-        Except as noted, test values were generated in matlab and implemented by
-        Russell Desiderio.
+        # VECTOR CASES
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                args_vector = self.args_vector_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_wind10m(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES with time-vectorized sensor heights and algorithm switches
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, self.npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, self.npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_wind10m(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
     """
+    Tests for coolskin/warmlayer products on native METBK timebase.
+
+    Test values were generated in matlab and implemented by Russell Desiderio.
+    Vector cases with time-vectorized sensor heights and algorithm switches
+    are not necessary because these data products are produced on the native
+    time base of the METBK instrumentation (and the hourly versions have
+    already been vetted).
+    """
+    def test_met_heatflx_minute(self):
+        # cases: [jwarm, jcool]
+        # total heat flux = latnflx + sensflx + rainflx + netlirr - netsirr
+        latnf = np.array([[184.91334211, 133.43175366, 151.19456789],
+                          [170.45205774, 123.62963458, 139.11084942],
+                          [184.91334211, 133.50681019, 151.24665632],
+                          [170.45205774, 123.71656274, 139.18576360]])
+
+        sensf = np.array([[24.34435275, 19.84019748, 23.96742950],
+                          [20.96527540, 17.52684365, 21.07171423],
+                          [24.34435275, 19.85791503, 23.97990023],
+                          [20.96527540, 17.54752327, 21.08983701]])
+
+        rainf = np.array([[0.00000000, 110.67785202, 9.96157245],
+                          [0.00000000, 110.67785202, 9.96157245],
+                          [0.00000000, 110.72575756, 9.96421969],
+                          [0.00000000, 110.73973748, 9.96582507]])
+
+        netli = np.array([[41.43188924, 28.54298163, 42.15187511],
+                          [39.19850664, 26.60211114, 39.95207621],
+                          [41.43188924, 28.55772741, 42.16127194],
+                          [39.19850664, 26.61960347, 39.96595888]])
+
+        netsi_down = np.array([541.20150, 622.75500, 599.13000])
+        netsi = np.tile(netsi_down, (4, 1))
+
+        xpctd = latnf + sensf + rainf + netli - netsi
+
+        # SCALAR CASES [00] and [01]:
+        calc = np.zeros(2)
+        iwarm = 0
+        for icool in range(2):
+            args_scalar = self.args_scalar_inputs + (iwarm, icool)
+            calc[icool] = mb.met_heatflx_minute(*args_scalar)
+        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                args_vector = self.args_permin_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_heatflx_minute(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    def test_met_latnflx_minute(self):
+        # cases: [jwarm, jcool]
+        xpctd = np.array([[184.91334211, 133.43175366, 151.19456789],
+                          [170.45205774, 123.62963458, 139.11084942],
+                          [184.91334211, 133.50681019, 151.24665632],
+                          [170.45205774, 123.71656274, 139.18576360]])
+
+        # SCALAR CASES [00] and [01]:
+        calc = np.zeros(2)
+        iwarm = 0
+        for icool in range(2):
+            args_scalar = self.args_scalar_inputs + (iwarm, icool)
+            calc[icool] = mb.met_latnflx_minute(*args_scalar)
+        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                args_vector = self.args_permin_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_latnflx_minute(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    def test_met_netlirr_minute(self):
+        # cases: [jwarm, jcool]
+        xpctd = np.array([[41.43188924, 28.54298163, 42.15187511],
+                          [39.19850664, 26.60211114, 39.95207621],
+                          [41.43188924, 28.55772741, 42.16127194],
+                          [39.19850664, 26.61960347, 39.96595888]])
+
+        # SCALAR CASES [00] and [01]:
+        calc = np.zeros(2)
+        iwarm = 0
+        for icool in range(2):
+            args_scalar = self.args_scalar_inputs + (iwarm, icool)
+            calc[icool] = mb.met_netlirr_minute(*args_scalar)
+        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                args_vector = self.args_permin_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_netlirr_minute(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    def test_met_sensflx_minute(self):
+        # cases: [jwarm, jcool]
+        xpctd = np.array([[24.34435275, 19.84019748, 23.96742950],
+                          [20.96527540, 17.52684365, 21.07171423],
+                          [24.34435275, 19.85791503, 23.97990023],
+                          [20.96527540, 17.54752327, 21.08983701]])
+
+        # SCALAR CASES [00] and [01]:
+        calc = np.zeros(2)
+        iwarm = 0
+        for icool in range(2):
+            args_scalar = self.args_scalar_inputs + (iwarm, icool)
+            calc[icool] = mb.met_sensflx_minute(*args_scalar)
+        np.testing.assert_allclose(calc, xpctd[0:2, self.kk], rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASES
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                args_vector = self.args_permin_inputs + (iwarm, icool)
+                calc[ctr, :] = mb.met_sensflx_minute(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    """
+    Tests for products that require neither coolskin nor warmlayer corrections.
+
+    Test values were generated in matlab and implemented by Russell Desiderio.
+    """
+    def test_met_barpres(self):
+        pr_air_mbar = np.array([1005.1, 1006.2, 1007.3])
+        xpctd = pr_air_mbar * 100.0
+
+        # SCALAR CASE
+        kk = 1
+        calc = mb.met_barpres(pr_air_mbar[kk])
+        np.testing.assert_allclose(calc, xpctd[kk], rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASE
+        calc = mb.met_barpres(pr_air_mbar)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
     def test_met_netsirr(self):
         xpctd = np.array([541.20150, 622.75500, 599.13000])
         Rshort_down = np.array([572.7, 659.0, 634.0])
@@ -853,6 +1084,55 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
 
         # VECTOR CASE
         calc = mb.met_netsirr(Rshort_down)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    def test_met_netsirr_hourly(self):
+        #
+        #    This Vector Case differs from that for test_met_netsirr in that
+        #    30 points of Rshort_down data spanning 3 hours (self.Rshort_down)
+        #    are input instead of a vector of 3 values (Rshort_down).
+        #
+        xpctd = np.array([541.20150, 622.75500, 599.13000])
+        Rshort_down = np.array([572.7, 659.0, 634.0])
+
+        # SCALAR CASE
+        kk = 1
+        calc = mb.met_netsirr_hourly(Rshort_down[kk], 6540998.0)
+        np.testing.assert_allclose(calc, xpctd[kk], rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASE (input data span 3 hours)
+        calc = mb.met_netsirr_hourly(self.Rshort_down, self.timestamp)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    def test_met_rainrte(self):
+        # SCALAR CASE
+        xpctd_scalar = 0.0
+        calc = mb.met_rainrte(42.0, 6540998.0)
+        np.testing.assert_allclose(calc, xpctd_scalar, rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASE (input data span 3 hours)
+        xpctd = np.array([0.0, 17.3, 1.5])
+        calc = mb.met_rainrte(self.cumu_prcp, self.timestamp)
+
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+    def test_met_salsurf(self):
+        #
+        #   Test values generated from ctd_functions.ctd_pracsal, using ztmpwat [m]
+        #  as a proxy for pressure [db].
+        #
+        xpctd = np.array([20.80589579, 25.51852081, 29.42245514])
+        cond_S_m = np.array([3.0, 4.0, 5.0])
+        tC_sea = np.array([20.0, 25.0, 30.0])
+        ztmpwat = np.array([1.0, 1.5, 2.0])
+
+        # SCALAR CASE
+        kk = 1
+        calc = mb.met_salsurf(cond_S_m[kk], tC_sea[kk], ztmpwat[kk])
+        np.testing.assert_allclose(calc, xpctd[kk], rtol=1.e-8, atol=0.0)
+
+        # VECTOR CASE
+        calc = mb.met_salsurf(cond_S_m, tC_sea, ztmpwat)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
     def test_met_spechum(self):
@@ -870,54 +1150,16 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         calc = mb.met_spechum(tC_air, pr_air, relhum)
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
 
-    def test_met_rainrte(self):
-        # SCALAR CASE
-        xpctd_scalar = 0.0
-        calc = mb.met_rainrte(42.0, 6540998.0)
-        np.testing.assert_allclose(calc, xpctd_scalar, rtol=1.e-8, atol=0.0)
+    """
+    Tests for current and wind products.
 
-        # VECTOR CASE
-        xpctd = np.array([0.0, 17.3, 1.5])
-        calc = mb.met_rainrte(self.cumu_prcp, self.timestamp)
-
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-    def test_met_salsurf(self):
-        """
-            Test values generated from ctd_functions.ctd_pracsal, using ztmpwat [m]
-            as a proxy for pressure [db].
-        """
-        xpctd = np.array([20.80589579, 25.51852081, 29.42245514])
-        cond_S_m = np.array([3.0, 4.0, 5.0])
-        tC_sea = np.array([20.0, 25.0, 30.0])
-        ztmpwat = np.array([1.0, 1.5, 2.0])
-
-        # SCALAR CASE
-        kk = 1
-        calc = mb.met_salsurf(cond_S_m[kk], tC_sea[kk], ztmpwat[kk])
-        np.testing.assert_allclose(calc, xpctd[kk], rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASE
-        calc = mb.met_salsurf(cond_S_m, tC_sea, ztmpwat)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
-    def test_met_barpres(self):
-        pr_air_mbar = np.array([1005.1, 1006.2, 1007.3])
-        xpctd = pr_air_mbar * 100.0
-
-        # SCALAR CASE
-        kk = 1
-        calc = mb.met_barpres(pr_air_mbar[kk])
-        np.testing.assert_allclose(calc, xpctd[kk], rtol=1.e-8, atol=0.0)
-
-        # VECTOR CASE
-        calc = mb.met_barpres(pr_air_mbar)
-        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-
+    Except as noted, test values were generated in matlab and implemented by
+    Russell Desiderio.
+    """
     def test_met_current_direction(self):
-        """  Desiderio 13-Jul-2015.
-             Revised unit tests to check action of use_velptmn_with_metbk switch
-        """
+        #    Desiderio 13-Jul-2015.
+        #    Revised unit tests to check action of use_velptmn_with_metbk switch
+
         # test data inputs - hit all quadrants.
         hf_rt3 = np.sqrt(3.0)/2.0
         vle = np.array([0.0, hf_rt3, 0.5, 0.0, -0.5, -hf_rt3,
@@ -958,21 +1200,21 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_array_almost_equal(calc, xpctd, decimal=4)
 
     def test_met_current_speed(self):
-        """
-            Test the surface current algorithm using test data generated in Matlab
-            from the compass plot function example:
-
-            >> rng(0,'twister') % initialize random number generator
-            >> M = randn(15,15);
-            >> Z = eig(M);
-            >> vle = real(Z);
-            >> vln = imag(Z);
-            >> crnt = sqrt(vle.^2 + vln.^2);
-
-            C. Wingard 2014-07-01
-            R. Desiderio 13-Jul-2015.
-               Revised unit tests to check action of use_velptmn_with_metbk switch
-        """
+        #"""
+        #    Test the surface current algorithm using test data generated in Matlab
+        #    from the compass plot function example:
+        #
+        #    >> rng(0,'twister') % initialize random number generator
+        #    >> M = randn(15,15);
+        #    >> Z = eig(M);
+        #    >> vle = real(Z);
+        #    >> vln = imag(Z);
+        #    >> crnt = sqrt(vle.^2 + vln.^2);
+        #
+        #    C. Wingard 2014-07-01
+        #    R. Desiderio 13-Jul-2015.
+        #       Revised unit tests to check action of use_velptmn_with_metbk switch
+        #"""
 
         # test data inputs
         vle = np.array([-3.1330, -3.1330, -2.9908, 1.0666, 1.0666,
@@ -1018,10 +1260,10 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_array_almost_equal(out, crnt, decimal=4)
 
     def test_met_relwind_direction(self):
-        """
-        2015-07-14. Russell Desiderio. Revised unit tests to check action of
-                                       use_velptmn_with_metbk switch
-        """
+        #
+        # 2015-07-14. Russell Desiderio. Revised unit tests to check action of
+        #                                use_velptmn_with_metbk switch
+        #
         hf_rt3 = np.sqrt(3.0)/2.0
         wind_vle = np.array([0.0, hf_rt3, 0.5, 0.0, -0.5, -hf_rt3,
                             -1.0, -hf_rt3, -0.5, 0.0, 0.5, hf_rt3]) * 3.0
@@ -1072,10 +1314,10 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_array_almost_equal(calc, xpctd, decimal=5)
 
     def test_met_relwind_speed(self):
-        """
-        2015-07-14. Russell Desiderio. Revised unit tests to check action of
-                                       use_velptmn_with_metbk switch.
-        """
+        #
+        #2015-07-14. Russell Desiderio. Revised unit tests to check action of
+        #                               use_velptmn_with_metbk switch.
+        #
 
         # These tests differ from those for relwind_direction, current_speed, and current_direction
         # in that bad current data should not result in nans for the relative windspeed; rather, the
@@ -1128,16 +1370,16 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         calc = mb.met_relwind_speed(wind_vle, wind_vln, current_vle, current_vln, use_metbk)
         np.testing.assert_array_almost_equal(calc, xpctd, decimal=5)
 
-    def test_metbk_windavg(self):
-        """
-            Date, lat, and lon provided approximately equal magnetic
-            declinations of -17 and +17 degrees
-
-            have to convert these dates to ntp timestamp (seonds since
-            1900-01-01)
-
-            C. Wingard 2014-07-01
-        """
+    def test_met_windavg(self):
+        #"""
+        #    Date, lat, and lon provided approximately equal magnetic
+        #    declinations of -17 and +17 degrees
+        #
+        #    have to convert these dates to ntp timestamp (seconds since
+        #    1900-01-01)
+        #
+        #    C. Wingard 2014-07-01
+        #"""
 
         date_str = np.array([
             '5/30/2013', '5/30/2013', '5/30/2013', '5/30/2013', '5/30/2013',
@@ -1178,19 +1420,22 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         np.testing.assert_array_almost_equal(ve_cor, ve_expected, decimal=2)
         np.testing.assert_array_almost_equal(vn_cor, vn_expected, decimal=2)
 
+    """
+    Tests involving time.
+    """
     def test_make_hourly_data(self):
-        """
-            Note that except for the first two elements, the expected values are the
-            same as those given above in the "scalar testset".
-                The first element contains the hourly averages of the cumulative
-                    precipitation; when differenced, this will give the expected
-                    rain rate array [0.0, 17.3, 1,5].
-                The second element contains the hourly timestamps which have been
-                    coded to be at the midpoint of the bins.
-            Note also that the output of make_hourly_data is a list of np.arrays.
-
-            Initial code: 2014-09-20, Russell Desiderio.
-        """
+        #"""
+        #    Note that except for the first two elements, the expected values are the
+        #    same as those given above in the "scalar testset".
+        #        The first element contains the hourly averages of the cumulative
+        #            precipitation; when differenced, this will give the expected
+        #            rain rate array [0.0, 17.3, 1,5].
+        #        The second element contains the hourly timestamps which have been
+        #            coded to be at the midpoint of the bins.
+        #    Note also that the output of make_hourly_data is a list of np.arrays.
+        #
+        #    Initial code: 2014-09-20, Russell Desiderio.
+        #"""
         xpctd = [np.array([0., 17.3, 18.8]),
                  np.array([866200., 869800., 873400.]),
                  np.array([40.5, 40.6, 40.7]),
@@ -1223,43 +1468,6 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         calc = mb.met_timeflx(self.timestamp)
 
         np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=1.e-8)
-
-    def test_warmlayer_time_keys(self):
-        """
-        idx_warm, newday, nanmask = warmlayer_time_keys(localdate)
-
-            where
-
-        idx_warm = indices of data records to be processed by the warmlayer routine;
-                   these are data for days for which there are data before a threshold
-                   time value early in the morning (usually set to equatorial sunrise).
-        newday = boolean array: true for the first record of a day, false otherwise.
-        nanmask = boolean array: true for indices of data records not to be processed
-                  by the warmlayer routine.
-        localdate = local (not UTC) date and time [sec since 01-01-1900]
-
-        Initial code: 2014-10-27, Russell Desiderio.
-        """
-        # test data: set local date and times for each day
-        # no times before 6AM (21600 seconds)
-        day1 = np.array([30000.0, 34000.0, 40000.0]) + 3 * 86400.0
-        # 1st time before 6AM
-        day2 = np.array([20000.0, 25000.0, 30000.0, 36000.0]) + 4 * 86400.0
-        day3 = np.array([50000.0, 60000.0]) + 7 * 86400.0
-        day4 = np.array([10000.0, 15000.0, 20000.0, 26000.0]) + 9 * 86400.0
-        # entire test time record
-        localdate = np.hstack((day1, day2, day3, day4))
-
-        # expected
-        xpctd_idx = np.array([3, 4, 5, 6, 9, 10, 11, 12])
-        xpctd_new = np.array([1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0], dtype=bool)
-        xpctd_nan = np.array([1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0], dtype=bool)
-        xpctd = (xpctd_idx, xpctd_new, xpctd_nan)
-
-        # calculated
-        calc = mb.warmlayer_time_keys(localdate)
-
-        np.testing.assert_equal(calc, xpctd)
 
     def test_multiple_days(self):
         """
@@ -1306,21 +1514,6 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
             #timeflx = mb.met_timeflx(alt_time)  # make sure python is creating copies
             #print timeflx, xpctd
             np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=1.e-8)
-
-    def test_rain_heat_flux(self):
-        """
-            Tests new formulation of rain heat flux, independent of coare bulk algorithms.
-        """
-        Tsea = 25.0
-        Tair = 23.5
-        RH = 80.0       # relative humidity [%]
-        rainrate = 1.0  # [mm/hour]
-        Pr = 1015.0     # atmospheric pressure [mbar]
-
-        # check value is from the matlab code test_rain_heat_flux.m
-        xpctd = 4.663360812871
-        calc = mb.rain_heat_flux(rainrate, Tsea, Tair, RH, Pr)
-        np.testing.assert_allclose(calc, xpctd, rtol=0, atol=1.e-12)
 
     def test_time_calcs_with_actual_metbk_data(self):
         """
@@ -1444,93 +1637,111 @@ class TestMetFunctionsUnit(BaseUnitTestCase):
         xpctd = np.array([True, True, True, False])
         np.testing.assert_equal(calc, xpctd)
 
-    #def test_time_vectorized_heights_and_switches(self):
-    #    """
-    #    Description:
-    #
-    #        Time-vectorization of the sensor heights (ztmpwat, ztmpair, zhumair, zwindsp,
-    #        and zinvpbl) and algorithm switches (jwarm, jcool) are tested using the DPA
-    #        met_latnflx which calculates the latent heat flux L2 data product. The check
-    #        values are identical to the vector case values in test_met_latnflx.
-    #
-    #    Implemented by:
-    #
-    #        2014-07-14: Russell Desiderio. Initial Code.
-    #    """
-    #    xpctd = np.array([[184.91334211, 133.43175366, 151.19456789],
-    #                      [170.45205774, 123.62963458, 139.11084942],
-    #                      [184.91334211, 133.78969897, 151.58612581],
-    #                      [170.45205774, 124.03365974, 139.55690009]])
-    #
-    #    # Time-vectorized cases only
-    #    # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
-    #    npts = self.args_vector_ztmvec[0].shape  # number of time points
-    #    calc = np.zeros((4, 3))
-    #    for iwarm in range(2):
-    #        jwarm_tmvec = np.tile(iwarm, npts)  # time vectorize jwarm
-    #        for icool in range(2):
-    #            ctr = icool + iwarm * 2
-    #            jcool_tmvec = np.tile(icool, npts)  # time vectorize jcool
-    #            args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-    #            calc[ctr, :] = mb.met_latnflx(*args_vector)
-    #    np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
-    #
-    #
-    #
-    #    xpctd = np.array([[4.84933264, 3.42025464, 3.87210524],
-    #                      [4.85069650, 3.42094844, 3.87301659],
-    #                      [4.84933264, 3.42023139, 3.87207813],
-    #                      [4.85069650, 3.42091723, 3.87297987]])
-    #
-    #    # Time-vectorized cases only
-    #    # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
-    #    npts = self.args_vector_ztmvec[0].shape  # number of time points
-    #    calc = np.zeros((4, 3))
-    #    for iwarm in range(2):
-    #        jwarm_tmvec = np.tile(iwarm, npts)  # time vectorize jwarm
-    #        for icool in range(2):
-    #            ctr = icool + iwarm * 2
-    #            jcool_tmvec = np.tile(icool, npts)  # time vectorize jcool
-    #            args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
-    #            calc[ctr, :] = mb.met_wind10m(*args_vector)
-    #    np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+    def test_warmlayer_time_keys(self):
+        """
+        idx_warm, newday, nanmask = warmlayer_time_keys(localdate)
 
-    #def fast_test(self):
-    #    tC_sea = np.zeros(43) + 15.0
-    #    wnd = np.zeros(43) + .5
-    #    tC_air = np.zeros(43) + 12.5
-    #    relhum = np.zeros(43) + 56.5
-    #
-    #    #timestamp = np.array([  3.62559589e+09,   3.62559589e+09,   3.62559590e+09,
-    #    timestamp = np.array([  3625553890,   3625553898,   3625563892,
-    #     3.62564315e+09,   3.62569050e+09,   3.62573784e+09,
-    #     3.62578513e+09,   3.62583246e+09,   3.62587979e+09,
-    #     3.62592708e+09,   3.62597436e+09,   3.62602169e+09,
-    #     3.62606905e+09,   3.62611637e+09,   3.62616366e+09,
-    #     3.62621100e+09,   3.62625828e+09,   3.62630562e+09,
-    #     3.62635295e+09,   3.62640023e+09,   3.62644758e+09,
-    #     3.62649486e+09,   3.62652416e+09,   3.62672640e+09,
-    #     3.62677877e+09,   3.62682610e+09,   3.62687339e+09,
-    #     3.62692074e+09,   3.62696802e+09,   3.62701535e+09,
-    #     3.62706266e+09,   3.62711000e+09,   3.62715145e+09,
-    #     3.62732849e+09,   3.62748853e+09,   3.62753586e+09,
-    #     3.62758313e+09,   3.62763049e+09,   3.62767780e+09,
-    #     3.62772511e+09,   3.62773303e+09,   3.62778304e+09,
-    #     3.62791436e+09])
-    #    lon = np.zeros(43) + 89.5
-    #    ztmpwat = np.zeros(43) + 5.5
-    #    zwindsp = np.zeros(43) + 12.5
-    #    ztmpair = np.zeros(43) + 3.5
-    #    zhumair = np.zeros(43) + 6.5
-    #    lat = np.zeros(43) + 33.5
-    #    pr_air = np.zeros(43) + 1005.5
-    #    Rshort_down = np.zeros(43) + 100.5
-    #    Rlong_down = np.zeros(43) + 400.5
-    #    cumu_prcp = np.zeros(43) + 25.5
-    #    zinvpbl = np.zeros(43) + 600.0
-    #    jwarm = np.zeros(43) + 1
-    #    jcool = np.zeros(43) + 1
-    #    
-    #    out = mb.met_wind10m(tC_sea, wnd, tC_air, relhum, timestamp, lon, ztmpwat, zwindsp, ztmpair, zhumair, lat, pr_air, Rshort_down, Rlong_down, cumu_prcp, zinvpbl, jwarm, jcool)
-    #    print out.shape
-    #    
+            where
+
+        idx_warm = indices of data records to be processed by the warmlayer routine;
+                   these are data for days for which there are data before a threshold
+                   time value early in the morning (usually set to equatorial sunrise).
+        newday = boolean array: true for the first record of a day, false otherwise.
+        nanmask = boolean array: true for indices of data records not to be processed
+                  by the warmlayer routine.
+        localdate = local (not UTC) date and time [sec since 01-01-1900]
+
+        Initial code: 2014-10-27, Russell Desiderio.
+        """
+        # test data: set local date and times for each day
+        # no times before 6AM (21600 seconds)
+        day1 = np.array([30000.0, 34000.0, 40000.0]) + 3 * 86400.0
+        # 1st time before 6AM
+        day2 = np.array([20000.0, 25000.0, 30000.0, 36000.0]) + 4 * 86400.0
+        day3 = np.array([50000.0, 60000.0]) + 7 * 86400.0
+        day4 = np.array([10000.0, 15000.0, 20000.0, 26000.0]) + 9 * 86400.0
+        # entire test time record
+        localdate = np.hstack((day1, day2, day3, day4))
+
+        # expected
+        xpctd_idx = np.array([3, 4, 5, 6, 9, 10, 11, 12])
+        xpctd_new = np.array([1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0], dtype=bool)
+        xpctd_nan = np.array([1, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0], dtype=bool)
+        xpctd = (xpctd_idx, xpctd_new, xpctd_nan)
+
+        # calculated
+        calc = mb.warmlayer_time_keys(localdate)
+
+        np.testing.assert_equal(calc, xpctd)
+
+    """
+    Miscellaneous tests.
+    """
+    def test_rain_heat_flux(self):
+        """
+            Tests new formulation of rain heat flux, independent of coare bulk algorithms.
+        """
+        Tsea = 25.0
+        Tair = 23.5
+        RH = 80.0       # relative humidity [%]
+        rainrate = 1.0  # [mm/hour]
+        Pr = 1015.0     # atmospheric pressure [mbar]
+
+        # check value is from the matlab code test_rain_heat_flux.m
+        xpctd = 4.663360812871
+        calc = mb.rain_heat_flux(rainrate, Tsea, Tair, RH, Pr)
+        np.testing.assert_allclose(calc, xpctd, rtol=0, atol=1.e-12)
+
+    def test_time_vectorized_heights_and_switches(self):
+        """
+        Description:
+
+            Time-vectorization of the sensor heights (ztmpwat, ztmpair, zhumair, zwindsp,
+            and zinvpbl) and algorithm switches (jwarm, jcool) are tested using the DPAs
+            met_latnflx and met_wind10m. The check values are identical to the corresponding
+            vector case values.
+
+        Implemented by:
+
+            2014-07-14: Russell Desiderio. Initial Code.
+            2015-10-26: Russell Desiderio. Added test using met_wind10m. Minor DPA mods were
+                                           made to several DPAs involving binning the invariant
+                                           sensor heights as a fix for redmine ticket #8592 (pull
+                                           request 232). This documentation added 2017-02-14.
+        """
+        xpctd = np.array([[184.91334211, 133.43175366, 151.19456789],
+                          [170.45205774, 123.62963458, 139.11084942],
+                          [184.91334211, 133.78969897, 151.58612581],
+                          [170.45205774, 124.03365974, 139.55690009]])
+
+        # latnflx: Time-vectorized cases only
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        npts = self.args_vector_ztmvec[0].shape  # number of time points
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_latnflx(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
+        xpctd = np.array([[4.84933264, 3.42025464, 3.87210524],
+                          [4.85069650, 3.42094844, 3.87301659],
+                          [4.84933264, 3.42023139, 3.87207813],
+                          [4.85069650, 3.42091723, 3.87297987]])
+
+        # wind10m: Time-vectorized cases only
+        # sensor height arrays in self.args_vector_ztmvec have already been time-vectorized
+        npts = self.args_vector_ztmvec[0].shape  # number of time points
+        calc = np.zeros((4, 3))
+        for iwarm in range(2):
+            jwarm_tmvec = np.tile(iwarm, npts)  # time vectorize jwarm
+            for icool in range(2):
+                ctr = icool + iwarm * 2
+                jcool_tmvec = np.tile(icool, npts)  # time vectorize jcool
+                args_vector = self.args_vector_ztmvec + (jwarm_tmvec, jcool_tmvec)
+                calc[ctr, :] = mb.met_wind10m(*args_vector)
+        np.testing.assert_allclose(calc, xpctd, rtol=1.e-8, atol=0.0)
+
