@@ -3,7 +3,7 @@
 """
 @package ion_functions.test.prs_functions
 @file ion_functions/test/test_prs_functions.py
-@author Christopher Wingard, Russell Desiderio
+@author Russell Desiderio, Chris Wingard
 @brief Unit tests for prs_functions module
 """
 
@@ -340,7 +340,7 @@ class TestPRSFunctionsUnit(BaseUnitTestCase):
                          '2011 04 30 23 59 45']
 
         reftime = mdates.date2num(dt.datetime(1900, 1, 1))
-        time15s = prsfunc.prs_botsflu_time15s(self.ss1900)
+        time15s = prsfunc.prs_botsflu_time15s(self.ss1900, self.botpres)
         # convert to datetime objects
         t15s_dto = np.array(mdates.num2date(time15s/86400.0+reftime))
         # convert 20 values to readable date-times

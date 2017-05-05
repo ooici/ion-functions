@@ -2,7 +2,7 @@
 """
 @package ion_functions.data.prs_functions
 @file ion_functions/data/prs_functions.py
-@author Christopher Wingard, Russell Desiderio
+@author Russell Desiderio, Chris Wingard
 @brief Module containing calculations related to instruments in the Seafloor
     Pressure family.
 """
@@ -37,6 +37,15 @@ from scipy import signal
         prs_botsflu_4wkrate -- computes the BOTSFLU-4WKRATE_L2 data product
         prs_botsflu_8wkrate -- computes the BOTSFLU-8WKRATE_L2 data product
 
+    Worker functions called by functions calculating data products.
+
+      BOTSFLU:
+
+        anchor_bin
+        calc_daydepth_plus
+        calc_meandepth_plus
+        calculate_sliding_means
+
     Functions calculating event notifications; they return either True or False.
 
       BOTSFLU:
@@ -44,15 +53,6 @@ from scipy import signal
         prs_tsunami_detection -- event notification specified by DPS
         prs_eruption_imminent -- event notification specified by DPS
         prs_eruption_occurred -- event notification specified by DPS
-
-    Worker functions called by functions calculating data products.
-
-      BOTSFLU
-
-        anchor_bin
-        calc_daydepth_plus
-        calc_meandepth_plus
-        calculate_sliding_means
         calculate_sliding_slopes
 """
 
@@ -252,7 +252,10 @@ def prs_bottilt_tdir(x_tilt, y_tilt, ccmp):
     return np.round(np.mod(450 - np.degrees(np.arctan2(y_tilt, x_tilt)) + ccmp, 360))
 
 
-def prs_botsflu_time15s(timestamp):
+#**********************************************************************
+#.. BOTSFLU: Functions calculating data products
+#**********************************************************************
+def prs_botsflu_time15s(timestamp, botpres):
     """
     Description:
 
@@ -287,10 +290,8 @@ def prs_botsflu_time15s(timestamp):
         OOI (2015). Data Product Specification for Seafloor Uplift and Subsidence
             (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
     """
-    bin_duration = 15.0  # seconds
-
-    # the second calling argument is a placeholder
-    time15s = anchor_bin(timestamp, None, bin_duration, 'time')
+    ###### the second calling argument is a placeholder
+    time15s, _, _ = anchor_bin_rawdata_to_15s(timestamp, botpres)
 
     return time15s
 
@@ -324,9 +325,7 @@ def prs_botsflu_meanpres(timestamp, botpres):
         OOI (2015). Data Product Specification for Seafloor Uplift and Subsidence
             (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
     """
-    bin_duration = 15.0  # seconds
-
-    meanpres, _ = anchor_bin(timestamp, botpres, bin_duration, 'data')
+    _, meanpres, _ = anchor_bin_rawdata_to_15s(timestamp, botpres)
 
     return meanpres
 
@@ -588,10 +587,8 @@ def prs_botsflu_time24h(time15s):
         OOI (2015). Data Product Specification for Seafloor Uplift and Subsidence
             (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
     """
-    bin_duration = 86400.0  # seconds in a bin
-
     # the second calling argument is a placeholder
-    time24h = anchor_bin(time15s, None, bin_duration, 'time')
+    time24h, _, _ = anchor_bin_detided_to_24h(time15s, None)
 
     return time24h
 
@@ -732,6 +729,425 @@ def prs_botsflu_8wkrate(timestamp, botpres):
 
 
 #**********************************************************************
+#.. BOTSFLU: Worker functions called by the data product functions
+#**********************************************************************
+def anchor_bin_rawdata_to_15s(time, data):
+    """
+    Description:
+
+        Calculates 'anchored' timestamps (see Notes) and binned data based on timestamps
+        in units of seconds since midnight. Written explicitly for the BOTSFLU DPA which
+        requires two stages of binning: 20hz data on 15 seconds, then the 15sec data on 24 hours.
+
+    Implemented by:
+
+        2015-01-13: Russell Desiderio. Initial code.
+        2015-01-14: Russell Desiderio. Changed output arguments and incorporated conditionals
+                                       to improve program efficiency.
+
+    Usage (1):
+
+        bin_timestamps = anchor_bin(time, None, bin_duration, 'time')
+
+            where
+
+        bin_timestamps = 1D array of centered timestamps for non-empty bins
+        time = 1D array of timestamps, units of sec since 01-01-1900
+        None = not used; python placeholder object
+        bin_duration = size of bin [s]
+        mode = the string 'time'
+
+    Usage (2):
+
+        binned_data, mask_nonzero = anchor_bin(time, data, bin_duration, 'data')
+
+            where
+
+        binned_data = 1D array of binned data; no empty bins are represented
+        mask_nonzero = boolean where True values represent locations of non-empty bins
+        time = 1D array of timestamps, units of sec since 01-01-1900
+        data = data to be binned
+        bin_duration = size of bin [s]
+        mode = the string 'data'
+
+    Usage (3):
+
+        bin_timestamps, binned_data, mask_nonzero = anchor_bin(time, data, bin_duration, 'both')
+
+            where
+
+        bin_timestamps = 1D array of centered timestamps for non-empty bins
+        binned_data = 1D array of binned data; no empty bins are represented
+        mask_nonzero = boolean where True values represent locations of non-empty bins
+        time = 1D array of timestamps, units of sec since 01-01-1900
+        data = data to be binned
+        bin_duration = size of bin [s]
+        mode = the string 'both'
+
+    Notes:
+
+        The conditional construction is used so that only necessary statements are executed;
+        when multiple years' worth of 20 Hz data is operated on, each np.bincount operation
+        may take multiple tens of seconds to execute.
+
+        The np.bincount routine is used in the same way accumarray in matlab is used
+        to bin data. The key to the routine is to convert the timestamps into elapsed
+        time in units of bin_duration and to construct bins based on the floored
+        bin_duration times. The summing is then carried out by using the weighting
+        feature of the np.bincount function, as described in the example in the
+        numpy.bincount documentation as listed in the References.
+
+        The BOTSFLU data products require binning at two stages. Bin results both with
+        and without empty bins are required. The output arguments have been selected to
+        provide this flexibility (in particular mask_nonzero).
+
+        This routine has been constructed to supply 'anchored' timestamps. For example,
+        if the bin_duration is 86400 (the number of seconds in a day) then the start time
+        will be half a bin earlier than the first day of data (at noon) and all timestamps
+        will be 'anchored' at midnight. Similarly, if the bin_duration is 15 sec, all
+        timestamps will be at 00, 15, 30, and 45 seconds past the minute.
+
+    References:
+
+        http://docs.scipy.org/doc/numpy-1.8.1/reference/generated/numpy.bincount.html.
+    """
+    bin_duration = 15.0  # seconds
+    half_bin = bin_duration/2.0
+
+    # anchor time-centered bins by determining the start time to be half a bin
+    # before the first 'anchor timestamp', which will be an integral number of
+    # bin_durations after midnight.
+    start_time = np.floor((time[0] - half_bin)/bin_duration) * bin_duration + half_bin
+    # calculate elapsed time from start in units of bin_duration.
+    time_elapsed = (time - start_time)/bin_duration
+    # assign each timestamp a bin number index based on its elapsed time.
+    bin_number = np.floor(time_elapsed).astype(int)
+    # the number of elements in each bin is given by
+    bin_count = np.bincount(bin_number).astype(float)
+    # create a logical mask of non-zero bin_count values
+    mask_nonzero = (bin_count != 0)
+
+    # directly calculate bin timestamp, units of [sec]:
+    # the midpoint of the data interval is used.
+    bin_timestamps = start_time + half_bin + bin_duration * np.arange(bin_count.size)
+    # keep only the bins with values
+    bin_timestamps = bin_timestamps[mask_nonzero]
+
+    # sum the values in each time bin, and put into the variable binned_data
+    binned_data = np.bincount(bin_number, data)
+    # divide the values in non-empty bins by the number of values in each bin
+    binned_data = binned_data[mask_nonzero]/bin_count[mask_nonzero]
+
+    return bin_timestamps, binned_data, mask_nonzero
+
+
+def anchor_bin_detided_to_24h(time, data):
+    """
+    Description:
+
+        Calculates 'anchored' timestamps (see Notes) and binned data based on timestamps
+        in units of seconds since midnight. Written explicitly for the BOTSFLU DPA which
+        requires two stages of binning: 20hz data on 15 seconds, then the 15sec data on 24 hours.
+
+    Implemented by:
+
+        2015-01-13: Russell Desiderio. Initial code.
+        2015-01-14: Russell Desiderio. Changed output arguments and incorporated conditionals
+                                       to improve program efficiency.
+
+    Usage (1):
+
+        bin_timestamps = anchor_bin(time, None, bin_duration, 'time')
+
+            where
+
+        bin_timestamps = 1D array of centered timestamps for non-empty bins
+        time = 1D array of timestamps, units of sec since 01-01-1900
+        None = not used; python placeholder object
+        bin_duration = size of bin [s]
+        mode = the string 'time'
+
+    Usage (2):
+
+        binned_data, mask_nonzero = anchor_bin(time, data, bin_duration, 'data')
+
+            where
+
+        binned_data = 1D array of binned data; no empty bins are represented
+        mask_nonzero = boolean where True values represent locations of non-empty bins
+        time = 1D array of timestamps, units of sec since 01-01-1900
+        data = data to be binned
+        bin_duration = size of bin [s]
+        mode = the string 'data'
+
+    Usage (3):
+
+        bin_timestamps, binned_data, mask_nonzero = anchor_bin(time, data, bin_duration, 'both')
+
+            where
+
+        bin_timestamps = 1D array of centered timestamps for non-empty bins
+        binned_data = 1D array of binned data; no empty bins are represented
+        mask_nonzero = boolean where True values represent locations of non-empty bins
+        time = 1D array of timestamps, units of sec since 01-01-1900
+        data = data to be binned
+        bin_duration = size of bin [s]
+        mode = the string 'both'
+
+    Notes:
+
+        The conditional construction is used so that only necessary statements are executed;
+        when multiple years' worth of 20 Hz data is operated on, each np.bincount operation
+        may take multiple tens of seconds to execute.
+
+        The np.bincount routine is used in the same way accumarray in matlab is used
+        to bin data. The key to the routine is to convert the timestamps into elapsed
+        time in units of bin_duration and to construct bins based on the floored
+        bin_duration times. The summing is then carried out by using the weighting
+        feature of the np.bincount function, as described in the example in the
+        numpy.bincount documentation as listed in the References.
+
+        The BOTSFLU data products require binning at two stages. Bin results both with
+        and without empty bins are required. The output arguments have been selected to
+        provide this flexibility (in particular mask_nonzero).
+
+        This routine has been constructed to supply 'anchored' timestamps. For example,
+        if the bin_duration is 86400 (the number of seconds in a day) then the start time
+        will be half a bin earlier than the first day of data (at noon) and all timestamps
+        will be 'anchored' at midnight. Similarly, if the bin_duration is 15 sec, all
+        timestamps will be at 00, 15, 30, and 45 seconds past the minute.
+
+    References:
+
+        http://docs.scipy.org/doc/numpy-1.8.1/reference/generated/numpy.bincount.html.
+    """
+    bin_duration = 86400.0  # number of seconds in a day
+    half_bin = bin_duration/2.0
+
+    # anchor time-centered bins by determining the start time to be half a bin
+    # before the first 'anchor timestamp', which will an integral number of
+    # bin_durations after midnight.
+    start_time = np.floor((time[0] - half_bin)/bin_duration) * bin_duration + half_bin
+    # calculate elapsed time from start in units of bin_duration.
+    time_elapsed = (time - start_time)/bin_duration
+    # assign each timestamp a bin number index based on its elapsed time.
+    bin_number = np.floor(time_elapsed).astype(int)
+    # the number of elements in each bin is given by
+    bin_count = np.bincount(bin_number).astype(float)
+    # create a logical mask of non-zero bin_count values
+    mask_nonzero = (bin_count != 0)
+
+    # directly calculate bin timestamp, units of [sec]:
+    # the midpoint of the data interval is used.
+    bin_timestamps = start_time + half_bin + bin_duration * np.arange(bin_count.size)
+    # keep only the bins with values
+    bin_timestamps = bin_timestamps[mask_nonzero]
+
+    # sum the values in each time bin, and put into the variable binned_data
+    binned_data = np.bincount(bin_number, data)
+    # divide the values in non-empty bins by the number of values in each bin
+    binned_data = binned_data[mask_nonzero]/bin_count[mask_nonzero]
+
+    return bin_timestamps, binned_data, mask_nonzero
+
+
+def calc_daydepth_plus(timestamp, botpres):
+    """
+    Description:
+
+        Worker function to calculate the botsflu data product daydepth plus an
+        additional boolean mask required to calculate other botsflu data products
+        downstream from daydepth.
+
+    Implemented by:
+
+        2015-01-14: Russell Desiderio. Initial code.
+
+    Usage
+
+        daydepth, mask_nonzero = calc_daydepth_plus(timestamp, botpres)
+
+            where
+
+        daydepth = BOTSFLU-DAYDEPTH_L2 [m]
+        mask_nonzero = boolean of positions of non-empty 24 hr bins
+        timestamp = OOI system timestamps [sec since 01-01-1900]
+        botpres = BOTPRES_L1 [psia]
+
+    Notes:
+
+    References:
+
+        OOI (2015). Data Product Specification for Seafloor Uplift and Subsidence
+            (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
+    """
+    # calculate 15sec bin timestamps and de-tided depth.
+    time15s, meandepth, _ = calc_meandepth_plus(timestamp, botpres)
+
+    # bin the 15sec data into 24 hour bins so that the timestamps are at midnight.
+    # to calculate daydepth, don't need the time24h timestamps.
+
+    _, daydepth, mask_nonzero = anchor_bin_detided_to_24h(time15s, meandepth)
+
+    # downstream data products require the mask_nonzero variable, so pass
+    # it as an output argument so that it doesn't need to be recalculated.
+    return daydepth, mask_nonzero
+
+
+def calc_meandepth_plus(timestamp, botpres):
+    """
+    Description:
+
+        Worker function to calculate the botsflu data product meandepth plus
+        additional variables required to calculate other botsflu data products
+        downstream from meandepth.
+
+    Implemented by:
+
+        2015-01-14: Russell Desiderio. Initial code.
+
+    Usage
+
+        time15s, meandepth, mask_nonzero = calc_meandepth_plus(timestamp, botpres)
+
+            where
+
+        time15s = TIME15S [sec since 01-01-1900]
+        meandepth = BOTSFLU-MEANDEPTH_L2 [m]
+        mask_nonzero = boolean of positions of non-empty bins in the original data
+        timestamp = OOI system timestamps [sec since 01-01-1900]
+        botpres = BOTPRES_L1 [psia]
+
+    Notes:
+
+        The DPS specifies that atmospheric pressure not be subtracted from the
+        L1 pressure data even though its units are [psia].
+
+        The DPS convention is that depths are negative, so that to detide the
+        pressure record, the predicted tide is added to the negative depths.
+
+        This function was written as a way to eliminate the execution of time
+        consuming duplicate calculations in the botsflu coding within the
+        OOI CI architecture constraints.
+
+    References:
+
+        OOI (2015). Data Product Specification for Seafloor Uplift and Subsidence
+            (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
+    """
+    # The pressure values do have units of psia. However, historically at these sites
+    # atmospheric pressure has *not* been subtracted when converting the pressure data
+    # to depth. Therefore the DPS authors do not want atmospheric pressure subtracted
+    # in the DPA. To emphasize this, I have created the variable atm_press_psi and set
+    # it to 0.
+    atm_press_psi = 0.0
+    psi_2_depth = -0.67  # psi to depth in meters
+    bin_duration = 15.0  # seconds
+
+    time15s, meanpres, mask_nonzero = anchor_bin_rawdata_to_15s(timestamp, botpres)
+    # look up tide data
+    tide = prs_botsflu_predtide(time15s)
+    # de-tide
+    meandepth = ((meanpres - atm_press_psi) * psi_2_depth) + tide
+
+    # downstream data products require the time15s and mask_nonzero variables,
+    # so pass these as output arguments so that they won't have to be recalculated.
+    return time15s, meandepth, mask_nonzero
+
+
+def calculate_sliding_means(data, window_size):
+    """
+    Description:
+
+        Calculates time-centered means using digital convolution for the
+        BOTSFLU data product 10MINRATE.
+
+    Implemented by:
+
+        2015-01-13: Russell Desiderio. Initial code.
+
+    Usage
+
+        means = calculate_sliding_means(data, window_size)
+
+            where
+
+        means = 1D array of sliding means
+        data = 1D array of data
+        window_size = even integer
+    """
+    kk = np.ones(window_size) / window_size
+    means = np.convolve(data, kk, 'same')
+    # matlab and numpy behave differently for even window sizes, so
+    means = np.roll(means, -1)
+    # in this application, window_size is always even.
+    hfwin = window_size/2 - 1
+    # nan out data with boundary effects at edges.
+    # the values in the array means will be of type float because kk is a float,
+    # so that the np.nan assignment statements will work as intended.
+    means[0:hfwin] = np.nan
+    means[-hfwin-1:] = np.nan
+
+    return means
+
+
+def calculate_sliding_slopes(data, window_size):
+    """
+    Description:
+
+        Calculates backwards-looking sliding slopes using the normal linear
+        regression equations rewritten to be less susceptible to round-off
+        error; required for the BOTSFLU data products 4WKRATE and 8WKRATE.
+
+    Implemented by:
+
+        2017-05-03: Russell Desiderio. Initial code. Replaces the much faster Moore-Penrose
+                                       pseudo-inverse method so that nan-masking can be
+                                       incorporated.
+
+    Usage
+
+        slopes = calculate_sliding_slopes(data, window_size)
+
+            where
+
+        slopes = 1D array of sliding slopes
+        data = 1D array of data
+        window_size = integer
+
+    Notes
+
+        Used equations 14.2.15-14.2.17 in the Numerical Recipes reference below.
+
+        The slopes are backwards-looking, not centered. The first non-nan value occurs
+        at (python) index window_size, and is the slope of a regression of the first
+        window_size points.
+
+    References:
+
+        Press, Flannery, Teukolsky and Vetterling. Numerical Recipes, 1986; 1987 reprint.
+        Cambridge University Press. page 507.
+    """
+    # odd window sizes are expected; if even, increment by one
+    window_size = window_size + 1 - np.mod(window_size, 2)
+    half_window = window_size / 2  # this will 'floor' when window_size is odd as desired
+
+    slopes = np.zeros(data.size) + np.nan
+    x = np.arange(window_size).astype('float')
+    for ii in range(half_window, data.size - half_window):
+        y = data[(ii-half_window):(ii+half_window+1)]
+        #x = x[~np.isnan(y)]  # LATER!
+        #y = y[~np.isnan(y)]  # LATER!
+        tti = x - x.mean(axis=0)
+        stt = np.sum(tti * tti)
+        slopes[ii] = np.sum(tti * y) / stt
+
+    slopes = np.roll(slopes, half_window)
+
+    return slopes
+
+
+#**********************************************************************
 #.. EVENT NOTIFICATION: tsunami detection
 #**********************************************************************
 def prs_tsunami_detection(botsflu_5minrate, tsunami_detection_threshold=1.0):
@@ -821,7 +1237,12 @@ def prs_eruption_occurred(botsflu_10minrate, eruption_occurred_threshold=-5.0):
     return boolean_eruption_occurred
 
 
-def anchor_bin(time, data, bin_duration, mode):
+#**********************************************************************
+#.. BOTSFLU functions deprecated May 2017 but retained.
+#**********************************************************************
+
+
+def anchor_bin_DEPRECATED(time, data, bin_duration, mode):
     """
     Description:
 
@@ -834,6 +1255,11 @@ def anchor_bin(time, data, bin_duration, mode):
         2015-01-13: Russell Desiderio. Initial code.
         2015-01-14: Russell Desiderio. Changed output arguments and incorporated conditionals
                                        to improve program efficiency.
+        2017-05-05: Russell Desiderio. Deprecated because the new code requires different
+                                       modifications to the rawdata and detided data binning:
+                                       (1) bad value check in the rawdata
+                                       (2) 'extended' 24hr timestamp records to incorporate
+                                           non-Nan coverage thresholds for the detided data.
 
     Usage (1):
 
@@ -943,147 +1369,8 @@ def anchor_bin(time, data, bin_duration, mode):
         return bin_timestamps, binned_data, mask_nonzero
 
 
-def calc_daydepth_plus(timestamp, botpres):
-    """
-    Description:
-
-        Worker function to calculate the botsflu data product daydepth plus an
-        additional boolean mask required to calculate other botsflu data products
-        downstream from daydepth.
-
-    Implemented by:
-
-        2015-01-14: Russell Desiderio. Initial code.
-
-    Usage
-
-        daydepth, mask_nonzero = calc_daydepth_plus(timestamp, botpres)
-
-            where
-
-        daydepth = BOTSFLU-DAYDEPTH_L2 [m]
-        mask_nonzero = boolean of positions of non-empty 24 hr bins
-        timestamp = OOI system timestamps [sec since 01-01-1900]
-        botpres = BOTPRES_L1 [psia]
-
-    Notes:
-
-    References:
-
-        OOI (2015). Data Product Specification for Seafloor Uplift and Subsidence
-            (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
-    """
-    # calculate 15sec bin timestamps and de-tided depth.
-    time15s, meandepth, _ = calc_meandepth_plus(timestamp, botpres)
-
-    # bin the 15sec data into 24 hour bins so that the timestamps are at midnight.
-    # to calculate daydepth, don't need the time24h timestamps.
-    bin_duration = 86400.0  # number of seconds in a day
-    daydepth, mask_nonzero = anchor_bin(time15s, meandepth, bin_duration, 'data')
-
-    # downstream data products require the mask_nonzero variable, so pass
-    # it as an output argument so that it doesn't need to be recalculated.
-    return daydepth, mask_nonzero
-
-
-def calc_meandepth_plus(timestamp, botpres):
-    """
-    Description:
-
-        Worker function to calculate the botsflu data product meandepth plus
-        additional variables required to calculate other botsflu data products
-        downstream from meandepth.
-
-    Implemented by:
-
-        2015-01-14: Russell Desiderio. Initial code.
-
-    Usage
-
-        time15s, meandepth, mask_nonzero = calc_meandepth_plus(timestamp, botpres)
-
-            where
-
-        time15s = TIME15S [sec since 01-01-1900]
-        meandepth = BOTSFLU-MEANDEPTH_L2 [m]
-        mask_nonzero = boolean of positions of non-empty bins in the original data
-        timestamp = OOI system timestamps [sec since 01-01-1900]
-        botpres = BOTPRES_L1 [psia]
-
-    Notes:
-
-        The DPS specifies that atmospheric pressure not be subtracted from the
-        L1 pressure data even though its units are [psia].
-
-        The DPS convention is that depths are negative, so that to detide the
-        pressure record, the predicted tide is added to the negative depths.
-
-        This function was written as a way to eliminate the execution of time
-        consuming duplicate calculations in the botsflu coding within the
-        OOI CI architecture constraints.
-
-    References:
-
-        OOI (2015). Data Product Specification for Seafloor Uplift and Subsidence
-            (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
-    """
-    # The pressure values do have units of psia. However, historically at these sites
-    # atmospheric pressure has *not* been subtracted when converting the pressure data
-    # to depth. Therefore the DPS authors do not want atmospheric pressure subtracted
-    # in the DPA. To emphasize this, I have created the variable atm_press_psi and set
-    # it to 0.
-    atm_press_psi = 0.0
-    psi_2_depth = -0.67  # psi to depth in meters
-    bin_duration = 15.0  # seconds
-
-    time15s, meanpres, mask_nonzero = anchor_bin(timestamp, botpres, bin_duration, 'both')
-    # look up tide data
-    tide = prs_botsflu_predtide(time15s)
-    # de-tide
-    meandepth = ((meanpres - atm_press_psi) * psi_2_depth) + tide
-
-    # downstream data products require the time15s and mask_nonzero variables,
-    # so pass these as output arguments so that they won't have to be recalculated.
-    return time15s, meandepth, mask_nonzero
-
-
-def calculate_sliding_means(data, window_size):
-    """
-    Description:
-
-        Calculates time-centered means using digital convolution for the
-        BOTSFLU data product 10MINRATE.
-
-    Implemented by:
-
-        2015-01-13: Russell Desiderio. Initial code.
-
-    Usage
-
-        means = calculate_sliding_means(data, window_size)
-
-            where
-
-        means = 1D array of sliding means
-        data = 1D array of data
-        window_size = even integer
-    """
-    kk = np.ones(window_size) / window_size
-    means = np.convolve(data, kk, 'same')
-    # matlab and numpy behave differently for even window sizes, so
-    means = np.roll(means, -1)
-    # in this application, window_size is always even.
-    hfwin = window_size/2 - 1
-    # nan out data with boundary effects at edges.
-    # the values in the array means will be of type float because kk is a float,
-    # so that the np.nan assignment statements will work as intended.
-    means[0:hfwin] = np.nan
-    means[-hfwin-1:] = np.nan
-
-    return means
-
-
-def calculate_sliding_slopes(data, window_size):
+def calculate_sliding_slopes__MoorePenrose(data, window_size):
+    # DEPRECATED because nan-masking cannot be implemented with this algorithm #
     """
     Description:
 
@@ -1094,9 +1381,11 @@ def calculate_sliding_slopes(data, window_size):
     Implemented by:
 
         2015-01-13: Russell Desiderio. Initial code.
+        2017-05-03: Russell Desiderio. Deprecated because nan-masking cannot
+                                       be implemented with this algorithm.
 
     Usage
-
+ 
         slopes = calculate_sliding_slopes(data, window_size)
 
             where
@@ -1113,8 +1402,8 @@ def calculate_sliding_slopes(data, window_size):
         for movingslope.m on Matlab Central's file exchange (16997).
 
         The slopes are backwards-looking, not centered. The first non-nan value occurs
-        at index window_size, and is the slope of a regression of the first (window_size
-        + 1) points.
+        at (python) index window_size, and is the slope of a regression of the first
+        window_size points.
     """
     column1 = np.ones((window_size, 1))
     column2 = -np.arange(float(window_size)).reshape(-1, 1)
