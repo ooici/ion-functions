@@ -565,6 +565,9 @@ def prs_botsflu_time24h(time15s):
     Implemented by:
 
         2015-01-14: Russell Desiderio. Initial code.
+        2017-05-05: Russell Desiderio. Changed time24h time base to span the entire
+                                       dataset including data gaps. This change is
+                                       made in the function anchor_bin_detided_to_24h.
 
     Usage
 
@@ -603,6 +606,9 @@ def prs_botsflu_daydepth(timestamp, botpres):
     Implemented by:
 
         2015-01-14: Russell Desiderio. Initial code.
+        2017-05-05: Russell Desiderio. Changed time24h time base to span the entire
+                                       dataset including data gaps. Therefore added
+                                       lines to insert Nans at the data gaps.
 
     Usage
 
@@ -623,7 +629,12 @@ def prs_botsflu_daydepth(timestamp, botpres):
         OOI (2015). Data Product Specification for Seafloor Uplift and Subsidence
             (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
     """
-    daydepth, _ = calc_daydepth_plus(timestamp, botpres)
+    # calculate non-trivial daydepth data and the mask of nonzero data bins.
+    data_no_nans, mask_nonzero = calc_daydepth_plus(timestamp, botpres)
+
+    # re-constitute the original data, with data gaps (if present) represented by nans.
+    daydepth = np.zeros(mask_nonzero.size) + np.nan
+    daydepth[mask_nonzero] = data_no_nans
 
     return daydepth
 
@@ -638,6 +649,10 @@ def prs_botsflu_4wkrate(timestamp, botpres):
     Implemented by:
 
         2015-01-14: Russell Desiderio. Initial code.
+        2017-05-05: Russell Desiderio. Changed time24h time base to span the entire
+                                       dataset including data gaps. Therefore removed
+                                       the last masking operation that removed the
+                                       values at bins that had zero data.
 
     Usage
 
@@ -668,12 +683,10 @@ def prs_botsflu_4wkrate(timestamp, botpres):
     # 4 weeks of data
     window_size = 29
     botsflu_4wkrate = calculate_sliding_slopes(data_w_gaps, window_size)
-    # (1) remove appropriate bins to re-establish the 1:1 correspondence
-    #     to TIME24H timestamps;
-    # (2) convert units:
-    #     the units of the slopes are [y]/[x] = meters/day;
-    #     to get units of cm/yr, multiply by 100cm/m * 365 days/yr
-    botsflu_4wkrate = 100.0 * 365.0 * botsflu_4wkrate[mask_nonzero]
+    #  convert units:
+    #    the units of the slopes are [y]/[x] = meters/day;
+    #    to get units of cm/yr, multiply by 100cm/m * 365 days/yr
+    botsflu_4wkrate = 100.0 * 365.0 * botsflu_4wkrate
 
     return botsflu_4wkrate
 
@@ -688,6 +701,10 @@ def prs_botsflu_8wkrate(timestamp, botpres):
     Implemented by:
 
         2015-01-14: Russell Desiderio. Initial code.
+        2017-05-05: Russell Desiderio. Changed time24h time base to span the entire
+                                       dataset including data gaps. Therefore removed
+                                       the last masking operation that removed the
+                                       values at bins that had zero data.
 
     Usage
 
@@ -718,12 +735,10 @@ def prs_botsflu_8wkrate(timestamp, botpres):
     # 8 weeks of data
     window_size = 57
     botsflu_8wkrate = calculate_sliding_slopes(data_w_gaps, window_size)
-    # (1) remove appropriate bins to re-establish the 1:1 correspondence
-    #     to TIME24H timestamps;
-    # (2) convert units:
-    #     the units of the slopes are [y]/[x] = meters/day;
-    #     to get units of cm/yr, multiply by 100cm/m * 365 days/yr
-    botsflu_8wkrate = 100.0 * 365.0 * botsflu_8wkrate[mask_nonzero]
+    #  convert units:
+    #    the units of the slopes are [y]/[x] = meters/day;
+    #    to get units of cm/yr, multiply by 100cm/m * 365 days/yr
+    botsflu_8wkrate = 100.0 * 365.0 * botsflu_8wkrate
 
     return botsflu_8wkrate
 
@@ -940,8 +955,9 @@ def anchor_bin_detided_to_24h(time, data):
     # directly calculate bin timestamp, units of [sec]:
     # the midpoint of the data interval is used.
     bin_timestamps = start_time + half_bin + bin_duration * np.arange(bin_count.size)
-    # keep only the bins with values
-    bin_timestamps = bin_timestamps[mask_nonzero]
+
+    ## keep only the bins with values
+    #bin_timestamps = bin_timestamps[mask_nonzero]
 
     # sum the values in each time bin, and put into the variable binned_data
     binned_data = np.bincount(bin_number, data)
