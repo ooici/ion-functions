@@ -591,7 +591,7 @@ def prs_botsflu_time24h(time15s):
             (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
     """
     # the second calling argument is a placeholder
-    time24h, _, _ = anchor_bin_detided_to_24h(time15s, None)
+    time24h, _ = anchor_bin_detided_to_24h(time15s, None)
 
     return time24h
 
@@ -629,12 +629,7 @@ def prs_botsflu_daydepth(timestamp, botpres):
         OOI (2015). Data Product Specification for Seafloor Uplift and Subsidence
             (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
     """
-    # calculate non-trivial daydepth data and the mask of nonzero data bins.
-    data_no_nans, mask_nonzero = calc_daydepth_plus(timestamp, botpres)
-
-    # re-constitute the original data, with data gaps (if present) represented by nans.
-    daydepth = np.zeros(mask_nonzero.size) + np.nan
-    daydepth[mask_nonzero] = data_no_nans
+    daydepth = calc_daydepth_plus(timestamp, botpres)
 
     return daydepth
 
@@ -673,12 +668,8 @@ def prs_botsflu_4wkrate(timestamp, botpres):
         OOI (2015). Data Product Specification for Seafloor Uplift and Subsidence
             (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
     """
-    # calculate daydepth and the mask of nonzero data bins.
-    daydepth, mask_nonzero = calc_daydepth_plus(timestamp, botpres)
-
-    # re-constitute the original data, with data gaps represented by nans.
-    data_w_gaps = np.zeros(mask_nonzero.size) + np.nan
-    data_w_gaps[mask_nonzero] = daydepth
+    # calculate daydepth
+    data_w_gaps = calc_daydepth_plus(timestamp, botpres)
 
     # 4 weeks of data
     window_size = 29
@@ -726,13 +717,9 @@ def prs_botsflu_8wkrate(timestamp, botpres):
             (BOTSFLU) from the BOTPT instrument. Document Control Number 1341-00080.
     """
     # calculate daydepth and the mask of nonzero data bins.
-    daydepth, mask_nonzero = calc_daydepth_plus(timestamp, botpres)
+    data_w_gaps = calc_daydepth_plus(timestamp, botpres)
 
-    # re-constitute the original data, with data gaps represented by nans.
-    data_w_gaps = np.zeros(mask_nonzero.size) + np.nan
-    data_w_gaps[mask_nonzero] = daydepth
-
-    # 8 weeks of data
+   # 8 weeks of data
     window_size = 57
     botsflu_8wkrate = calculate_sliding_slopes(data_w_gaps, window_size)
     #  convert units:
@@ -956,15 +943,16 @@ def anchor_bin_detided_to_24h(time, data):
     # the midpoint of the data interval is used.
     bin_timestamps = start_time + half_bin + bin_duration * np.arange(bin_count.size)
 
-    ## keep only the bins with values
-    #bin_timestamps = bin_timestamps[mask_nonzero]
-
     # sum the values in each time bin, and put into the variable binned_data
     binned_data = np.bincount(bin_number, data)
     # divide the values in non-empty bins by the number of values in each bin
     binned_data = binned_data[mask_nonzero]/bin_count[mask_nonzero]
 
-    return bin_timestamps, binned_data, mask_nonzero
+    # re-constitute the original data, with data gaps (if present) represented by nans.
+    daydepth = np.zeros(mask_nonzero.size) + np.nan
+    daydepth[mask_nonzero] = binned_data
+
+    return bin_timestamps, daydepth
 
 
 def calc_daydepth_plus(timestamp, botpres):
@@ -1003,11 +991,10 @@ def calc_daydepth_plus(timestamp, botpres):
     # bin the 15sec data into 24 hour bins so that the timestamps are at midnight.
     # to calculate daydepth, don't need the time24h timestamps.
 
-    _, daydepth, mask_nonzero = anchor_bin_detided_to_24h(time15s, meandepth)
+    _, daydepth = anchor_bin_detided_to_24h(time15s, meandepth)
 
-    # downstream data products require the mask_nonzero variable, so pass
-    # it as an output argument so that it doesn't need to be recalculated.
-    return daydepth, mask_nonzero
+    # downstream data products no longer require the mask_nonzero variable
+    return daydepth
 
 
 def calc_meandepth_plus(timestamp, botpres):
