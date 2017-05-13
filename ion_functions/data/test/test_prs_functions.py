@@ -286,11 +286,18 @@ class TestPRSFunctionsUnit(BaseUnitTestCase):
         even window sizes; specifically, make sure edge effects are nan'd out
         appropriately.
 
-        Implemented by Russell Desiderio, January 2015.
+        Russell Desiderio, January 2015. Original code.
+        May 2017: Added case of odd window-size for use in sliding_slope with Nanmasking
         """
         xpctd = np.array([np.nan, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, np.nan, np.nan])
         data = np.arange(10.0)
         window_size = 4
+        calc = prsfunc.calculate_sliding_means(data, window_size)
+        np.testing.assert_array_equal(calc, xpctd)
+
+        xpctd = np.array([np.nan, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, np.nan])
+        data = np.arange(10.0)
+        window_size = 3
         calc = prsfunc.calculate_sliding_means(data, window_size)
         np.testing.assert_array_equal(calc, xpctd)
 
@@ -306,8 +313,37 @@ class TestPRSFunctionsUnit(BaseUnitTestCase):
         xpctd = np.array([np.nan, np.nan, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
         data = np.arange(10.0)
         window_size = 3
-        calc = prsfunc.calculate_sliding_slopes(data, window_size)
+        rate_coverage = 1.0
+        calc = prsfunc.calculate_sliding_slopes(data, window_size, rate_coverage)
         np.testing.assert_allclose(calc, xpctd, rtol=0.0, atol=1.e-12)
+        """
+        Additional test, RDesiderio, May 12, 2017
+        Verify nan placement after routine has been altered to accept a 75% fill criterion.
+        """
+        # set up test data with slope=2
+        data = 2 * np.arange(150.0)
+        # nan out middle section
+        data[50:100] = np.nan
+
+        # when the sliding slope routine is applied, the result will be sets of contiguous nans
+        # and non-Nan values whose indices depend on the window size and on the location of nans
+        # in the test data.
+        #    29 point window (4weekrate case)
+        xpctd_w29 = np.ones(150) + 1.0
+        xpctd_w29[0:21] = np.nan
+        xpctd_w29[57:121] = np.nan
+        window_size = 29
+        rate_coverage = 0.75
+        calc = prsfunc.calculate_sliding_slopes(data, window_size, rate_coverage)
+        np.testing.assert_array_equal(calc, xpctd_w29)
+        #    57 point window (8weekrate case)
+        xpctd_w57 = np.ones(150) + 1.0
+        xpctd_w57[0:42] = np.nan
+        xpctd_w57[64:142] = np.nan
+        window_size = 57
+        rate_coverage = 0.75
+        calc = prsfunc.calculate_sliding_slopes(data, window_size, rate_coverage)
+        np.testing.assert_array_equal(calc, xpctd_w57)
 
     def test_prs_botsflu_auxiliary_timestamps(self):
         """
@@ -479,11 +515,33 @@ class TestPRSFunctionsUnit(BaseUnitTestCase):
         Test the calculation of DAYDEPTH.
 
         Implemented by Russell Desiderio, January 2015.
+        RDesiderio. May 12, 2015. Added 0.9 and default coverage test
         """
+        # case(1) January 2015 unit test values
         xpctd_daydepth = np.array([-1510.8705, -1510.9055, -1510.9119, -1510.8491,
                                    -1510.8596, -1510.8354, -1510.8791, -1510.8807,
                                    -1510.8378, -1510.8279, -1510.8530, -1512.2859,
                                    -1513.2018, -1513.1660, -1513.1128, -1513.0478])
+        dday_coverage = 0.0  # if a bin contains a non-Nan value, its datum will exist
+        daydepth = prsfunc.prs_botsflu_daydepth(self.ss1900, self.botpres, dday_coverage)
+        calc = daydepth[self.idx_24h]
+        np.testing.assert_allclose(calc, xpctd_daydepth, rtol=0, atol=1.e-4)
+
+         # case(2) May 2017 unit test values, coverage = 0.90
+        xpctd_daydepth = np.array([np.nan, -1510.9055, np.nan, -1510.8491,
+                                   -1510.8596, -1510.8354, -1510.8791, -1510.8807,
+                                   -1510.8378, -1510.8279, -1510.8530, -1512.2859,
+                                   -1513.2018, -1513.1660, -1513.1128, np.nan])
+        dday_coverage = 0.9
+        daydepth = prsfunc.prs_botsflu_daydepth(self.ss1900, self.botpres, dday_coverage)
+        calc = daydepth[self.idx_24h]
+        np.testing.assert_allclose(calc, xpctd_daydepth, rtol=0, atol=1.e-4)
+
+         # case(3) May 2017 default, no coverage specified in argument list
+        xpctd_daydepth = np.array([np.nan, -1510.9055, np.nan, -1510.8491,
+                                   -1510.8596, -1510.8354, -1510.8791, -1510.8807,
+                                   -1510.8378, -1510.8279, -1510.8530, -1512.2859,
+                                   -1513.2018, -1513.1660, -1513.1128, np.nan])
         daydepth = prsfunc.prs_botsflu_daydepth(self.ss1900, self.botpres)
         calc = daydepth[self.idx_24h]
         np.testing.assert_allclose(calc, xpctd_daydepth, rtol=0, atol=1.e-4)
@@ -493,11 +551,53 @@ class TestPRSFunctionsUnit(BaseUnitTestCase):
         Test the calculation of 4WKRATE.
 
         Implemented by Russell Desiderio, January 2015.
+        RDesiderio. May 12, 2015. 3 additional tests for coverage parameters; 4 total
+            (1) dday_coverage =  0.0;    rate_coverage = 1.0  (January 2015 unit test values)
+            (2) dday_coverage =  0.0;    rate_coverage = 0.75
+            (3) dday_coverage =  0.9;    rate_coverage = 0.75
+            (4) default (no argument)    default (no argument)  (should be same as (3))
         """
+        # case (1)
+        dday_coverage = 0.0
+        rate_coverage = 1.0
         xpctd_4wkrate = np.array([np.nan, np.nan, np.nan, np.nan,
                                   np.nan, 70.5000, 28.8000, -23.6372,
                                   7.8316, 38.7091, 57.6564, -407.2349,
                                   -3024.1664, -4291.1577, -3982.1142, -2118.0963])
+        b_4wkrate = prsfunc.prs_botsflu_4wkrate(
+            self.ss1900, self.botpres, dday_coverage, rate_coverage)
+        calc = b_4wkrate[self.idx_24h]
+        np.testing.assert_allclose(calc, xpctd_4wkrate, rtol=0, atol=1.e-4)
+
+        # case (2)
+        dday_coverage = 0.0
+        rate_coverage = 0.75
+        xpctd_4wkrate = np.array([np.nan, np.nan, np.nan, np.nan,
+                                  64.1039, 70.5000, 28.8000, -23.6372,
+                                  7.8316, 38.7091, 57.6564, -407.2349,
+                                  -3024.1664, -4291.1577, -3982.1142, -2118.0963])
+        b_4wkrate = prsfunc.prs_botsflu_4wkrate(
+            self.ss1900, self.botpres, dday_coverage, rate_coverage)
+        calc = b_4wkrate[self.idx_24h]
+        np.testing.assert_allclose(calc, xpctd_4wkrate, rtol=0, atol=1.e-4)
+
+        # case (3)
+        dday_coverage = 0.9
+        rate_coverage = 0.75
+        xpctd_4wkrate = np.array([np.nan, np.nan, np.nan, np.nan,
+                                  np.nan, 63.2291, 0.4971, -23.6372,
+                                  7.8316, 38.7091, 57.6564, -407.2349,
+                                  -3024.1664, -4291.1577, -3982.1142, -2276.7628])
+        b_4wkrate = prsfunc.prs_botsflu_4wkrate(
+            self.ss1900, self.botpres, dday_coverage, rate_coverage)
+        calc = b_4wkrate[self.idx_24h]
+        np.testing.assert_allclose(calc, xpctd_4wkrate, rtol=0, atol=1.e-4)
+
+        # case (4)
+        xpctd_4wkrate = np.array([np.nan, np.nan, np.nan, np.nan,
+                                  np.nan, 63.2291, 0.4971, -23.6372,
+                                  7.8316, 38.7091, 57.6564, -407.2349,
+                                  -3024.1664, -4291.1577, -3982.1142, -2276.7628])
         b_4wkrate = prsfunc.prs_botsflu_4wkrate(self.ss1900, self.botpres)
         calc = b_4wkrate[self.idx_24h]
         np.testing.assert_allclose(calc, xpctd_4wkrate, rtol=0, atol=1.e-4)
@@ -507,11 +607,53 @@ class TestPRSFunctionsUnit(BaseUnitTestCase):
         Test the calculation of 8WKRATE.
 
         Implemented by Russell Desiderio, January 2015.
+        RDesiderio. May 12, 2015. 3 additional tests for coverage parameters; 4 total
+            (1) dday_coverage =  0.0;    rate_coverage = 1.0  (January 2015 unit test values)
+            (2) dday_coverage =  0.0;    rate_coverage = 0.75
+            (3) dday_coverage =  0.9;    rate_coverage = 0.75
+            (4) default (no argument)    default (no argument)  (should be same as (3))
         """
+        # case (1)
+        dday_coverage = 0.0
+        rate_coverage = 1.0
         xpctd_8wkrate = np.array([np.nan, np.nan, np.nan, np.nan,
                                   np.nan, np.nan, np.nan, np.nan,
                                   np.nan, np.nan, 35.7686, -90.1254,
                                   -882.7773, -1506.2385, -1921.8774, -2120.7657])
+        b_8wkrate = prsfunc.prs_botsflu_8wkrate(
+            self.ss1900, self.botpres, dday_coverage, rate_coverage)
+        calc = b_8wkrate[self.idx_24h]
+        np.testing.assert_allclose(calc, xpctd_8wkrate, rtol=0, atol=1.e-4)
+
+        # case (2)
+        dday_coverage = 0.0
+        rate_coverage = 0.75
+        xpctd_8wkrate = np.array([np.nan, np.nan, np.nan, np.nan,
+                                  np.nan, np.nan, np.nan, 24.5993,
+                                  28.7563, 32.6131, 35.7686, -90.1254,
+                                  -882.7773, -1506.2385, -1921.8774, -2120.7657])
+        b_8wkrate = prsfunc.prs_botsflu_8wkrate(
+            self.ss1900, self.botpres, dday_coverage, rate_coverage)
+        calc = b_8wkrate[self.idx_24h]
+        np.testing.assert_allclose(calc, xpctd_8wkrate, rtol=0, atol=1.e-4)
+
+        # case (3)
+        dday_coverage = 0.9
+        rate_coverage = 0.75
+        xpctd_8wkrate = np.array([np.nan, np.nan, np.nan, np.nan,
+                                  np.nan, np.nan, np.nan, np.nan,
+                                  26.1114, 30.4322, 31.6141, -113.8871,
+                                  -882.7773, -1506.2385, -1921.8774, -2150.3933])
+        b_8wkrate = prsfunc.prs_botsflu_8wkrate(
+            self.ss1900, self.botpres, dday_coverage, rate_coverage)
+        calc = b_8wkrate[self.idx_24h]
+        np.testing.assert_allclose(calc, xpctd_8wkrate, rtol=0, atol=1.e-4)
+
+        # case (4)
+        xpctd_8wkrate = np.array([np.nan, np.nan, np.nan, np.nan,
+                                  np.nan, np.nan, np.nan, np.nan,
+                                  26.1114, 30.4322, 31.6141, -113.8871,
+                                  -882.7773, -1506.2385, -1921.8774, -2150.3933])
         b_8wkrate = prsfunc.prs_botsflu_8wkrate(self.ss1900, self.botpres)
         calc = b_8wkrate[self.idx_24h]
         np.testing.assert_allclose(calc, xpctd_8wkrate, rtol=0, atol=1.e-4)
