@@ -208,8 +208,8 @@ def met_barpres(mbar):
     """
     Description:
 
-        OOI Level 1 Barometric Pressure core data product, which is calculated
-        by scaling the measured barometric pressure from mbar to Pascals.
+        OOI Level 1 Air Pressure core data product, which is calculated 
+        by scaling the measured barometer pressure from mbar to Pascals.
 
     Implemented by:
 
@@ -221,8 +221,8 @@ def met_barpres(mbar):
 
             where
 
-        Pa = Barometric pressure (BARPRES_L1) [Pa]
-        mbar = Barometric pressure (BARPRES_L0) [mbar]
+        Pa = Air pressure (BARPRES_L1) [Pa]
+        mbar = Barometer pressure (BARPRES_L0) [mbar]
 
     References:
 
@@ -2483,7 +2483,7 @@ def air_density(tC_air, air_pressure_mbar, relhum):
 
         rho_air = the density of air [kg/m^3]
         tC_air = air temperature (TEMPAIR_L1) [deg_C].
-        air_pressure_mbar = barometric pressure (BARPRES_L0) [mbar]
+        air_pressure_mbar = barometer pressure (BARPRES_L0) [mbar]
         relhum = relative humidity of air (RELHUMI_L1) [%]
     """
     Rgas = 287.05  # gas constant [J/kg/K] for dry(!) air
